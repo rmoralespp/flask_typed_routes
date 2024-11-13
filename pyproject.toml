@@ -1,0 +1,73 @@
+[project]
+name = "flask_typed_routes"
+version = "0.0.0"
+description = "Validate Flask request parameters effortlessly with Pydantic"
+readme = "README.md"
+license = { file = "LICENSE" }
+keywords = ["python", "flask", "pydantic", "validation", "routes"]
+authors = [{ name = "rmoralespp", email = "rmoralespp@gmail.com" }]
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet",
+    "Topic :: Utilities",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Framework :: Flask",
+]
+dependencies = [
+    "flask",
+    "pydantic>2.0.0",
+]
+
+[project.urls]
+Source = "https://github.com/rmoralespp/flask_typed_routes"
+Homepage = "https://github.com/rmoralespp/flask_typed_routes"
+Changelog = "https://github.com/rmoralespp/flask_typed_routes/blob/main/CHANGELOG.md"
+Issues = "https://github.com/rmoralespp/flask_typed_routes/issues"
+Documentation = "https://rmoralespp.github.io/flask_typed_routes/"
+
+[tool.setuptools.packages]
+find = { where = ["src"] }
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    'D', # pydocstyle
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "D103",
+    "D100",
+    "D104",
+    "D202",
+    "D205",
+    "D401",
+    "D415",
+    "D400",
+    "D212",
+    "D211",
+    "UP009",
+    "C408",
+]

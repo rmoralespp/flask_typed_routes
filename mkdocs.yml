@@ -1,0 +1,19 @@
+site_name: flask_typed_routes
+site_description: "Validate Flask request parameters effortlessly with Pydantic"
+site_url: "https://github.com/rmoralespp/flask_typed_routes"
+repo_url: https://github.com/rmoralespp/flask_typed_routes
+repo_name: flask_typed_routes
+theme:
+  name: readthedocs
+  custom_dir: 'docs'
+markdown_extensions:
+  admonition: {}
+nav:
+  - Introduction: index.md
+  - Usage:
+    - Path parameters: path.md
+    - Query parameters: query.md
+    - Cookie parameters: cookie.md
+    - Header parameters: header.md
+    - Request body: body.md
+    - Handling errors: errors.md
