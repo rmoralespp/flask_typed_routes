@@ -4,6 +4,8 @@ This section demonstrates how to use the library to validate and enforce types f
 Flask application.
 
 ```python
+import typing as t
+
 import flask
 import flask_typed_routes as flask_tpr
 
@@ -13,7 +15,7 @@ flask_tpr.FlaskTypeRoutes(app)
 
 @app.route('/posts/<user_id>/<country_iso>')
 @flask_tpr.typed_route
-def read_posts(user_id: int, country_iso: flask_tpr.Path(max_length=2)):
+def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_length=2)]):
     data = {
         'user_id': user_id,
         'country_iso': country_iso,
