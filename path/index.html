@@ -88,7 +88,9 @@
                 <h1 id="path-parameters">Path Parameters</h1>
 <p>This section demonstrates how to use the library to validate and enforce types for path parameters in your
 Flask application.</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python">import typing as t
+
+import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
@@ -97,7 +99,7 @@ flask_tpr.FlaskTypeRoutes(app)
 
 @app.route('/posts/&lt;user_id&gt;/&lt;country_iso&gt;')
 @flask_tpr.typed_route
-def read_posts(user_id: int, country_iso: flask_tpr.Path(max_length=2)):
+def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_length=2)]):
     data = {
         'user_id': user_id,
         'country_iso': country_iso,

@@ -48,6 +48,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../path/">Path parameters</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Query parameters</a>
+    <ul class="current">
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../cookie/">Cookie parameters</a>
                   </li>
@@ -83,7 +85,79 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                
+                <h1 id="query-parameters">Query parameters</h1>
+<p>Parameters not included in the "path" are automatically treated as "query" parameters.</p>
+<pre><code class="language-python">import typing as t
+
+import flask
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.route('/posts/')
+@flask_tpr.typed_route
+def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Query(alias=&quot;max&quot;, le=100)] = 100):
+    data = {
+        'needy': needy,
+        'skip': skip,
+        'limit': limit,
+    }
+    return flask.jsonify(data)
+</code></pre>
+<p>Explanation:</p>
+<ul>
+<li><code>needy</code>: Query parameter that must be included in the request and must be a string.</li>
+<li><code>skip</code>: Query parameter that is optional and must be an integer. If not included, it defaults to 0.</li>
+<li><code>limit</code>: Query parameter that is optional and must be a string. If not included, it defaults to 100. The parameter is
+  validated using the library field <code>Query</code> with a maximum value of 100. The parameter is also aliased as <code>max</code>.</li>
+</ul>
+<p>Note: The alias is used to demonstrate how the library can support Pydantic's Field class.</p>
+<p>Valid Request: http://127.0.0.1:5000/posts/?needy=passed&amp;max=20</p>
+<pre><code class="language-json">{
+  &quot;limit&quot;: 20,
+  &quot;needy&quot;: &quot;passed&quot;,
+  &quot;skip&quot;: 0
+}
+</code></pre>
+<p><strong>Invalid Requests:</strong></p>
+<p><strong>Case1</strong> If "needy" is not included in the request: http://127.0.0.1:5000/posts/</p>
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;input&quot;: {},
+      &quot;loc&quot;: [
+        &quot;query&quot;,
+        &quot;needy&quot;
+      ],
+      &quot;msg&quot;: &quot;Field required&quot;,
+      &quot;type&quot;: &quot;missing&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/missing&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Case2</strong> If "limit" (alias: "max") is greater than 100: http://127.0.0.1:5000/posts/?needy=passed&amp;max=1000</p>
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;ctx&quot;: {
+        &quot;le&quot;: 100
+      },
+      &quot;input&quot;: &quot;1000&quot;,
+      &quot;loc&quot;: [
+        &quot;query&quot;,
+        &quot;max&quot;
+      ],
+      &quot;msg&quot;: &quot;Input should be less than or equal to 100&quot;,
+      &quot;type&quot;: &quot;less_than_equal&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/less_than_equal&quot;
+    }
+  ]
+}
+</code></pre>
               
             </div>
           </div><footer>
