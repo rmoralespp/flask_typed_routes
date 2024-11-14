@@ -33,7 +33,7 @@ Explanation:
 
 Note: The alias is used to demonstrate how the library can support Pydantic's Field class.
 
-Valid Request: http://127.0.0.1:5000/posts/?needy=passed&max=20
+Valid Request: `http://127.0.0.1:5000/posts/?needy=passed&max=20`
 
 ```json
 {
@@ -45,7 +45,7 @@ Valid Request: http://127.0.0.1:5000/posts/?needy=passed&max=20
 
 **Invalid Requests:**
 
-**Case1** If "needy" is not included in the request: http://127.0.0.1:5000/posts/
+**Case1** If "needy" is not included in the request: `http://127.0.0.1:5000/posts/`
 
 ```json
 {
@@ -64,7 +64,7 @@ Valid Request: http://127.0.0.1:5000/posts/?needy=passed&max=20
 }
 ```
 
-**Case2** If "limit" (alias: "max") is greater than 100: http://127.0.0.1:5000/posts/?needy=passed&max=1000
+**Case2** If "limit" (alias: "max") is greater than 100: `http://127.0.0.1:5000/posts/?needy=passed&max=1000`
 
 ```json
 {

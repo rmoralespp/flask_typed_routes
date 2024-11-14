@@ -29,7 +29,7 @@ def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_le
 - country_iso: Must be a string with a maximum length of 2 characters. This parameter is validated using the libray
   field `Path`.
 
-Valid Request: http://127.0.0.1:5000/posts/12/ES
+Valid Request: `http://127.0.0.1:5000/posts/12/ES`
 
 ```json
 {
@@ -40,7 +40,7 @@ Valid Request: http://127.0.0.1:5000/posts/12/ES
 
 **Invalid Requests:**
 
-**Case1** If "user_id" is not an integer: http://127.0.0.1:5000/posts/abc/ES
+**Case1** If "user_id" is not an integer: `http://127.0.0.1:5000/posts/abc/ES`
 
 ```json
 {
@@ -60,7 +60,7 @@ Valid Request: http://127.0.0.1:5000/posts/12/ES
 ```
 
 **Case2** If "country_iso" is not a string with a maximum length of 2
-characters: http://127.0.0.1:5000/posts/12/ESP
+characters: `http://127.0.0.1:5000/posts/12/ESP`
 
 ```
 {

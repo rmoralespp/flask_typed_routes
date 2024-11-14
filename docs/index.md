@@ -61,7 +61,7 @@ flask --app posts run
 
 **Data conversion:**
 
-Open your browser and go to http://127.0.0.1:5000/posts/myuser/?skip=20
+Open your browser and go to `http://127.0.0.1:5000/posts/myuser/?skip=20`
 You will see the JSON response as:
 
 ```json
@@ -74,7 +74,7 @@ You will see the JSON response as:
 
 **Data validation:**
 
-Open your browser and go to http://127.0.0.1:5000/posts/myuser/?skip=abc
+Open your browser and go to `http://127.0.0.1:5000/posts/myuser/?skip=abc`
 You will see the JSON response with the error details because the `skip` parameter is not an integer:
 
 ```json
