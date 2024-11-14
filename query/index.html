@@ -115,7 +115,7 @@ def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
   validated using the library field <code>Query</code> with a maximum value of 100. The parameter is also aliased as <code>max</code>.</li>
 </ul>
 <p>Note: The alias is used to demonstrate how the library can support Pydantic's Field class.</p>
-<p>Valid Request: http://127.0.0.1:5000/posts/?needy=passed&amp;max=20</p>
+<p>Valid Request: <code>http://127.0.0.1:5000/posts/?needy=passed&amp;max=20</code></p>
 <pre><code class="language-json">{
   &quot;limit&quot;: 20,
   &quot;needy&quot;: &quot;passed&quot;,
@@ -123,7 +123,7 @@ def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
 }
 </code></pre>
 <p><strong>Invalid Requests:</strong></p>
-<p><strong>Case1</strong> If "needy" is not included in the request: http://127.0.0.1:5000/posts/</p>
+<p><strong>Case1</strong> If "needy" is not included in the request: <code>http://127.0.0.1:5000/posts/</code></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -139,7 +139,7 @@ def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
   ]
 }
 </code></pre>
-<p><strong>Case2</strong> If "limit" (alias: "max") is greater than 100: http://127.0.0.1:5000/posts/?needy=passed&amp;max=1000</p>
+<p><strong>Case2</strong> If "limit" (alias: "max") is greater than 100: <code>http://127.0.0.1:5000/posts/?needy=passed&amp;max=1000</code></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {

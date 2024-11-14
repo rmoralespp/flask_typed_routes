@@ -131,7 +131,7 @@ def read_user_posts(user: str, skip: int = 0, limit: int = 10):
 <pre><code class="language-bash">flask --app posts run
 </code></pre>
 <p><strong>Data conversion:</strong></p>
-<p>Open your browser and go to http://127.0.0.1:5000/posts/myuser/?skip=20
+<p>Open your browser and go to <code>http://127.0.0.1:5000/posts/myuser/?skip=20</code>
 You will see the JSON response as:</p>
 <pre><code class="language-json">{
   &quot;limit&quot;: 10,
@@ -140,7 +140,7 @@ You will see the JSON response as:</p>
 }
 </code></pre>
 <p><strong>Data validation:</strong></p>
-<p>Open your browser and go to http://127.0.0.1:5000/posts/myuser/?skip=abc
+<p>Open your browser and go to <code>http://127.0.0.1:5000/posts/myuser/?skip=abc</code>
 You will see the JSON response with the error details because the <code>skip</code> parameter is not an integer:</p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
@@ -209,5 +209,5 @@ You will see the JSON response with the error details because the <code>skip</co
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-11-14 15:42:27.306761+00:00
+Build Date UTC : 2024-11-14 15:44:47.940681+00:00
 -->
