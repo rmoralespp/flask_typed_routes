@@ -31,7 +31,7 @@ class Field(abc.ABC):
 
     def __init__(self, *args, embed=False, multi=False, **kwargs):
         self.embed = embed  # "JsonBody" fields can be embedded
-        self.multi = multi  # "Header" and "Cookie" fields can have multiple values
+        self.multi = multi  # "Header", "Cookie" and "Query" fields can have multiple values
         self.field_info = pydantic.fields.Field(*args, **kwargs)
 
     @property
