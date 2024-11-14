@@ -24,6 +24,73 @@ pip install flask_typed_routes
 
 ## Getting Started
 
+Example of a simple Flask application using `flask_typed_routes`:
+
+Create a file `posts.py` with:
+
+```python
+
+import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypedRoutes(app)
+
+
+@app.route('/posts/<user>/')
+@flask_tpr.typed_route
+def read_user_posts(user: str, skip: int = 0, limit: int = 10):
+    # Parameters not included in the "path" are automatically treated as "query" parameters.
+    data = {
+        'user': user,
+        'skip': skip,
+        'limit': limit
+    }
+    return flask.jsonify(data)
+```
+
+**Run the server with:**
+
+```bash
+flask --app posts run
+```
+
+**Data conversion:**
+
+Open your browser and go to `127.0.0.1:5000/posts/myuser/?skip=20`
+You will see the JSON response as:
+
+```json
+{
+  "user": "user",
+  "skip": 20,
+  "limit": 10
+}
+
+```
+
+**Data validation:**
+
+Open your browser and go to `127.0.0.1:5000/posts/myuser/?skip=abc`
+You will see the JSON response with the error details because the `skip` parameter is not an integer:
+
+```json
+{
+  "detail": [
+    {
+      "input": "abc",
+      "loc": [
+        "query",
+        "skip"
+      ],
+      "msg": "Input should be a valid integer, unable to parse string as an integer",
+      "type": "int_parsing",
+      "url": "https://errors.pydantic.dev/2.9/v/int_parsing"
+    }
+  ]
+}
+```
+
 ## Documentation
 
 For more detailed information and usage examples, refer to the
