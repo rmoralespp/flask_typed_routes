@@ -46,6 +46,8 @@
               <p class="caption"><span class="caption-text">Usage</span></p>
               <ul class="current">
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Path parameters</a>
+    <ul class="current">
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../query/">Query parameters</a>
                   </li>
@@ -83,7 +85,79 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                
+                <h1 id="path-parameters">Path Parameters</h1>
+<p>This section demonstrates how to use the library to validate and enforce types for path parameters in your
+Flask application.</p>
+<pre><code class="language-python">import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.route('/posts/&lt;user_id&gt;/&lt;country_iso&gt;')
+@flask_tpr.typed_route
+def read_posts(user_id: int, country_iso: flask_tpr.Path(max_length=2)):
+    data = {
+        'user_id': user_id,
+        'country_iso': country_iso,
+    }
+    return flask.jsonify(data)
+</code></pre>
+<p><strong>Validations:</strong></p>
+<ul>
+<li>user_id: Must be an integer.</li>
+<li>country_iso: Must be a string with a maximum length of 2 characters. This parameter is validated using the libray
+  field <code>Path</code>.</li>
+</ul>
+<p>Valid Request: http://127.0.0.1:5000/posts/12/ES</p>
+<pre><code class="language-json">{
+  &quot;country_iso&quot;: &quot;ES&quot;,
+  &quot;user_id&quot;: 12
+}
+</code></pre>
+<p><strong>Invalid Requests:</strong></p>
+<p><strong>Case1</strong> If "user_id" is not an integer: http://127.0.0.1:5000/posts/abc/ES</p>
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;input&quot;: &quot;abc&quot;,
+      &quot;loc&quot;: [
+        &quot;path&quot;,
+        &quot;user_id&quot;
+      ],
+      &quot;msg&quot;: &quot;Input should be a valid integer, unable to parse string as an integer&quot;,
+      &quot;type&quot;: &quot;int_parsing&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/int_parsing&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Case2</strong> If "country_iso" is not a string with a maximum length of 2
+characters: http://127.0.0.1:5000/posts/12/ESP</p>
+<pre><code>{
+
+      &quot;errors&quot;: [
+            {
+                  &quot;ctx&quot;: {
+                        &quot;max_length&quot;: 2
+                  },
+                  &quot;input&quot;: &quot;ESP&quot;,
+                  &quot;loc&quot;: [
+                        &quot;path&quot;,
+                        &quot;country_iso&quot;
+                  ],
+                  &quot;msg&quot;: &quot;String should have at most 2 characters&quot;,
+                  &quot;type&quot;: &quot;string_too_long&quot;,
+                  &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/string_too_long&quot;
+            }
+      ]
+
+}
+</code></pre>
+<p><strong>Custom Path Validations</strong></p>
+<p>The <code>Path</code> field is an extension of Pydantic's field, offering powerful validation capabilities.
+This flexibility allows you to tailor path parameter validation to your application's specific needs.</p>
               
             </div>
           </div><footer>

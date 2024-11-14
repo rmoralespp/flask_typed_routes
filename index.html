@@ -41,6 +41,8 @@
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="#">Introduction</a>
+    <ul class="current">
+    </ul>
                 </li>
               </ul>
               <p class="caption"><span class="caption-text">Usage</span></p>
@@ -82,8 +84,79 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <p>Wellcome to the documentation of the project!</p>
-<p>Work in progress !!</p>
+                <p><a href="https://github.com/rmoralespp/flask_typed_routes/actions?query=event%3Arelease+workflow%3ACI"><img alt="CI" src="https://github.com/rmoralespp/flask_typed_routes/workflows/CI/badge.svg" /></a>
+<a href="https://pypi.python.org/pypi/flask_typed_routes"><img alt="pypi" src="https://img.shields.io/pypi/v/flask_typed_routes.svg" /></a>
+<a href="https://app.codecov.io/gh/rmoralespp/flask_typed_routes"><img alt="codecov" src="https://codecov.io/gh/rmoralespp/jsonl/branch/main/graph/badge.svg" /></a>
+<a href="https://github.com/rmoralespp/flask_typed_routes/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/rmoralespp/jsonl.svg" /></a></p>
+<h2 id="about">About</h2>
+<p><strong>flask_typed_routes</strong> is a <code>Python</code> library designed to validate <code>Flask</code> requests effortlessly with <code>Pydantic</code>.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Type Safety:</strong> Automatically validates request parameters based on type annotations.</li>
+<li><strong>Easy Integration:</strong> Simple decorator syntax for applying validation to Flask routes.</li>
+<li><strong>Error Handling:</strong> Automatically returns meaningful error responses for validation failures.</li>
+</ul>
+<h2 id="requirements">Requirements</h2>
+<ul>
+<li>Python 3.10+</li>
+<li>Pydantic 2.0+</li>
+<li>Flask</li>
+</ul>
+<h2 id="installation">Installation</h2>
+<p>To install <strong>flask_typed_routes</strong> using <code>pip</code>, run the following command:</p>
+<pre><code class="language-bash">pip install flask_typed_routes
+</code></pre>
+<h2 id="getting-started">Getting Started</h2>
+<p>Example of a simple Flask application using <code>flask_typed_routes</code>:</p>
+<p>Create a file <code>posts.py</code> with:</p>
+<pre><code class="language-python">import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.route('/posts/&lt;user&gt;/')
+@flask_tpr.typed_route
+def read_user_posts(user: str, skip: int = 0, limit: int = 10):
+    # Parameters not included in the &quot;path&quot; are automatically treated as &quot;query&quot; parameters.
+    data = {
+        'user': user,
+        'skip': skip,
+        'limit': limit,
+    }
+    return flask.jsonify(data)
+</code></pre>
+<p><strong>Run the server with:</strong></p>
+<pre><code class="language-bash">flask --app posts run
+</code></pre>
+<p><strong>Data conversion:</strong></p>
+<p>Open your browser and go to http://127.0.0.1:5000/posts/myuser/?skip=20
+You will see the JSON response as:</p>
+<pre><code class="language-json">{
+  &quot;limit&quot;: 10,
+  &quot;skip&quot;: 20,
+  &quot;user&quot;: &quot;myuser&quot;
+}
+</code></pre>
+<p><strong>Data validation:</strong></p>
+<p>Open your browser and go to http://127.0.0.1:5000/posts/myuser/?skip=abc
+You will see the JSON response with the error details because the <code>skip</code> parameter is not an integer:</p>
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;input&quot;: &quot;abc&quot;,
+      &quot;loc&quot;: [
+        &quot;query&quot;,
+        &quot;skip&quot;
+      ],
+      &quot;msg&quot;: &quot;Input should be a valid integer, unable to parse string as an integer&quot;,
+      &quot;type&quot;: &quot;int_parsing&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/int_parsing&quot;
+    }
+  ]
+}
+</code></pre>
               
             </div>
           </div><footer>
@@ -136,5 +209,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-11-14 14:46:31.358409+00:00
+Build Date UTC : 2024-11-14 15:22:22.450859+00:00
 -->
