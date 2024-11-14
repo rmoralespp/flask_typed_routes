@@ -22,11 +22,8 @@ class Item(pydantic.BaseModel):
 
 @pytest.fixture(scope='package')
 def flask_app():
-    def handle_errors(e):
-        return flask.jsonify({"errors": e.errors}), 400
-
     api = flask.Flask(__name__)
-    api.register_error_handler(src.RequestValidationError, handle_errors)
+    src.FlaskTypeRoutes(api)
 
     @api.get('/items/')
     @src.typed_route

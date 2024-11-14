@@ -1,3 +1,9 @@
+"""
+Contains the field classes that are used to define the
+input fields of the API.
+"""
+
+import abc
 import collections
 
 import flask
@@ -15,17 +21,23 @@ class FieldTypes:
     body = "body"
 
 
-class Field:
+class Field(abc.ABC):
+    """
+    Abstract base class for all field types.
+    Inherit from ABC with abstractmethod to avoid instantiation of this class.
+    """
+
     kind = None
 
     def __init__(self, *args, embed=False, multi=False, **kwargs):
-        self.embed = embed
-        self.multi = multi
+        self.embed = embed  # "JsonBody" fields can be embedded
+        self.multi = multi  # "Header" and "Cookie" fields can have multiple values
         self.field_info = pydantic.fields.Field(*args, **kwargs)
 
     @property
+    @abc.abstractmethod
     def value(self):
-        return Unset
+        raise NotImplementedError
 
     @property
     def alias(self):

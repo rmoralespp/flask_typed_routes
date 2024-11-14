@@ -1,13 +1,15 @@
-from src.errors import RequestValidationError
-from src.fields import Query, Path, Header, Cookie, JsonBody
-from src.main import typed_route
+from src.app import FlaskTypeRoutes  # noqa
+from src.errors import ValidationError  # noqa
+from src.fields import Query, Path, Header, Cookie, JsonBody  # noqa
+from src.main import typed_route  # noqa
 
 __all__ = [
-    "RequestValidationError",
+    "ValidationError",
     "Query",
     "Path",
     "Header",
     "Cookie",
     "JsonBody",
     "typed_route",
+    "FlaskTypeRoutes",
 ]

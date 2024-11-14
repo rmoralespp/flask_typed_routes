@@ -1,14 +1,18 @@
-# flask_typed_routes
-
 ## About
 
-**flask_typed_routes** is a Python library designed to validate Flask request parameters effortlessly with Pydantic.
+**flask_typed_routes** is a `Python` library designed to validate `Flask` requests effortlessly with `Pydantic`.
+
+## Features
+
+- **Type Safety:** Automatically validates request parameters based on type annotations.
+- **Easy Integration:** Simple decorator syntax for applying validation to Flask routes.
+- **Error Handling:** Automatically returns meaningful error responses for validation failures.
 
 ## Requirements
 
 - Python 3.10+
+- Pydantic 2.0+
 - Flask
-- Pydantic
 
 ## Installation
 

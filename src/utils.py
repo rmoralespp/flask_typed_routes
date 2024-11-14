@@ -2,6 +2,7 @@ import contextlib
 import inspect
 import typing as t
 
+import src.errors
 import src.fields
 
 
@@ -15,16 +16,23 @@ def check_types(func):
 
     sig = inspect.signature(func)
     for name, tp in func.__annotations__.items():
-        if is_annotated(tp):
+        if name != "return" and is_annotated(tp):
             tp, *meta = t.get_args(tp)
             if not meta or len(meta) > 1 or not isinstance(meta[0], src.fields.Field):
-                raise TypeError(f"Invalid annotation for {name!r} in {func.__name__!r}")
+                raise src.errors.InvalidParameterTypeError(f"Invalid annotation for {name!r} in {func.__name__!r}")
             else:
                 field = meta[0]
                 param = sig.parameters[name]
                 if param.default != inspect.Parameter.empty and field.field_info.default is not src.fields.Undef:
                     if param.default != field.field_info.default:
-                        raise TypeError(f"Default value mismatch for {name!r} in {func.__name__!r}")
+                        raise src.errors.InvalidParameterTypeError(
+                            f"Default value mismatch for {name!r} in {func.__name__!r}"
+                        )
+
+                if isinstance(field, src.fields.Path) and field.alias and field.alias != name:
+                    raise src.errors.InvalidParameterTypeError(
+                        f"Unsupported alias for Path field {name!r} in {func.__name__!r}"
+                    )
 
 
 def make_field(tp, field_class, is_required, default):
@@ -53,22 +61,19 @@ def pretty_errors(fields, errors):
     """
     Convert the errors to a more readable format.
 
-    :param fields: Field aliases
-    :param errors: Pydantic validation errors
+    :param dict fields: Field aliases
+    :param Iterable[dict] errors: Pydantic validation errors
     """
 
     for error in errors:
-        loc = error["loc"]
+        loc = list(error["loc"])
         name = loc[0]
         klass, field = fields[name]
         if field.alias:
             # If the field has an alias, use "kind", "alias", and the rest of the location.
-            loc = (
-                field.kind,
-                name,
-            ) + loc[1:]
+            loc = [field.kind, name] + loc[1:]
         else:
             # Otherwise, use "kind" and the rest of the location.
-            loc = (field.kind,) + loc[1:]
+            loc = [field.kind] + loc[1:]
         error["loc"] = loc
     return errors

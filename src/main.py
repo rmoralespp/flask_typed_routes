@@ -1,3 +1,8 @@
+"""
+Contains the main application logic.
+Offers a decorator to validate the request parameters using Pydantic models.
+"""
+
 import functools
 import inspect
 
@@ -16,6 +21,9 @@ def inspect_route(view_func, view_kwargs):
     values = dict(**view_kwargs)
 
     for name, klass in view_func.__annotations__.items():
+        if name == "return":
+            continue
+
         param = sig.parameters[name]
         is_required = param.default == inspect.Parameter.empty
 
@@ -28,7 +36,7 @@ def inspect_route(view_func, view_kwargs):
         else:  # Query parameter by default
             klass, field = src.utils.make_field(klass, src.fields.Query, is_required, param.default)
             if src.utils.is_subclass(klass, pydantic.BaseModel):
-                # When the query parameter is a Pydantic model, use alias if embed is True.
+                # When the parameter is a Pydantic model, use alias if embed is True.
                 field.alias = (field.alias or name) if field.embed else None
             else:
                 # Otherwise, use the alias if it is set, otherwise use the name.
@@ -64,7 +72,7 @@ def typed_route(func):
             instance = model.model_validate(values)
         except pydantic.ValidationError as e:
             errors = src.utils.pretty_errors(fields_aliases, e.errors())
-            raise src.errors.RequestValidationError(errors) from None
+            raise src.errors.ValidationError(errors) from None
         else:
             inject = {k: getattr(instance, k) for k in fields}
             return func(*args, **inject)
