@@ -55,9 +55,11 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Request body</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#create-a-new-post">Create a new POST</a>
+    <li class="toctree-l2"><a class="reference internal" href="#create-a-new-item">Create a new Item</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#update-a-post">Update a POST</a>
+    <li class="toctree-l2"><a class="reference internal" href="#update-an-item">Update an Item</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#create-an-item-by-a-user-using-two-pydantic-models-leveraging-the-jsonbody-field-with-embed">Create an Item by a User Using Two Pydantic Models, Leveraging the JsonBody Field with embed</a>
     </li>
     </ul>
                   </li>
@@ -104,26 +106,26 @@ app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-class Post(pydantic.BaseModel):
+class Item(pydantic.BaseModel):
     title: str
     author: str
 
 
-@app.post('/posts/')
+@app.post('/items/')
 @flask_tpr.typed_route
-def create_post(post: Post):
-    return flask.jsonify(post.model_dump())
+def create_item(item: Item):
+    return flask.jsonify(item.model_dump())
 
 
-@app.put('/posts/&lt;post_id&gt;/')
+@app.put('/items/&lt;item_id&gt;/')
 @flask_tpr.typed_route
-def update_post(
-    post_id: int,
+def update_item(
+    item_id: int,
     title: t.Annotated[str, flask_tpr.JsonBody()] = None,
     author: t.Annotated[str, flask_tpr.JsonBody()] = None,
 ):
     data = {
-        'post_id': post_id,
+        'item_id': item_id,
         'title': title,
         'author': author,
     }
@@ -131,15 +133,15 @@ def update_post(
 </code></pre>
 <p>Explanation:</p>
 <ul>
-<li><code>Post</code>: Pydantic model that represents the structure of the request body. The model has two fields: <code>title</code> and
+<li><code>Item</code>: Pydantic model that represents the structure of the request body. The model has two fields: <code>title</code> and
   <code>author</code>.</li>
-<li><code>create_post</code>: Route that accepts a POST request with a JSON body that must match the <code>Post</code> model.</li>
-<li><code>update_post</code>: Route that accepts a URL parameter <code>post_id</code> that must be an integer. The route also accepts two
+<li><code>create_item</code>: Route that accepts a POST request with a JSON body that must match the <code>Item</code> model.</li>
+<li><code>update_item</code>: Route that accepts a URL parameter <code>item_id</code> that must be an integer. The route also accepts two
   optional JSON body parameters: <code>title</code> and <code>author</code>. The parameters are validated using the library field <code>JsonBody</code>.</li>
 </ul>
-<h3 id="create-a-new-post">Create a new POST</h3>
-<p><strong>Invalid request Body:</strong>
-<code>http://127.0.0.1:5000/posts/</code></p>
+<h3 id="create-a-new-item">Create a new Item</h3>
+<p><strong>Invalid request Body</strong>
+<code>POST http://127.0.0.1:5000/items/</code></p>
 <pre><code class="language-json">{
   &quot;title&quot;: &quot;Hello, World!&quot;
 }
@@ -162,14 +164,14 @@ def update_post(
   ]
 }
 </code></pre>
-<h3 id="update-a-post">Update a POST</h3>
-<p><strong>Invalid request Body:</strong>
-<code>http://127.0.0.1:5000/posts/123</code></p>
+<h3 id="update-an-item">Update an Item</h3>
+<p><strong>Invalid request Body</strong>
+<code>PUT http://127.0.0.1:5000/items/123</code></p>
 <pre><code class="language-json">{
   &quot;title&quot;: 111
 }
 </code></pre>
-<p><strong>Http Response:</strong></p>
+<p><strong>Http Response</strong></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -183,6 +185,68 @@ def update_post(
       &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/string_type&quot;
     }
   ]
+}
+</code></pre>
+<h3 id="create-an-item-by-a-user-using-two-pydantic-models-leveraging-the-jsonbody-field-with-embed">Create an Item by a User Using Two Pydantic Models, Leveraging the <code>JsonBody</code> Field with <code>embed</code></h3>
+<pre><code class="language-python">import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class Item(pydantic.BaseModel):
+    title: str
+    author: str
+
+
+class User(pydantic.BaseModel):
+    email: str
+    age: int
+
+
+@app.post('/users/&lt;user_id&gt;/items/')
+@flask_tpr.typed_route
+def create_item_by_user(
+    user_id: int,
+    item: t.Annotated[Item, flask_tpr.JsonBody(embed=True)],
+    user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
+):
+    data = {
+        'user_id': user_id,
+        'item': item.model_dump(),
+        'user': user.model_dump(),
+    }
+    return flask.jsonify(data)
+</code></pre>
+<p><strong>Request Body</strong></p>
+<p><code>POST http://127.0.0.1:5000/users/123/items/</code></p>
+<pre><code class="language-json">{
+    &quot;item&quot;: {
+        &quot;title&quot;: &quot;Hello, World!&quot;,
+        &quot;author&quot;: &quot;John Doe&quot;
+    },
+    &quot;user&quot;: {
+        &quot;email&quot;: &quot;myemail@abc.com&quot;,
+        &quot;age&quot;: 25
+    }
+}
+</code></pre>
+<p><strong>Http Response</strong></p>
+<pre><code class="language-json">{
+  &quot;item&quot;: {
+    &quot;author&quot;: &quot;John Doe&quot;,
+    &quot;title&quot;: &quot;Hello, World!&quot;
+  },
+  &quot;user&quot;: {
+    &quot;age&quot;: 25,
+    &quot;email&quot;: &quot;myemail@abc.com&quot;
+  },
+  &quot;user_id&quot;: 123
 }
 </code></pre>
               
