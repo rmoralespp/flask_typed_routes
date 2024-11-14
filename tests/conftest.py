@@ -4,7 +4,7 @@ import flask
 import pydantic
 import pytest
 
-import src
+import flask_typed_routes
 
 
 class Params(pydantic.BaseModel):
@@ -23,28 +23,28 @@ class Item(pydantic.BaseModel):
 @pytest.fixture(scope='package')
 def flask_app():
     api = flask.Flask(__name__)
-    src.FlaskTypeRoutes(api)
+    flask_typed_routes.FlaskTypeRoutes(api)
 
     @api.get('/items/')
-    @src.typed_route
-    def read_items(params: typing.Annotated[Params, src.Query()]):
+    @flask_typed_routes.typed_route
+    def read_items(params: typing.Annotated[Params, flask_typed_routes.Query()]):
         return flask.jsonify(params.model_dump())
 
     @api.get('/items/<item_id>/')
-    @src.typed_route
+    @flask_typed_routes.typed_route
     def read_item(item_id: int):
         data = {"item_id": item_id}
         return flask.jsonify(data)
 
     @api.get('/user/items/<username>/')
-    @src.typed_route
+    @flask_typed_routes.typed_route
     def read_user_items(
         username: str,
         needy: str,
         skip: int = 0,
         limit: int = 10,
-        extra: typing.Annotated[str, src.Query(alias="EXTRA", max_length=2)] = None,
-        tags: typing.Annotated[list[str], src.Query(alias="tag", multi=True)] = (),
+        extra: typing.Annotated[str, flask_typed_routes.Query(alias="EXTRA", max_length=2)] = None,
+        tags: typing.Annotated[list[str], flask_typed_routes.Query(alias="tag", multi=True)] = (),
     ):
         data = {
             "username": username,
@@ -57,15 +57,15 @@ def flask_app():
         return flask.jsonify(data)
 
     @api.post('/items/')
-    @src.typed_route
+    @flask_typed_routes.typed_route
     def create_item_from_model(item: Item):
         return flask.jsonify(item.model_dump()), 201
 
     @api.post('/user/')
-    @src.typed_route
+    @flask_typed_routes.typed_route
     def create_user_from_fields(
-        username: typing.Annotated[str, src.JsonBody()],
-        full_name: typing.Annotated[str, src.JsonBody()] = None,
+        username: typing.Annotated[str, flask_typed_routes.JsonBody()],
+        full_name: typing.Annotated[str, flask_typed_routes.JsonBody()] = None,
     ):
         data = {"username": username, "full_name": full_name}
         return flask.jsonify(data), 201

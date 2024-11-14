@@ -36,8 +36,12 @@ Changelog = "https://github.com/rmoralespp/flask_typed_routes/blob/main/CHANGELO
 Issues = "https://github.com/rmoralespp/flask_typed_routes/issues"
 Documentation = "https://rmoralespp.github.io/flask_typed_routes/"
 
-[tool.setuptools.packages]
-find = { where = ["src"] }
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["flask_typed_routes"]
 
 [tool.black]
 line-length = 120

@@ -2,8 +2,8 @@ import contextlib
 import inspect
 import typing as t
 
-import src.errors
-import src.fields
+import flask_typed_routes.errors
+import flask_typed_routes.fields
 
 
 def check_types(func):
@@ -18,19 +18,19 @@ def check_types(func):
     for name, tp in func.__annotations__.items():
         if name != "return" and is_annotated(tp):
             tp, *meta = t.get_args(tp)
-            if not meta or len(meta) > 1 or not isinstance(meta[0], src.fields.Field):
-                raise src.errors.InvalidParameterTypeError(f"Invalid annotation for {name!r} in {func.__name__!r}")
+            if not meta or len(meta) > 1 or not isinstance(meta[0], flask_typed_routes.fields.Field):
+                raise flask_typed_routes.errors.InvalidParameterTypeError(f"Invalid annotation for {name!r} in {func.__name__!r}")
             else:
                 field = meta[0]
                 param = sig.parameters[name]
-                if param.default != inspect.Parameter.empty and field.field_info.default is not src.fields.Undef:
+                if param.default != inspect.Parameter.empty and field.field_info.default is not flask_typed_routes.fields.Undef:
                     if param.default != field.field_info.default:
-                        raise src.errors.InvalidParameterTypeError(
+                        raise flask_typed_routes.errors.InvalidParameterTypeError(
                             f"Default value mismatch for {name!r} in {func.__name__!r}"
                         )
 
-                if isinstance(field, src.fields.Path) and field.alias and field.alias != name:
-                    raise src.errors.InvalidParameterTypeError(
+                if isinstance(field, flask_typed_routes.fields.Path) and field.alias and field.alias != name:
+                    raise flask_typed_routes.errors.InvalidParameterTypeError(
                         f"Unsupported alias for Path field {name!r} in {func.__name__!r}"
                     )
 

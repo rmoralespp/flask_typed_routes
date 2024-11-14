@@ -1,5 +1,5 @@
-import src.errors
-import src.main
+import flask_typed_routes.errors
+import flask_typed_routes.main
 
 
 class FlaskTypeRoutes:
@@ -20,11 +20,11 @@ class FlaskTypeRoutes:
 
     def __init__(self, app=None, validation_error_handler=None):
         self.error_handler = validation_error_handler
-        self.typed_route = src.main.typed_route  # Shortcut to the "typed_route" decorator
+        self.typed_route = flask_typed_routes.main.typed_route  # Shortcut to the "typed_route" decorator
 
         if app:
             self.init_app(app)
 
     def init_app(self, app):
         # Register the error handler for the "ValidationError"
-        app.register_error_handler(src.errors.ValidationError, self.error_handler or src.errors.handler)
+        app.register_error_handler(flask_typed_routes.errors.ValidationError, self.error_handler or flask_typed_routes.errors.handler)

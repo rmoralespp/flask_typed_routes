@@ -1,3 +1,8 @@
+[![CI](https://github.com/rmoralespp/flask_typed_routes/workflows/CI/badge.svg)](https://github.com/rmoralespp/flask_typed_routes/actions?query=event%3Arelease+workflow%3ACI)
+[![pypi](https://img.shields.io/pypi/v/flask_typed_routes.svg)](https://pypi.python.org/pypi/flask_typed_routes)
+[![codecov](https://codecov.io/gh/rmoralespp/jsonl/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rmoralespp/flask_typed_routes)
+[![license](https://img.shields.io/github/license/rmoralespp/jsonl.svg)](https://github.com/rmoralespp/flask_typed_routes/blob/main/LICENSE)
+
 ## About
 
 **flask_typed_routes** is a `Python` library designed to validate `Flask` requests effortlessly with `Pydantic`.
@@ -29,12 +34,11 @@ Example of a simple Flask application using `flask_typed_routes`:
 Create a file `posts.py` with:
 
 ```python
-
 import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.route('/posts/<user>/')
@@ -44,7 +48,7 @@ def read_user_posts(user: str, skip: int = 0, limit: int = 10):
     data = {
         'user': user,
         'skip': skip,
-        'limit': limit
+        'limit': limit,
     }
     return flask.jsonify(data)
 ```
@@ -57,26 +61,25 @@ flask --app posts run
 
 **Data conversion:**
 
-Open your browser and go to `127.0.0.1:5000/posts/myuser/?skip=20`
+Open your browser and go to [127.0.0.1:5000/posts/myuser/?skip=20](http://127.0.0.1:5000/posts/myuser/?skip=20)
 You will see the JSON response as:
 
 ```json
 {
-  "user": "user",
+  "limit": 10,
   "skip": 20,
-  "limit": 10
+  "user": "myuser"
 }
-
 ```
 
 **Data validation:**
 
-Open your browser and go to `127.0.0.1:5000/posts/myuser/?skip=abc`
+Open your browser and go to [127.0.0.1:5000/posts/myuser/?skip=abc](http://127.0.0.1:5000/posts/myuser/?skip=abc)
 You will see the JSON response with the error details because the `skip` parameter is not an integer:
 
 ```json
 {
-  "detail": [
+  "errors": [
     {
       "input": "abc",
       "loc": [
