@@ -3,7 +3,6 @@
 To declare a request body, you use Pydantic models with all their power and benefits
 The library provides annotations like `JsonBody()` to validate specific fields in the request body.
 
-
 Basic Usage of request Body Validation:
 
 ```python
@@ -18,26 +17,26 @@ app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-class Post(pydantic.BaseModel):
+class Item(pydantic.BaseModel):
     title: str
     author: str
 
 
-@app.post('/posts/')
+@app.post('/items/')
 @flask_tpr.typed_route
-def create_post(post: Post):
-    return flask.jsonify(post.model_dump())
+def create_item(item: Item):
+    return flask.jsonify(item.model_dump())
 
 
-@app.put('/posts/<post_id>/')
+@app.put('/items/<item_id>/')
 @flask_tpr.typed_route
-def update_post(
-    post_id: int,
+def update_item(
+    item_id: int,
     title: t.Annotated[str, flask_tpr.JsonBody()] = None,
     author: t.Annotated[str, flask_tpr.JsonBody()] = None,
 ):
     data = {
-        'post_id': post_id,
+        'item_id': item_id,
         'title': title,
         'author': author,
     }
@@ -46,16 +45,16 @@ def update_post(
 
 Explanation:
 
-- `Post`: Pydantic model that represents the structure of the request body. The model has two fields: `title` and
+- `Item`: Pydantic model that represents the structure of the request body. The model has two fields: `title` and
   `author`.
-- `create_post`: Route that accepts a POST request with a JSON body that must match the `Post` model.
-- `update_post`: Route that accepts a URL parameter `post_id` that must be an integer. The route also accepts two
+- `create_item`: Route that accepts a POST request with a JSON body that must match the `Item` model.
+- `update_item`: Route that accepts a URL parameter `item_id` that must be an integer. The route also accepts two
   optional JSON body parameters: `title` and `author`. The parameters are validated using the library field `JsonBody`.
 
-### Create a new POST
+### Create a new Item
 
-**Invalid request Body:**
-`http://127.0.0.1:5000/posts/`
+**Invalid request Body**
+`POST http://127.0.0.1:5000/items/`
 
 ```json
 {
@@ -84,10 +83,10 @@ Explanation:
 }
 ```
 
-### Update a POST
+### Update an Item
 
-**Invalid request Body:**
-`http://127.0.0.1:5000/posts/123`
+**Invalid request Body**
+`PUT http://127.0.0.1:5000/items/123`
 
 ```json
 {
@@ -95,7 +94,7 @@ Explanation:
 }
 ```
 
-**Http Response:**
+**Http Response**
 
 ```json
 {
@@ -114,3 +113,74 @@ Explanation:
 }
 ```
 
+### Create an Item by a User Using Two Pydantic Models, Leveraging the `JsonBody` Field with `embed`
+
+```python
+import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class Item(pydantic.BaseModel):
+    title: str
+    author: str
+
+
+class User(pydantic.BaseModel):
+    email: str
+    age: int
+
+
+@app.post('/users/<user_id>/items/')
+@flask_tpr.typed_route
+def create_item_by_user(
+    user_id: int,
+    item: t.Annotated[Item, flask_tpr.JsonBody(embed=True)],
+    user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
+):
+    data = {
+        'user_id': user_id,
+        'item': item.model_dump(),
+        'user': user.model_dump(),
+    }
+    return flask.jsonify(data)
+```
+
+**Request Body**
+
+`POST http://127.0.0.1:5000/users/123/items/`
+
+```json
+{
+    "item": {
+        "title": "Hello, World!",
+        "author": "John Doe"
+    },
+    "user": {
+        "email": "myemail@abc.com",
+        "age": 25
+    }
+}
+```
+
+**Http Response**
+
+```json
+{
+  "item": {
+    "author": "John Doe",
+    "title": "Hello, World!"
+  },
+  "user": {
+    "age": 25,
+    "email": "myemail@abc.com"
+  },
+  "user_id": 123
+}
+```
