@@ -54,6 +54,12 @@
                   <li class="toctree-l1"><a class="reference internal" href="../header/">Header parameters</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Request body</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#create-a-new-post">Create a new POST</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#update-a-post">Update a POST</a>
+    </li>
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../errors/">Handling errors</a>
                   </li>
@@ -83,7 +89,102 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                
+                <h1 id="request-body">Request Body</h1>
+<p>To declare a request body, you use Pydantic models with all their power and benefits
+The library provides annotations like <code>JsonBody()</code> to validate specific fields in the request body.</p>
+<p>Basic Usage of request Body Validation:</p>
+<pre><code class="language-python">import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class Post(pydantic.BaseModel):
+    title: str
+    author: str
+
+
+@app.post('/posts/')
+@flask_tpr.typed_route
+def create_post(post: Post):
+    return flask.jsonify(post.model_dump())
+
+
+@app.put('/posts/&lt;post_id&gt;/')
+@flask_tpr.typed_route
+def update_post(
+    post_id: int,
+    title: t.Annotated[str, flask_tpr.JsonBody()] = None,
+    author: t.Annotated[str, flask_tpr.JsonBody()] = None,
+):
+    data = {
+        'post_id': post_id,
+        'title': title,
+        'author': author,
+    }
+    return flask.jsonify(data)
+</code></pre>
+<p>Explanation:</p>
+<ul>
+<li><code>Post</code>: Pydantic model that represents the structure of the request body. The model has two fields: <code>title</code> and
+  <code>author</code>.</li>
+<li><code>create_post</code>: Route that accepts a POST request with a JSON body that must match the <code>Post</code> model.</li>
+<li><code>update_post</code>: Route that accepts a URL parameter <code>post_id</code> that must be an integer. The route also accepts two
+  optional JSON body parameters: <code>title</code> and <code>author</code>. The parameters are validated using the library field <code>JsonBody</code>.</li>
+</ul>
+<h3 id="create-a-new-post">Create a new POST</h3>
+<p><strong>Invalid request Body:</strong>
+<code>http://127.0.0.1:5000/posts/</code></p>
+<pre><code class="language-json">{
+  &quot;title&quot;: &quot;Hello, World!&quot;
+}
+</code></pre>
+<p><strong>Http Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;input&quot;: {
+        &quot;title&quot;: &quot;Hello, World!&quot;
+      },
+      &quot;loc&quot;: [
+        &quot;body&quot;,
+        &quot;author&quot;
+      ],
+      &quot;msg&quot;: &quot;Field required&quot;,
+      &quot;type&quot;: &quot;missing&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/missing&quot;
+    }
+  ]
+}
+</code></pre>
+<h3 id="update-a-post">Update a POST</h3>
+<p><strong>Invalid request Body:</strong>
+<code>http://127.0.0.1:5000/posts/123</code></p>
+<pre><code class="language-json">{
+  &quot;title&quot;: 111
+}
+</code></pre>
+<p><strong>Http Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;input&quot;: 111,
+      &quot;loc&quot;: [
+        &quot;body&quot;,
+        &quot;title&quot;
+      ],
+      &quot;msg&quot;: &quot;Input should be a valid string&quot;,
+      &quot;type&quot;: &quot;string_type&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/string_type&quot;
+    }
+  ]
+}
+</code></pre>
               
             </div>
           </div><footer>
