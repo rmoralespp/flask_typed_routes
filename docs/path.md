@@ -61,25 +61,23 @@ Valid Request: `http://127.0.0.1:5000/posts/12/ES`
 **Case2** If "country_iso" is not a string with a maximum length of 2
 characters: `http://127.0.0.1:5000/posts/12/ESP`
 
-```
+```json
 {
-
-      "errors": [
-            {
-                  "ctx": {
-                        "max_length": 2
-                  },
-                  "input": "ESP",
-                  "loc": [
-                        "path",
-                        "country_iso"
-                  ],
-                  "msg": "String should have at most 2 characters",
-                  "type": "string_too_long",
-                  "url": "https://errors.pydantic.dev/2.9/v/string_too_long"
-            }
-      ]
-
+  "errors": [
+    {
+      "ctx": {
+        "max_length": 2
+      },
+      "input": "ESP",
+      "loc": [
+        "path",
+        "country_iso"
+      ],
+      "msg": "String should have at most 2 characters",
+      "type": "string_too_long",
+      "url": "https://errors.pydantic.dev/2.9/v/string_too_long"
+    }
+  ]
 }
 ```
 

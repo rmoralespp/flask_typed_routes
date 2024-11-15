@@ -8,10 +8,17 @@ import flask_typed_routes.fields as flask_tpr_fields
 
 
 def check_param_annotation(func_name, default, name, tp):
+    """
+    Check the annotation of a function parameter.
+    Raise an exception if the annotation is invalid.
+    """
+
     if is_annotated(tp):
         tp, *meta = t.get_args(tp)
+
         if not meta or len(meta) > 1 or not isinstance(meta[0], flask_tpr_fields.Field):
-            raise flask_tpr_errors.InvalidParameterTypeError(f"Invalid annotation for {name!r} in {func_name!r}")
+            msg = f"Invalid annotation for {name!r} in {func_name!r}"
+            raise flask_tpr_errors.InvalidParameterTypeError(msg)
         else:
             field = meta[0]
             if default != inspect.Parameter.empty and field.field_info.default is not flask_tpr_fields.Undef:

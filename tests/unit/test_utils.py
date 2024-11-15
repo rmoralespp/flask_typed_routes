@@ -121,6 +121,7 @@ def test_pretty_errors_without_alias():
         ("/user/list", frozenset()),
         ("/user/<int:id>/post/<string:title>", frozenset(["id", "title"])),
         ("/user/<path:subpath>", frozenset(["subpath"])),
+        ("/user/<user_id>/details/<detail_id>", frozenset(["user_id", "detail_id"])),
     ],
 )
 def test_extract_rule_params(rule, expected):

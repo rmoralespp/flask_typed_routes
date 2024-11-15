@@ -7,8 +7,8 @@ import flask_typed_routes.utils as utils
 
 class FlaskTypeRoutes:
     """
-    Flask extension that provides a decorator for validating requests
-    in typed Flask routes using Pydantic models.
+    Flask extension for automatically validating Requests with Pydantic
+    by decorating route functions.
 
     :param app: Flask application instance
     :param validation_error_handler:
@@ -32,6 +32,7 @@ class FlaskTypeRoutes:
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
             path_args = utils.extract_rule_params(rule)
+
             view_func = main.typed_route(view_func, path_args) if view_func else view_func
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 

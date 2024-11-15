@@ -49,10 +49,9 @@ Explanation:
 - `update_item`: Route that accepts a URL parameter `item_id` that must be an integer. The route also accepts two
   optional JSON body parameters: `title` and `author`. The parameters are validated using the library field `JsonBody`.
 
-### Create a new Item
+**Create a new Item**
 
-**Invalid request Body**
-`POST http://127.0.0.1:5000/items/`
+Invalid request Body: `POST http://127.0.0.1:5000/items/`
 
 ```json
 {
@@ -60,7 +59,7 @@ Explanation:
 }
 ```
 
-**Http Response:**
+Http Response:
 
 ```json
 {
@@ -81,10 +80,9 @@ Explanation:
 }
 ```
 
-### Update an Item
+**Update an Item**
 
-**Invalid request Body**
-`PUT http://127.0.0.1:5000/items/123`
+Invalid request Body: `PUT http://127.0.0.1:5000/items/123`
 
 ```json
 {
@@ -92,7 +90,7 @@ Explanation:
 }
 ```
 
-**Http Response**
+Http Response:
 
 ```json
 {
@@ -111,7 +109,7 @@ Explanation:
 }
 ```
 
-### Create an Item by a User Using Two Pydantic Models, Leveraging the `JsonBody` Field with `embed`
+### Using multiple Pydantic Models, JsonBody` Field with `embed`
 
 ```python
 import typing as t
@@ -155,14 +153,14 @@ def create_item_by_user(
 
 ```json
 {
-    "item": {
-        "title": "Hello, World!",
-        "author": "John Doe"
-    },
-    "user": {
-        "email": "myemail@abc.com",
-        "age": 25
-    }
+  "item": {
+    "title": "Hello, World!",
+    "author": "John Doe"
+  },
+  "user": {
+    "email": "myemail@abc.com",
+    "age": 25
+  }
 }
 ```
 
