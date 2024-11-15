@@ -93,7 +93,7 @@
 <h2 id="features">Features</h2>
 <ul>
 <li><strong>Type Safety:</strong> Automatically validates request parameters based on type annotations.</li>
-<li><strong>Easy Integration:</strong> Simple decorator syntax for applying validation to Flask routes.</li>
+<li><strong>Easy Integration:</strong> Simple Flask extension for applying validation to Flask routes.</li>
 <li><strong>Error Handling:</strong> Automatically returns meaningful error responses for validation failures.</li>
 </ul>
 <h2 id="requirements">Requirements</h2>
@@ -117,7 +117,6 @@ flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.route('/posts/&lt;user&gt;/')
-@flask_tpr.typed_route
 def read_user_posts(user: str, skip: int = 0, limit: int = 10):
     # Parameters not included in the &quot;path&quot; are automatically treated as &quot;query&quot; parameters.
     data = {
@@ -209,5 +208,5 @@ You will see the JSON response with the error details because the <code>skip</co
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-11-14 17:41:04.907050+00:00
+Build Date UTC : 2024-11-15 12:03:00.398603+00:00
 -->
