@@ -30,7 +30,8 @@ Explanation:
 - `limit`: Query parameter that is optional and must be a string. If not included, it defaults to 100. The parameter is
   validated using the library field `Query` with a maximum value of 100. The parameter is also aliased as `max`.
 
-Note: The alias is used to demonstrate how the library can support Pydantic's Field class.
+!!! note
+    The alias is used to demonstrate how the library can support Pydantic's Field class.
 
 Valid Request: `http://127.0.0.1:5000/posts/?needy=passed&max=20`
 
@@ -92,6 +93,10 @@ If you have a group of query parameters that are related, you can create a Pydan
 This would allow you to re-use the model in multiple places and also to declare validations and metadata for all the
 parameters at once.
 
+!!! note
+  `Query` field is only used to declare the query parameters in the function signature, in Pydantic models, you can use
+  the Pydantic's `Field` class to declare constraints and metadata.
+
 ```python
 import typing as t
 
@@ -108,8 +113,8 @@ class QueryParams(pydantic.BaseModel):
     status: bool
     skip: int = 0
     limit: int = 10
-    tracking_number: t.Annotated[int, flask_tpr.Query(alias="tracking", le=3)] = 1
-    payment_method: t.Annotated[t.Literal["cash", "credit"], flask_tpr.Query()] = "credit"
+    tracking_number: t.Annotated[int, pydantic.Field(alias="tracking", le=3)] = 1
+    payment_method: t.Literal["cash", "credit"] = "credit"
 
 
 @app.get('/orders/<user_id>/')
@@ -138,7 +143,8 @@ Go to `http://127.0.0.1:5000/orders/233/?status=true`
 
 ## Query parameters with multiple values
 
-If you want to allow a query parameter to have multiple values, you can use the `multi=True` argument in the `Annotated`
+!!! note
+  If you want to allow a query parameter to have multiple values, you can use the `multi=True` argument in the `Annotated`
 
 ```python
 import typing as t

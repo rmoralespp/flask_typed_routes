@@ -109,7 +109,7 @@ Http Response:
 }
 ```
 
-### Using multiple Pydantic Models, JsonBody` Field with `embed`
+### Using multiple Pydantic Models, `JsonBody` Field with `embed`
 
 ```python
 import typing as t

@@ -83,5 +83,6 @@ characters: `http://127.0.0.1:5000/posts/12/ESP`
 
 **Custom Path Validations**
 
-The `Path` field is an extension of Pydantic's field, offering powerful validation capabilities.
-This flexibility allows you to tailor path parameter validation to your application's specific needs.
+!!! note
+  The `Path` field is an extension of Pydantic's field, offering powerful validation capabilities.
+  This flexibility allows you to tailor path parameter validation to your application's specific needs.
