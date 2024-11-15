@@ -1,6 +1,6 @@
 [project]
 name = "flask_typed_routes"
-version = "0.0.1-beta.3"
+version = "0.0.1-beta.4"
 description = "Validate Flask request parameters effortlessly with Pydantic"
 readme = "README.md"
 license = { file = "LICENSE" }
