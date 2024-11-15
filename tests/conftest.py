@@ -24,20 +24,27 @@ class Item(pydantic.BaseModel):
 def flask_app():
     api = flask.Flask(__name__)
     flask_typed_routes.FlaskTypeRoutes(api)
+    api_v2 = flask.Blueprint('api_v2', __name__, url_prefix='/v2')
+
+    @api_v2.get('/items/')
+    def read_items_blueprint(params: typing.Annotated[Params, flask_typed_routes.Query()]):
+        return flask.jsonify(params.model_dump())
 
     @api.get('/items/')
-    @flask_typed_routes.typed_route
     def read_items(params: typing.Annotated[Params, flask_typed_routes.Query()]):
         return flask.jsonify(params.model_dump())
 
     @api.get('/items/<item_id>/')
-    @flask_typed_routes.typed_route
     def read_item(item_id: int):
         data = {"item_id": item_id}
         return flask.jsonify(data)
 
+    @api.get('/items/<item_id>/details/')
+    def read_item_details(item_id):
+        data = {"item_id": item_id}
+        return flask.jsonify(data)
+
     @api.get('/user/items/<username>/')
-    @flask_typed_routes.typed_route
     def read_user_items(
         username: str,
         needy: str,
@@ -57,12 +64,10 @@ def flask_app():
         return flask.jsonify(data)
 
     @api.post('/items/')
-    @flask_typed_routes.typed_route
     def create_item_from_model(item: Item):
         return flask.jsonify(item.model_dump()), 201
 
     @api.post('/user/')
-    @flask_typed_routes.typed_route
     def create_user_from_fields(
         username: typing.Annotated[str, flask_typed_routes.JsonBody()],
         full_name: typing.Annotated[str, flask_typed_routes.JsonBody()] = None,
@@ -70,6 +75,13 @@ def flask_app():
         data = {"username": username, "full_name": full_name}
         return flask.jsonify(data), 201
 
+    def read_user_details(user_id: int, needy: str):
+        return flask.jsonify({'user': user_id, 'needy': needy})
+
+    api.add_url_rule('/users/<user_id>/', view_func=read_user_details, methods=['GET'])
+    api_v2.add_url_rule('/users/<user_id>/', view_func=read_user_details, methods=['GET'])
+
+    api.register_blueprint(api_v2)
     return api
 
 

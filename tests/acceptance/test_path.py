@@ -19,3 +19,10 @@ def test_bad_param(client):
     response = client.get("/items/abc/")
     assert response.status_code == 400
     assert response.json == expected
+
+
+def test_valid_param_non_annotation(client):
+    response = client.get("/items/42/details/")
+    assert response.status_code == 200
+    assert response.json == {"item_id": '42'}
+

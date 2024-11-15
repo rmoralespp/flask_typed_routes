@@ -23,13 +23,11 @@ class Item(pydantic.BaseModel):
 
 
 @app.post('/items/')
-@flask_tpr.typed_route
 def create_item(item: Item):
     return flask.jsonify(item.model_dump())
 
 
 @app.put('/items/<item_id>/')
-@flask_tpr.typed_route
 def update_item(
     item_id: int,
     title: t.Annotated[str, flask_tpr.JsonBody()] = None,
@@ -138,7 +136,6 @@ class User(pydantic.BaseModel):
 
 
 @app.post('/users/<user_id>/items/')
-@flask_tpr.typed_route
 def create_item_by_user(
     user_id: int,
     item: t.Annotated[Item, flask_tpr.JsonBody(embed=True)],

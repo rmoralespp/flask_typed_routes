@@ -131,3 +131,25 @@ def test_multi_params(client):
     }
     response = client.get("/user/items/my_user/?needy=value&tag=tag1&tag=tag2")
     assert response.json == expected
+
+
+def test_model_params_blueprint(client):
+    expected = {
+        'limit': 10,
+        'offset': 0,
+        'order_by': 'created_at',
+    }
+    response = client.get("/v2/items/?limit=10")
+    assert response.json == expected
+
+
+def test_user_detail_v2(client):
+    expected = {'needy': 'value', 'user': 123}
+    response = client.get("/v2/users/123/?needy=value")
+    assert response.json == expected
+
+
+def test_user_detail_v1(client):
+    expected = {'needy': 'value', 'user': 11}
+    response = client.get("/users/11/?needy=value")
+    assert response.json == expected

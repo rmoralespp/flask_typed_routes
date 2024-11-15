@@ -14,7 +14,6 @@ flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.route('/posts/')
-@flask_tpr.typed_route
 def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Query(alias="max", le=100)] = 100):
     data = {
         'needy': needy,

@@ -10,7 +10,7 @@
 ## Features
 
 - **Type Safety:** Automatically validates request parameters based on type annotations.
-- **Easy Integration:** Simple decorator syntax for applying validation to Flask routes.
+- **Easy Integration:** Simple Flask extension for applying validation to Flask routes.
 - **Error Handling:** Automatically returns meaningful error responses for validation failures.
 
 ## Requirements
@@ -42,7 +42,6 @@ flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.route('/posts/<user>/')
-@flask_tpr.typed_route
 def read_user_posts(user: str, skip: int = 0, limit: int = 10):
     # Parameters not included in the "path" are automatically treated as "query" parameters.
     data = {

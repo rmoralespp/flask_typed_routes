@@ -14,7 +14,6 @@ flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.route('/posts/<user_id>/<country_iso>')
-@flask_tpr.typed_route
 def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_length=2)]):
     data = {
         'user_id': user_id,

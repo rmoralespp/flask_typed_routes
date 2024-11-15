@@ -1,38 +1,27 @@
 import contextlib
 import inspect
+import re
 import typing as t
 
-import flask_typed_routes.errors
-import flask_typed_routes.fields
+import flask_typed_routes.errors as flask_tpr_errors
+import flask_typed_routes.fields as flask_tpr_fields
 
 
-def check_types(func):
-    """
-    Check the types of the function annotations.
+def check_param_annotation(func_name, default, name, tp):
+    if is_annotated(tp):
+        tp, *meta = t.get_args(tp)
+        if not meta or len(meta) > 1 or not isinstance(meta[0], flask_tpr_fields.Field):
+            raise flask_tpr_errors.InvalidParameterTypeError(f"Invalid annotation for {name!r} in {func_name!r}")
+        else:
+            field = meta[0]
+            if default != inspect.Parameter.empty and field.field_info.default is not flask_tpr_fields.Undef:
+                if default != field.field_info.default:
+                    msg = f"Default value mismatch for {name!r} in {func_name!r}"
+                    raise flask_tpr_errors.InvalidParameterTypeError(msg)
 
-    :param func: Flask view function.
-    :raises TypeError: When the annotation is invalid.
-    """
-
-    sig = inspect.signature(func)
-    for name, tp in func.__annotations__.items():
-        if name != "return" and is_annotated(tp):
-            tp, *meta = t.get_args(tp)
-            if not meta or len(meta) > 1 or not isinstance(meta[0], flask_typed_routes.fields.Field):
-                raise flask_typed_routes.errors.InvalidParameterTypeError(f"Invalid annotation for {name!r} in {func.__name__!r}")
-            else:
-                field = meta[0]
-                param = sig.parameters[name]
-                if param.default != inspect.Parameter.empty and field.field_info.default is not flask_typed_routes.fields.Undef:
-                    if param.default != field.field_info.default:
-                        raise flask_typed_routes.errors.InvalidParameterTypeError(
-                            f"Default value mismatch for {name!r} in {func.__name__!r}"
-                        )
-
-                if isinstance(field, flask_typed_routes.fields.Path) and field.alias and field.alias != name:
-                    raise flask_typed_routes.errors.InvalidParameterTypeError(
-                        f"Unsupported alias for Path field {name!r} in {func.__name__!r}"
-                    )
+            if isinstance(field, flask_tpr_fields.Path) and field.alias and field.alias != name:
+                msg = f"Unsupported alias for Path field {name!r} in {func_name!r}"
+                raise flask_tpr_errors.InvalidParameterTypeError(msg)
 
 
 def make_field(tp, field_class, is_required, default):
@@ -77,3 +66,8 @@ def pretty_errors(fields, errors):
             loc = [field.kind] + loc[1:]
         error["loc"] = loc
     return errors
+
+
+def extract_rule_params(rule: str):
+    pattern = r"<(?:[^:<>]+:)?([^<>]+)>"  # Regex pattern for extracting parameters from the route
+    return frozenset(re.findall(pattern, rule))
