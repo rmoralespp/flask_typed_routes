@@ -50,6 +50,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../query/">Query parameters</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Cookie parameters</a>
+    <ul class="current">
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../header/">Header parameters</a>
                   </li>
@@ -83,7 +85,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <p>Documentation Under Development !!!</p>
+                <h2 id="cookie-parameters">Cookie Parameters</h2>
+<p>You can define cookie parameters in the same way as query parameters, with support for multiple values.</p>
+<pre><code class="language-python">import typing as t
+
+import flask
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.route('/posts/')
+def get_posts(session_id: t.Annotated[str, flask_tpr.Cookie(alias=&quot;session-id&quot;)] = None):
+    data = {
+        'session_id': session_id,
+    }
+    return flask.jsonify(data)
+</code></pre>
               
             </div>
           </div><footer>

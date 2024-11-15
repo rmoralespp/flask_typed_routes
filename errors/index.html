@@ -56,6 +56,8 @@
                   <li class="toctree-l1"><a class="reference internal" href="../body/">Request body</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Handling errors</a>
+    <ul class="current">
+    </ul>
                   </li>
               </ul>
       </div>
@@ -83,7 +85,21 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <p>Documentation Under Development !!!</p>
+                <h2 id="handling-errors">Handling Errors</h2>
+<p>If you need to change default output for validation errors, you can pass a
+custom error handler to <code>FlaskTypeRoutes</code> constructor.</p>
+<pre><code class="language-python">import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+
+
+def custom_error_handler(error):
+    return flask.jsonify({&quot;detail&quot;: error.errors}), 400
+
+
+flask_tpr.FlaskTypeRoutes(app, validation_error_handler=custom_error_handler)
+</code></pre>
               
             </div>
           </div><footer>

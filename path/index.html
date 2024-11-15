@@ -136,24 +136,22 @@ def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_le
 </code></pre>
 <p><strong>Case2</strong> If "country_iso" is not a string with a maximum length of 2
 characters: <code>http://127.0.0.1:5000/posts/12/ESP</code></p>
-<pre><code>{
-
-      &quot;errors&quot;: [
-            {
-                  &quot;ctx&quot;: {
-                        &quot;max_length&quot;: 2
-                  },
-                  &quot;input&quot;: &quot;ESP&quot;,
-                  &quot;loc&quot;: [
-                        &quot;path&quot;,
-                        &quot;country_iso&quot;
-                  ],
-                  &quot;msg&quot;: &quot;String should have at most 2 characters&quot;,
-                  &quot;type&quot;: &quot;string_too_long&quot;,
-                  &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/string_too_long&quot;
-            }
-      ]
-
+<pre><code class="language-json">{
+  &quot;errors&quot;: [
+    {
+      &quot;ctx&quot;: {
+        &quot;max_length&quot;: 2
+      },
+      &quot;input&quot;: &quot;ESP&quot;,
+      &quot;loc&quot;: [
+        &quot;path&quot;,
+        &quot;country_iso&quot;
+      ],
+      &quot;msg&quot;: &quot;String should have at most 2 characters&quot;,
+      &quot;type&quot;: &quot;string_too_long&quot;,
+      &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/string_too_long&quot;
+    }
+  ]
 }
 </code></pre>
 <p><strong>Custom Path Validations</strong></p>

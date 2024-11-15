@@ -55,11 +55,7 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Request body</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#create-a-new-item">Create a new Item</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#update-an-item">Update an Item</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#create-an-item-by-a-user-using-two-pydantic-models-leveraging-the-jsonbody-field-with-embed">Create an Item by a User Using Two Pydantic Models, Leveraging the JsonBody Field with embed</a>
+    <li class="toctree-l2"><a class="reference internal" href="#using-multiple-pydantic-models-jsonbodyfield-withembed">Using multiple Pydantic Models, JsonBodyField withembed`</a>
     </li>
     </ul>
                   </li>
@@ -137,14 +133,13 @@ def update_item(
 <li><code>update_item</code>: Route that accepts a URL parameter <code>item_id</code> that must be an integer. The route also accepts two
   optional JSON body parameters: <code>title</code> and <code>author</code>. The parameters are validated using the library field <code>JsonBody</code>.</li>
 </ul>
-<h3 id="create-a-new-item">Create a new Item</h3>
-<p><strong>Invalid request Body</strong>
-<code>POST http://127.0.0.1:5000/items/</code></p>
+<p><strong>Create a new Item</strong></p>
+<p>Invalid request Body: <code>POST http://127.0.0.1:5000/items/</code></p>
 <pre><code class="language-json">{
   &quot;title&quot;: &quot;Hello, World!&quot;
 }
 </code></pre>
-<p><strong>Http Response:</strong></p>
+<p>Http Response:</p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -162,14 +157,13 @@ def update_item(
   ]
 }
 </code></pre>
-<h3 id="update-an-item">Update an Item</h3>
-<p><strong>Invalid request Body</strong>
-<code>PUT http://127.0.0.1:5000/items/123</code></p>
+<p><strong>Update an Item</strong></p>
+<p>Invalid request Body: <code>PUT http://127.0.0.1:5000/items/123</code></p>
 <pre><code class="language-json">{
   &quot;title&quot;: 111
 }
 </code></pre>
-<p><strong>Http Response</strong></p>
+<p>Http Response:</p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -185,7 +179,7 @@ def update_item(
   ]
 }
 </code></pre>
-<h3 id="create-an-item-by-a-user-using-two-pydantic-models-leveraging-the-jsonbody-field-with-embed">Create an Item by a User Using Two Pydantic Models, Leveraging the <code>JsonBody</code> Field with <code>embed</code></h3>
+<h3 id="using-multiple-pydantic-models-jsonbodyfield-withembed">Using multiple Pydantic Models, JsonBody<code>Field with</code>embed`</h3>
 <pre><code class="language-python">import typing as t
 
 import flask
@@ -223,14 +217,14 @@ def create_item_by_user(
 <p><strong>Request Body</strong></p>
 <p><code>POST http://127.0.0.1:5000/users/123/items/</code></p>
 <pre><code class="language-json">{
-    &quot;item&quot;: {
-        &quot;title&quot;: &quot;Hello, World!&quot;,
-        &quot;author&quot;: &quot;John Doe&quot;
-    },
-    &quot;user&quot;: {
-        &quot;email&quot;: &quot;myemail@abc.com&quot;,
-        &quot;age&quot;: 25
-    }
+  &quot;item&quot;: {
+    &quot;title&quot;: &quot;Hello, World!&quot;,
+    &quot;author&quot;: &quot;John Doe&quot;
+  },
+  &quot;user&quot;: {
+    &quot;email&quot;: &quot;myemail@abc.com&quot;,
+    &quot;age&quot;: 25
+  }
 }
 </code></pre>
 <p><strong>Http Response</strong></p>

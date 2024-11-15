@@ -49,6 +49,10 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Query parameters</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#query-parameters-using-pydantic-models">Query parameters using Pydantic models</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#query-parameters-with-multiple-values">Query parameters with multiple values</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../cookie/">Cookie parameters</a>
@@ -155,6 +159,78 @@ def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
       &quot;url&quot;: &quot;https://errors.pydantic.dev/2.9/v/less_than_equal&quot;
     }
   ]
+}
+</code></pre>
+<h2 id="query-parameters-using-pydantic-models">Query parameters using Pydantic models</h2>
+<p>If you have a group of query parameters that are related, you can create a Pydantic model to declare them.</p>
+<p>This would allow you to re-use the model in multiple places and also to declare validations and metadata for all the
+parameters at once.</p>
+<pre><code class="language-python">import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class QueryParams(pydantic.BaseModel):
+    status: bool
+    skip: int = 0
+    limit: int = 10
+    tracking_number: t.Annotated[int, flask_tpr.Query(alias=&quot;tracking&quot;, le=3)] = 1
+    payment_method: t.Annotated[t.Literal[&quot;cash&quot;, &quot;credit&quot;], flask_tpr.Query()] = &quot;credit&quot;
+
+
+@app.get('/orders/&lt;user_id&gt;/')
+def get_orders(
+    user_id: int,
+    params: t.Annotated[QueryParams, flask_tpr.Query()]
+):
+    data = {'user_id': user_id, &quot;params&quot;: params.model_dump()}
+    return flask.jsonify(data)
+</code></pre>
+<p>Go to <code>http://127.0.0.1:5000/orders/233/?status=true</code></p>
+<pre><code class="language-json">{
+  &quot;params&quot;: {
+    &quot;limit&quot;: 10,
+    &quot;payment_method&quot;: &quot;credit&quot;,
+    &quot;skip&quot;: 0,
+    &quot;status&quot;: true,
+    &quot;tracking_number&quot;: 1
+  },
+  &quot;user_id&quot;: 233
+}
+</code></pre>
+<h2 id="query-parameters-with-multiple-values">Query parameters with multiple values</h2>
+<p>If you want to allow a query parameter to have multiple values, you can use the <code>multi=True</code> argument in the <code>Annotated</code></p>
+<pre><code class="language-python">import typing as t
+
+import flask
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.get('/users/&lt;user_id&gt;/')
+def get_users(
+    user_id: int,
+    tags: t.Annotated[list[str], flask_tpr.Query(alias=&quot;tag&quot;, multi=True)] = (),
+):
+    data = {'user_id': user_id, &quot;tags&quot;: tags}
+    return flask.jsonify(data)
+</code></pre>
+<p>Go to <code>http://127.0.0.1:5000/users/123/?tag=hello&amp;tag=world</code></p>
+<pre><code class="language-json">{
+  &quot;tags&quot;: [
+    &quot;hello&quot;,
+    &quot;world&quot;
+  ],
+  &quot;user_id&quot;: 123
 }
 </code></pre>
               
