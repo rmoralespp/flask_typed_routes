@@ -88,8 +88,13 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="request-body">Request Body</h1>
-<p>To declare a request body, you use Pydantic models with all their power and benefits
-The library provides annotations like <code>JsonBody()</code> to validate specific fields in the request body.</p>
+<p>To declare a request body, you use Pydantic models with all their power and benefits</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, the library interprets a Pydantic model used as a type annotation in a function signature as a 
+request body model. However, if you only want to validate specific fields in the request body, you can use the
+<code>JsonBody()</code> annotation.</p>
+</div>
 <p>Basic Usage of request Body Validation:</p>
 <pre><code class="language-python">import typing as t
 
@@ -109,6 +114,7 @@ class Item(pydantic.BaseModel):
 
 @app.post('/items/')
 def create_item(item: Item):
+    # Use Pydantic model to validate the request body
     return flask.jsonify(item.model_dump())
 
 
@@ -118,6 +124,7 @@ def update_item(
     title: t.Annotated[str, flask_tpr.JsonBody()] = None,
     author: t.Annotated[str, flask_tpr.JsonBody()] = None,
 ):
+    # Use `JsonBody` to validate specific fields in the request body
     data = {
         'item_id': item_id,
         'title': title,
@@ -125,7 +132,7 @@ def update_item(
     }
     return flask.jsonify(data)
 </code></pre>
-<p>Explanation:</p>
+<p><strong>Explanation:</strong></p>
 <ul>
 <li><code>Item</code>: Pydantic model that represents the structure of the request body. The model has two fields: <code>title</code> and
   <code>author</code>.</li>
@@ -207,6 +214,7 @@ def create_item_by_user(
     item: t.Annotated[Item, flask_tpr.JsonBody(embed=True)],
     user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
 ):
+    # Use `JsonBody` with `embed=True` to validate nested specific fields in the request body
     data = {
         'user_id': user_id,
         'item': item.model_dump(),
