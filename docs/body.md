@@ -1,7 +1,11 @@
 # Request Body
 
 To declare a request body, you use Pydantic models with all their power and benefits
-The library provides annotations like `JsonBody()` to validate specific fields in the request body.
+
+!!! note
+    By default, the library interprets a Pydantic model used as a type annotation in a function signature as a 
+    request body model. However, if you only want to validate specific fields in the request body, you can use the
+    `JsonBody()` annotation.
 
 Basic Usage of request Body Validation:
 
@@ -24,6 +28,7 @@ class Item(pydantic.BaseModel):
 
 @app.post('/items/')
 def create_item(item: Item):
+    # Use Pydantic model to validate the request body
     return flask.jsonify(item.model_dump())
 
 
@@ -33,6 +38,7 @@ def update_item(
     title: t.Annotated[str, flask_tpr.JsonBody()] = None,
     author: t.Annotated[str, flask_tpr.JsonBody()] = None,
 ):
+    # Use `JsonBody` to validate specific fields in the request body
     data = {
         'item_id': item_id,
         'title': title,
@@ -41,7 +47,7 @@ def update_item(
     return flask.jsonify(data)
 ```
 
-Explanation:
+**Explanation:**
 
 - `Item`: Pydantic model that represents the structure of the request body. The model has two fields: `title` and
   `author`.
@@ -139,6 +145,7 @@ def create_item_by_user(
     item: t.Annotated[Item, flask_tpr.JsonBody(embed=True)],
     user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
 ):
+    # Use `JsonBody` with `embed=True` to validate nested specific fields in the request body
     data = {
         'user_id': user_id,
         'item': item.model_dump(),
