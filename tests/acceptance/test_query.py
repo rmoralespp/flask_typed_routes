@@ -153,3 +153,15 @@ def test_user_detail_v1(client):
     expected = {'needy': 'value', 'user': 11}
     response = client.get("/users/11/?needy=value")
     assert response.json == expected
+
+
+def test_class_based_view_methods(client):
+    expected = {'needy': 'true', 'user_id': 1}
+    response = client.get("/view/method/orders/1/?needy=true")
+    assert response.json == expected
+
+
+def test_class_based_view(client):
+    expected = {'needy': 'true', 'user_id': 1}
+    response = client.get("/view/orders/1/?needy=true")
+    assert response.json == expected

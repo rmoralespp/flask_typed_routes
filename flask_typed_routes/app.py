@@ -1,7 +1,7 @@
 import functools
 
+import flask_typed_routes.core as core
 import flask_typed_routes.errors as errors
-import flask_typed_routes.main as main
 import flask_typed_routes.utils as utils
 
 
@@ -16,8 +16,11 @@ class FlaskTypeRoutes:
         by default it uses the default error handler provided by the library.
     """
 
-    def __init__(self, app=None, validation_error_handler=None):
+    IGNORE_VERBS = ("HEAD", "OPTIONS")
+
+    def __init__(self, app=None, validation_error_handler=None, ignore_verbs=None):
         self.error_handler = validation_error_handler
+        self.ignore_verbs = ignore_verbs or self.IGNORE_VERBS
         if app:
             self.init_app(app)
 
@@ -27,13 +30,33 @@ class FlaskTypeRoutes:
         # Replace the "add_url_rule" method with a wrapper that adds the "typed_route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
-    @staticmethod
-    def add_url_rule(func):
+    def add_url_rule(self, func):
+        """
+        Decorator for the "add_url_rule" method of the Flask application.
+        Applies the "typed_route" decorator to the view functions.
+
+        :param func: Original "add_url_rule" method
+        """
+
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
             path_args = utils.extract_rule_params(rule)
+            if view_func:
+                view = utils.class_based_view(view_func)
+                if view:  # class-based view
+                    verbs = (getattr(view, "methods") or ())  # methods defined in the class
+                    verbs = (verb for verb in verbs if hasattr(view, verb.lower()))  # implemented methods
+                    verbs = frozenset(verbs).difference(self.ignore_verbs)  # ignore some methods
+                    if verbs:  # implemented methods
+                        for verb in verbs:
+                            method = getattr(view, verb.lower())
+                            setattr(view, verb.lower(), core.typed_route(method, path_args))
+                    else:  # no implemented methods, use the default "dispatch_request"
+                        method = getattr(view, "dispatch_request")
+                        setattr(view, "dispatch_request", core.typed_route(method, path_args))
+                else:  # function-based view
+                    view_func = core.typed_route(view_func, path_args)
 
-            view_func = main.typed_route(view_func, path_args) if view_func else view_func
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
         return wrapper

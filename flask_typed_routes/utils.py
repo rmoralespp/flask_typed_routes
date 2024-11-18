@@ -3,8 +3,13 @@ import inspect
 import re
 import typing as t
 
+import flask
+import flask.views
+
 import flask_typed_routes.errors as flask_tpr_errors
 import flask_typed_routes.fields as flask_tpr_fields
+
+rule_regex = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")  # Regex for extracting parameters from the route
 
 
 def check_param_annotation(func_name, default, name, tp):
@@ -49,6 +54,11 @@ def is_subclass(x, y):
     return False
 
 
+def class_based_view(view):
+    klass = getattr(view, "view_class", None)
+    return klass if klass and is_subclass(klass, flask.views.View) else None
+
+
 def is_annotated(tp):
     return t.get_origin(tp) is t.Annotated
 
@@ -76,5 +86,4 @@ def pretty_errors(fields, errors):
 
 
 def extract_rule_params(rule: str):
-    pattern = r"<(?:[^:<>]+:)?([^<>]+)>"  # Regex pattern for extracting parameters from the route
-    return frozenset(re.findall(pattern, rule))
+    return frozenset(rule_regex.findall(rule))

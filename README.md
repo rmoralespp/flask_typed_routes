@@ -13,8 +13,6 @@
 - **Easy Integration:** Simple Flask extension for applying validation to Flask routes.
 - **Error Handling:** Automatically returns meaningful error responses for validation failures.
 
-Note: Flask-based views are not supported.
-
 ## Requirements
 
 - Python 3.10+

@@ -30,7 +30,9 @@ def inspect_route(view_func, view_path_args):
             continue  # Skip the return annotation
 
         param = sig.parameters[name]
-        utils.check_param_annotation(view_func.__name__, param.default, name, klass)
+
+        func_dir = f"{view_func.__module__}.{view_func.__name__}"
+        utils.check_param_annotation(func_dir, param.default, name, klass)
         is_required = param.default == inspect.Parameter.empty
 
         if utils.is_subclass(klass, pydantic.BaseModel):  # Request body

@@ -1,6 +1,7 @@
 import inspect
 import typing as t
 
+import flask.views
 import pytest
 
 import flask_typed_routes.errors as flask_tpr_errors
@@ -127,3 +128,38 @@ def test_pretty_errors_without_alias():
 def test_extract_rule_params(rule, expected):
     result = utils.extract_rule_params(rule)
     assert result == expected
+
+
+# Caso 1: Clase de vista válida
+class ValidView(flask.views.View):
+    def dispatch_request(self):
+        return "Valid View"
+
+
+class MockView:
+    view_class = ValidView
+
+
+# Caso 2: Clase de vista no válida
+class NotAFlaskView:
+    pass
+
+
+class InvalidView:
+    view_class = NotAFlaskView
+
+
+# Caso 3: Objeto sin atributo view_class
+class NoViewClass:
+    pass
+
+
+@pytest.mark.parametrize("view, expected", [
+    (MockView(), ValidView),  # Caso válido
+    (InvalidView(), None),  # Clase de vista no válida
+    (NoViewClass(), None),  # Sin atributo view_class
+    (object(), None),  # Objeto simple
+    (None, None),  # None como entrada
+])
+def test_class_based_view(view, expected):
+    assert utils.class_based_view(view) == expected

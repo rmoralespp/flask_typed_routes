@@ -30,7 +30,7 @@ Explanation:
 - `limit`: Query parameter that is optional and must be a string. If not included, it defaults to 100. The parameter is
   validated using the library field `Query` with a maximum value of 100. The parameter is also aliased as `max`.
 
-!!! note
+!!!note
     The alias is used to demonstrate how the library can support Pydantic's Field class.
 
 Valid Request: `http://127.0.0.1:5000/posts/?needy=passed&max=20`
@@ -93,7 +93,7 @@ If you have a group of query parameters that are related, you can create a Pydan
 This would allow you to re-use the model in multiple places and also to declare validations and metadata for all the
 parameters at once.
 
-!!! note
+!!!note
   `Query` field is only used to declare the query parameters in the function signature, in Pydantic models, you can use
   the Pydantic's `Field` class to declare constraints and metadata.
 
@@ -143,7 +143,7 @@ Go to `http://127.0.0.1:5000/orders/233/?status=true`
 
 ## Query parameters with multiple values
 
-!!! note
+!!!note
   If you want to allow a query parameter to have multiple values, you can use the `multi=True` argument in the `Annotated`
 
 ```python

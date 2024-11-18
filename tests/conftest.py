@@ -1,10 +1,20 @@
+import functools
 import typing
 
 import flask
 import pydantic
 import pytest
+from flask.views import MethodView
 
 import flask_typed_routes
+
+
+def login_required(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 class Params(pydantic.BaseModel):
@@ -77,6 +87,31 @@ def flask_app():
 
     def read_user_details(user_id: int, needy: str):
         return flask.jsonify({'user': user_id, 'needy': needy})
+
+    class OrdersMethodView(flask.views.MethodView):
+
+        def get(
+            self,
+            user_id: int,
+            needy: str
+        ):
+            data = {'user_id': user_id, "needy": needy}
+            return flask.jsonify(data)
+
+    class OrdersView(flask.views.View):
+        methods = ["GET"]
+
+        @login_required
+        def dispatch_request(
+            self,
+            user_id: int,
+            needy: str
+        ):
+            data = {'user_id': user_id, "needy": needy}
+            return flask.jsonify(data)
+
+    api.add_url_rule('/view/method/orders/<int:user_id>/', view_func=OrdersMethodView.as_view('orders_view_method'))
+    api.add_url_rule('/view/orders/<int:user_id>/', view_func=OrdersView.as_view('orders_views'))
 
     api.add_url_rule('/users/<user_id>/', view_func=read_user_details, methods=['GET'])
     api_v2.add_url_rule('/users/<user_id>/', view_func=read_user_details, methods=['GET'])
