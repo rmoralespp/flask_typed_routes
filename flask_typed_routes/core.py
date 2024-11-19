@@ -86,9 +86,10 @@ def typed_route(view_func, rule_params):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
-        # Get request values from the field definitions.
-        field_values = get_request_values(fields)
-        if field_values:
+        
+        if fields:
+            # Get request values from the fields.
+            field_values = get_request_values(fields)
             try:
                 instance = model.model_validate(field_values)
             except pydantic.ValidationError as e:
