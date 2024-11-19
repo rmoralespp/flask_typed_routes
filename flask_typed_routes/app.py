@@ -44,7 +44,7 @@ class FlaskTypeRoutes:
             if view_func:
                 view = utils.class_based_view(view_func)
                 if view:  # class-based view
-                    verbs = (getattr(view, "methods") or ())  # methods defined in the class
+                    verbs = view.methods or ()  # methods defined in the class
                     verbs = (verb for verb in verbs if hasattr(view, verb.lower()))  # implemented methods
                     verbs = frozenset(verbs).difference(self.ignore_verbs)  # ignore some methods
                     if verbs:  # implemented methods
@@ -52,8 +52,8 @@ class FlaskTypeRoutes:
                             method = getattr(view, verb.lower())
                             setattr(view, verb.lower(), core.typed_route(method, path_args))
                     else:  # no implemented methods, use the default "dispatch_request"
-                        method = getattr(view, "dispatch_request")
-                        setattr(view, "dispatch_request", core.typed_route(method, path_args))
+                        method = view.dispatch_request
+                        view.dispatch_request = core.typed_route(method, path_args)
                 else:  # function-based view
                     view_func = core.typed_route(view_func, path_args)
 

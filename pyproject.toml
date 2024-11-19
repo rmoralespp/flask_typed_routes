@@ -1,6 +1,6 @@
 [project]
 name = "flask_typed_routes"
-version = "0.0.1-beta.5"
+version = "0.0.1"
 description = "Validate Flask request parameters effortlessly with Pydantic"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -10,8 +10,6 @@ requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

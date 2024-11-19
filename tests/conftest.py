@@ -1,15 +1,17 @@
 import functools
-import typing
+import typing as t
 
 import flask
+import flask.views
 import pydantic
 import pytest
-from flask.views import MethodView
 
-import flask_typed_routes
+import flask_typed_routes as flask_tpr
 
 
 def login_required(func):
+    """Decorator to simulate a login required on the view function."""
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -17,106 +19,130 @@ def login_required(func):
     return wrapper
 
 
-class Params(pydantic.BaseModel):
-    limit: int = pydantic.Field(gt=0, le=100)
-    offset: int = pydantic.Field(0, ge=0)
-    order_by: typing.Literal["created_at", "updated_at"] = "created_at"
+class User(pydantic.BaseModel):
+    user_id: t.Annotated[int, pydantic.Field(alias="id")]  # Testing alias
+    username: str
+    password: pydantic.constr(min_length=4)
+    full_name: str | None = None
 
 
-class Item(pydantic.BaseModel):
-    item_id: str
-    description: str = None
-    country: pydantic.constr(max_length=2)
+class Product(pydantic.BaseModel):
+    product_id: t.Annotated[int, pydantic.Field(alias="id")]  # Testing alias
+    name: str
+    description: str | None = None
     price: float
+    stock: int
+    category: str | None = None
+
+
+class QueryParams(pydantic.BaseModel):
+    skip: int = 0
+    limit: int = 10
+    sort_by: t.Annotated[str, pydantic.Field(alias='order-by')] = 'id'  # Testing alias
 
 
 @pytest.fixture(scope='package')
 def flask_app():
     api = flask.Flask(__name__)
-    flask_typed_routes.FlaskTypeRoutes(api)
-    api_v2 = flask.Blueprint('api_v2', __name__, url_prefix='/v2')
+    flask_tpr.FlaskTypeRoutes(api)
+    # Blueprint to test the blueprint registration
+    bp = flask.Blueprint('bp', __name__, url_prefix='/bp')
 
-    @api_v2.get('/items/')
-    def read_items_blueprint(params: typing.Annotated[Params, flask_typed_routes.Query()]):
-        return flask.jsonify(params.model_dump())
+    def add_url(*args, **kwargs):
+        api.add_url_rule(*args, **kwargs)
+        bp.add_url_rule(*args, **kwargs)
 
-    @api.get('/items/')
-    def read_items(params: typing.Annotated[Params, flask_typed_routes.Query()]):
-        return flask.jsonify(params.model_dump())
+    # Simple view functions ============================================================================================
+    def func_path_field(category: str, product_id: int):
+        return flask.jsonify({"category": category, "product_id": product_id})
 
-    @api.get('/items/<item_id>/')
-    def read_item(item_id: int):
-        data = {"item_id": item_id}
-        return flask.jsonify(data)
-
-    @api.get('/items/<item_id>/details/')
-    def read_item_details(item_id):
-        data = {"item_id": item_id}
-        return flask.jsonify(data)
-
-    @api.get('/user/items/<username>/')
-    def read_user_items(
-        username: str,
-        needy: str,
+    def func_query(
         skip: int = 0,
         limit: int = 10,
-        extra: typing.Annotated[str, flask_typed_routes.Query(alias="EXTRA", max_length=2)] = None,
-        tags: typing.Annotated[list[str], flask_typed_routes.Query(alias="tag", multi=True)] = (),
+        tags: t.Annotated[list[str], flask_tpr.Query(alias="tag", multi=True)] = None,
     ):
-        data = {
-            "username": username,
-            "needy": needy,
+        return flask.jsonify({"skip": skip, "limit": limit, "tags": tags})
+
+    def func_header(
+        auth: t.Annotated[str, flask_tpr.Header(alias="Authorization")],
+        tags: t.Annotated[list[str], flask_tpr.Header(alias="X-Tag", multi=True)] = None,
+    ):
+        return flask.jsonify({"auth": auth, "tags": tags})
+
+    def func_cookie(
+        session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id")],
+        tags: t.Annotated[list[str], flask_tpr.Cookie(alias="tag", multi=True)] = None,
+    ):
+        return flask.jsonify({"session_id": session_id, "tags": tags})
+
+    def func_body_model(product: Product):
+        return flask.jsonify(product.model_dump())
+
+    def func_body_field(
+        product_id: t.Annotated[int, flask_tpr.JsonBody(alias='id')],
+        name: t.Annotated[str, flask_tpr.JsonBody()],
+    ):
+        return flask.jsonify({"product_id": product_id, "name": name})
+
+    def func_body_embed(
+        product: t.Annotated[Product, flask_tpr.JsonBody(embed=True)],
+        user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
+    ):
+        return flask.jsonify({"product": product.model_dump(), "user": user.model_dump()})
+
+    def func_all_params(
+        category: str,
+        product_id: int,
+        product: Product,
+        skip: int = 0,
+        limit: int = 10,
+        auth: t.Annotated[str, flask_tpr.Header(alias="Authorization")] = None,
+        session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id")] = None,
+    ):
+        result = {
+            "category": category,
+            "product_id": product_id,
+            "product": product.model_dump(),
             "skip": skip,
             "limit": limit,
-            "extra": extra,
-            "tags": tags,
+            "auth": auth,
+            "session_id": session_id,
         }
-        return flask.jsonify(data)
+        return flask.jsonify(result)
 
-    @api.post('/items/')
-    def create_item_from_model(item: Item):
-        return flask.jsonify(item.model_dump()), 201
-
-    @api.post('/user/')
-    def create_user_from_fields(
-        username: typing.Annotated[str, flask_typed_routes.JsonBody()],
-        full_name: typing.Annotated[str, flask_typed_routes.JsonBody()] = None,
-    ):
-        data = {"username": username, "full_name": full_name}
-        return flask.jsonify(data), 201
-
-    def read_user_details(user_id: int, needy: str):
-        return flask.jsonify({'user': user_id, 'needy': needy})
-
-    class OrdersMethodView(flask.views.MethodView):
-
-        def get(
-            self,
-            user_id: int,
-            needy: str
-        ):
-            data = {'user_id': user_id, "needy": needy}
-            return flask.jsonify(data)
-
-    class OrdersView(flask.views.View):
-        methods = ["GET"]
+    # Class-based view functions =======================================================================================
+    class MethodView(flask.views.MethodView):
 
         @login_required
-        def dispatch_request(
-            self,
-            user_id: int,
-            needy: str
-        ):
-            data = {'user_id': user_id, "needy": needy}
-            return flask.jsonify(data)
+        def get(self, category: str, skip: int = 0, limit: int = 10):
+            return flask.jsonify({"category": category, "skip": skip, "limit": limit})
 
-    api.add_url_rule('/view/method/orders/<int:user_id>/', view_func=OrdersMethodView.as_view('orders_view_method'))
-    api.add_url_rule('/view/orders/<int:user_id>/', view_func=OrdersView.as_view('orders_views'))
+        @login_required
+        def post(self, category, product: Product):
+            return flask.jsonify({"category": category, "product": product.model_dump()})
 
-    api.add_url_rule('/users/<user_id>/', view_func=read_user_details, methods=['GET'])
-    api_v2.add_url_rule('/users/<user_id>/', view_func=read_user_details, methods=['GET'])
+    class View(flask.views.View):
 
-    api.register_blueprint(api_v2)
+        @login_required
+        def dispatch_request(self, category: str, skip: int = 0, limit: int = 10):
+            return flask.jsonify({"category": category, "skip": skip, "limit": limit})
+
+    # Registering view functions ==================================================================================
+    add_url('/products/path/<string:category>/<product_id>/', view_func=func_path_field)
+    add_url('/products/query/', view_func=func_query)
+    add_url('/products/header/', view_func=func_header)
+    add_url('/products/cookie/', view_func=func_cookie)
+    add_url('/products/body/model/', view_func=func_body_model, methods=['POST'])
+    add_url('/products/body/field/', view_func=func_body_field, methods=['POST'])
+    add_url('/products/body/embed/', view_func=func_body_embed, methods=['POST'])
+    add_url('/products/all/<string:category>/<product_id>/', view_func=func_all_params, methods=['POST'])
+
+    # Registering class-based views
+    api.add_url_rule('/method_views/products/<category>/', view_func=MethodView.as_view('products_method_views'))
+    api.add_url_rule('/views/products/<category>/', view_func=View.as_view('products_views'))
+
+    # Registering blueprint routes =====================================================================================
+    api.register_blueprint(bp)
     return api
 
 

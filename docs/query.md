@@ -1,20 +1,23 @@
 # Query parameters
 
-Parameters not included in the "path" are automatically treated as "query" parameters.
+Parameters not included in the **path** are automatically treated as **query** parameters.
+
+!!! tip
+    Additionally, you can use the `Query` field which allows you to define more complex validations.
 
 ```python
 import typing as t
 
 import flask
-
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-@app.route('/posts/')
-def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Query(alias="max", le=100)] = 100):
+@app.route('/items/')
+def read_items(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Query(alias="max", le=100)] = 100):
     data = {
         'needy': needy,
         'skip': skip,
@@ -23,7 +26,7 @@ def read_posts(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
     return flask.jsonify(data)
 ```
 
-Explanation:
+**Validations:**
 
 - `needy`: Query parameter that must be included in the request and must be a string.
 - `skip`: Query parameter that is optional and must be an integer. If not included, it defaults to 0.
@@ -33,7 +36,7 @@ Explanation:
 !!! note
     The alias is used to demonstrate how the library can support Pydantic's Field class.
 
-Valid Request: `http://127.0.0.1:5000/posts/?needy=passed&max=20`
+**Valid Request:** `http://127.0.0.1:5000/posts/?needy=passed&max=20`
 
 ```json
 {
@@ -43,9 +46,7 @@ Valid Request: `http://127.0.0.1:5000/posts/?needy=passed&max=20`
 }
 ```
 
-**Invalid Requests:**
-
-**Case1** If "needy" is not included in the request: `http://127.0.0.1:5000/posts/`
+**Bad Request:** If "needy" is not included in the request `http://127.0.0.1:5000/posts/`
 
 ```json
 {
@@ -64,46 +65,20 @@ Valid Request: `http://127.0.0.1:5000/posts/?needy=passed&max=20`
 }
 ```
 
-**Case2** If "limit" (alias: "max") is greater than 100: `http://127.0.0.1:5000/posts/?needy=passed&max=1000`
-
-```json
-{
-  "errors": [
-    {
-      "ctx": {
-        "le": 100
-      },
-      "input": "1000",
-      "loc": [
-        "query",
-        "max"
-      ],
-      "msg": "Input should be less than or equal to 100",
-      "type": "less_than_equal",
-      "url": "https://errors.pydantic.dev/2.9/v/less_than_equal"
-    }
-  ]
-}
-```
-
-## Query parameters using Pydantic models
+## Pydantic models
 
 If you have a group of query parameters that are related, you can create a Pydantic model to declare them.
 
 This would allow you to re-use the model in multiple places and also to declare validations and metadata for all the
 parameters at once.
 
-!!! note
-    `Query` field is only used to declare the query parameters in the function signature, in Pydantic models, you can use
-    the Pydantic's `Field` class to declare constraints and metadata.
-
 ```python
 import typing as t
 
-import flask
 import pydantic
-
+import flask
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -141,17 +116,17 @@ Go to `http://127.0.0.1:5000/orders/233/?status=true`
 }
 ```
 
-## Query parameters with multiple values
+## Multiple values
 
-!!! tip
-    If you want to allow a query parameter to have multiple values, you can use the `multi=True` argument in the `Annotated`
+If you want to allow a query parameter to have multiple values, you can use the `multi=True` argument in the `Query`
+field.
 
 ```python
 import typing as t
 
 import flask
-
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)

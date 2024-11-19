@@ -12,10 +12,10 @@ Basic Usage of request Body Validation:
 ```python
 import typing as t
 
-import flask
 import pydantic
-
+import flask
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -55,9 +55,7 @@ def update_item(
 - `update_item`: Route that accepts a URL parameter `item_id` that must be an integer. The route also accepts two
   optional JSON body parameters: `title` and `author`. The parameters are validated using the library field `JsonBody`.
 
-**Create a new Item**
-
-Invalid request Body: `POST http://127.0.0.1:5000/items/`
+**Create a new Item:** Invalid request Body `POST http://127.0.0.1:5000/items/`
 
 ```json
 {
@@ -65,7 +63,7 @@ Invalid request Body: `POST http://127.0.0.1:5000/items/`
 }
 ```
 
-Http Response:
+*Http Response:*
 
 ```json
 {
@@ -86,9 +84,7 @@ Http Response:
 }
 ```
 
-**Update an Item**
-
-Invalid request Body: `PUT http://127.0.0.1:5000/items/123`
+**Update an Item:** Invalid request Body `PUT http://127.0.0.1:5000/items/123`
 
 ```json
 {
@@ -96,7 +92,7 @@ Invalid request Body: `PUT http://127.0.0.1:5000/items/123`
 }
 ```
 
-Http Response:
+*Http Response:*
 
 ```json
 {
@@ -115,15 +111,20 @@ Http Response:
 }
 ```
 
-### Using multiple Pydantic Models, `JsonBody` Field with `embed`
+### Multiple Pydantic Models
+
+!!! tip
+    You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
+    `JsonBody` field with the `embed` parameter.
+
 
 ```python
 import typing as t
 
-import flask
 import pydantic
-
+import flask
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -154,9 +155,7 @@ def create_item_by_user(
     return flask.jsonify(data)
 ```
 
-**Request Body**
-
-`POST http://127.0.0.1:5000/users/123/items/`
+**Request Body** `POST http://127.0.0.1:5000/users/123/items/`
 
 ```json
 {
@@ -171,7 +170,7 @@ def create_item_by_user(
 }
 ```
 
-**Http Response**
+*Http Response*
 
 ```json
 {

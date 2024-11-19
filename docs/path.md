@@ -1,7 +1,9 @@
 # Path Parameters
 
-This section demonstrates how to use the library to validate and enforce types for path parameters in your
-Flask application.
+You can validate path parameters in your route by adding type hints to the function signature.
+
+!!! warning
+    If no type hint is provided, the route parameters are not validated.
 
 ```python
 import typing as t
@@ -9,12 +11,13 @@ import typing as t
 import flask
 import flask_typed_routes as flask_tpr
 
+
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-@app.route('/posts/<user_id>/<country_iso>')
-def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_length=2)]):
+@app.route('/items/<user_id>/<country_iso>')
+def read_items(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_length=2)]):
     data = {
         'user_id': user_id,
         'country_iso': country_iso,
@@ -28,7 +31,7 @@ def read_posts(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_le
 - country_iso: Must be a string with a maximum length of 2 characters. This parameter is validated using the libray
   field `Path`.
 
-Valid Request: `http://127.0.0.1:5000/posts/12/ES`
+**Valid Request:** `http://127.0.0.1:5000/posts/12/ES`
 
 ```json
 {
@@ -37,9 +40,7 @@ Valid Request: `http://127.0.0.1:5000/posts/12/ES`
 }
 ```
 
-**Invalid Requests:**
-
-**Case1** If "user_id" is not an integer: `http://127.0.0.1:5000/posts/abc/ES`
+**Bad Request:** If "user_id" is not an integer: `http://127.0.0.1:5000/posts/abc/ES`
 
 ```json
 {
@@ -58,31 +59,12 @@ Valid Request: `http://127.0.0.1:5000/posts/12/ES`
 }
 ```
 
-**Case2** If "country_iso" is not a string with a maximum length of 2
-characters: `http://127.0.0.1:5000/posts/12/ESP`
+## Custom Validations
 
-```json
-{
-  "errors": [
-    {
-      "ctx": {
-        "max_length": 2
-      },
-      "input": "ESP",
-      "loc": [
-        "path",
-        "country_iso"
-      ],
-      "msg": "String should have at most 2 characters",
-      "type": "string_too_long",
-      "url": "https://errors.pydantic.dev/2.9/v/string_too_long"
-    }
-  ]
-}
-```
+Additionally, you can use the `Path` field which allows you to define more complex validations.
 
-**Custom Path Validations**
+The `Path` field is an extension of Pydantic's field, offering powerful validation capabilities.
+This flexibility allows you to tailor path parameter validation to your application's specific needs.`
 
-!!! note
-    The `Path` field is an extension of Pydantic's field, offering powerful validation capabilities.
-    This flexibility allows you to tailor path parameter validation to your application's specific needs.
+!!! warning
+    The `Path` field is not supported aliasing. You must respect the field's name when using it.

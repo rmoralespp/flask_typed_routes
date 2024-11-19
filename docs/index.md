@@ -9,9 +9,10 @@
 
 ## Features
 
-- **Type Safety:** Automatically validates request parameters based on type annotations.
+- **Type Safety:** Automatically validates requests based on standard Python type hints.
 - **Easy Integration:** Simple Flask extension for applying validation to Flask routes.
 - **Error Handling:** Automatically returns meaningful error responses for validation failures.
+- **Autocomplete**: Excellent editor integration, offering comprehensive completion across all contexts.
 
 ## Requirements
 
@@ -29,20 +30,24 @@ pip install flask_typed_routes
 
 ## Getting Started
 
+This tool offers comprehensive validation for various types of request parameters, 
+including **Path, Query, Body, Header, and Cookie** parameters.
+
 Example of a simple Flask application using `flask_typed_routes`:
 
-Create a file `posts.py` with:
+Create a file `items.py` with:
 
 ```python
 import flask
 import flask_typed_routes as flask_tpr
 
+
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-@app.route('/posts/<user>/')
-def read_user_posts(user: str, skip: int = 0, limit: int = 10):
+@app.get('/items/<user>/')
+def read_items(user: str, skip: int = 0, limit: int = 10):
     # Parameters not included in the "path" are automatically treated as "query" parameters.
     data = {
         'user': user,
@@ -55,10 +60,8 @@ def read_user_posts(user: str, skip: int = 0, limit: int = 10):
 **Run the server with:**
 
 ```bash
-flask --app posts run
+flask --app items run
 ```
-
-**Data conversion:**
 
 Open your browser and go to `http://127.0.0.1:5000/posts/myuser/?skip=20`
 You will see the JSON response as:
@@ -92,3 +95,38 @@ You will see the JSON response with the error details because the `skip` paramet
   ]
 }
 ```
+
+### Example with Pydantic Models
+
+You can also use Pydantic models to validate request data in Flask routes.
+Now let's update the `items.py` file with:
+
+```python
+import pydantic
+import flask
+import flask_typed_routes as flask_tpr
+
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class Item(pydantic.BaseModel):
+    name: str
+    description: str = None
+    price: float
+
+
+@app.post('/items/')
+def create_item(item: Item):
+    return flask.jsonify(item.model_dump())
+
+
+@app.put('/items/<item_id>/')
+def update_item(item_id: int, item: Item):
+    return flask.jsonify({'item_id': item_id, **item.model_dump()})
+```
+
+## License
+
+This project is licensed under the [MIT license](LICENSE).

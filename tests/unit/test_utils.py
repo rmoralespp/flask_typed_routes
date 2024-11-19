@@ -12,10 +12,7 @@ import flask_typed_routes.utils as utils
 def test_check_param_annotation_raises_error_for_multiple_meta():
     with pytest.raises(flask_tpr_errors.InvalidParameterTypeError):
         utils.check_param_annotation(
-            "func",
-            inspect.Parameter.empty,
-            "param",
-            t.Annotated[int, flask_tpr_fields.Path(), flask_tpr_fields.Path()]
+            "func", inspect.Parameter.empty, "param", t.Annotated[int, flask_tpr_fields.Path(), flask_tpr_fields.Path()]
         )
 
 
@@ -154,12 +151,15 @@ class NoViewClass:
     pass
 
 
-@pytest.mark.parametrize("view, expected", [
-    (MockView(), ValidView),  # Caso válido
-    (InvalidView(), None),  # Clase de vista no válida
-    (NoViewClass(), None),  # Sin atributo view_class
-    (object(), None),  # Objeto simple
-    (None, None),  # None como entrada
-])
+@pytest.mark.parametrize(
+    "view, expected",
+    [
+        (MockView(), ValidView),  # Caso válido
+        (InvalidView(), None),  # Clase de vista no válida
+        (NoViewClass(), None),  # Sin atributo view_class
+        (object(), None),  # Objeto simple
+        (None, None),  # None como entrada
+    ],
+)
 def test_class_based_view(view, expected):
     assert utils.class_based_view(view) == expected
