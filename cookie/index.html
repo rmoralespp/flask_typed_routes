@@ -90,20 +90,24 @@
 <pre><code class="language-python">import typing as t
 
 import flask
-
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-@app.route('/posts/')
-def get_posts(session_id: t.Annotated[str, flask_tpr.Cookie(alias=&quot;session-id&quot;)] = None):
+@app.route('/items/')
+def get_items(session_id: t.Annotated[str, flask_tpr.Cookie(alias=&quot;session-id&quot;)] = None):
     data = {
         'session_id': session_id,
     }
     return flask.jsonify(data)
 </code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The alias is used to demonstrate how the library can support Pydantic's Field class.</p>
+</div>
               
             </div>
           </div><footer>

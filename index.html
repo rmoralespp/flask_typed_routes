@@ -92,9 +92,10 @@
 <p><strong>flask_typed_routes</strong> is a <code>Python</code> library designed to validate <code>Flask</code> requests effortlessly with <code>Pydantic</code>.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li><strong>Type Safety:</strong> Automatically validates request parameters based on type annotations.</li>
+<li><strong>Type Safety:</strong> Automatically validates requests based on standard Python type hints.</li>
 <li><strong>Easy Integration:</strong> Simple Flask extension for applying validation to Flask routes.</li>
 <li><strong>Error Handling:</strong> Automatically returns meaningful error responses for validation failures.</li>
+<li><strong>Autocomplete</strong>: Excellent editor integration, offering comprehensive completion across all contexts.</li>
 </ul>
 <h2 id="requirements">Requirements</h2>
 <ul>
@@ -107,17 +108,20 @@
 <pre><code class="language-bash">pip install flask_typed_routes
 </code></pre>
 <h2 id="getting-started">Getting Started</h2>
+<p>This tool offers comprehensive validation for various types of request parameters, 
+including <strong>Path, Query, Body, Header, and Cookie</strong> parameters.</p>
 <p>Example of a simple Flask application using <code>flask_typed_routes</code>:</p>
-<p>Create a file <code>posts.py</code> with:</p>
+<p>Create a file <code>items.py</code> with:</p>
 <pre><code class="language-python">import flask
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-@app.route('/posts/&lt;user&gt;/')
-def read_user_posts(user: str, skip: int = 0, limit: int = 10):
+@app.get('/items/&lt;user&gt;/')
+def read_items(user: str, skip: int = 0, limit: int = 10):
     # Parameters not included in the &quot;path&quot; are automatically treated as &quot;query&quot; parameters.
     data = {
         'user': user,
@@ -127,9 +131,8 @@ def read_user_posts(user: str, skip: int = 0, limit: int = 10):
     return flask.jsonify(data)
 </code></pre>
 <p><strong>Run the server with:</strong></p>
-<pre><code class="language-bash">flask --app posts run
+<pre><code class="language-bash">flask --app items run
 </code></pre>
-<p><strong>Data conversion:</strong></p>
 <p>Open your browser and go to <code>http://127.0.0.1:5000/posts/myuser/?skip=20</code>
 You will see the JSON response as:</p>
 <pre><code class="language-json">{
@@ -156,6 +159,35 @@ You will see the JSON response with the error details because the <code>skip</co
   ]
 }
 </code></pre>
+<h3 id="example-with-pydantic-models">Example with Pydantic Models</h3>
+<p>You can also use Pydantic models to validate request data in Flask routes.
+Now let's update the <code>items.py</code> file with:</p>
+<pre><code class="language-python">import pydantic
+import flask
+import flask_typed_routes as flask_tpr
+
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class Item(pydantic.BaseModel):
+    name: str
+    description: str = None
+    price: float
+
+
+@app.post('/items/')
+def create_item(item: Item):
+    return flask.jsonify(item.model_dump())
+
+
+@app.put('/items/&lt;item_id&gt;/')
+def update_item(item_id: int, item: Item):
+    return flask.jsonify({'item_id': item_id, **item.model_dump()})
+</code></pre>
+<h2 id="license">License</h2>
+<p>This project is licensed under the <a href="LICENSE">MIT license</a>.</p>
               
             </div>
           </div><footer>
@@ -208,5 +240,5 @@ You will see the JSON response with the error details because the <code>skip</co
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-11-18 17:40:09.746672+00:00
+Build Date UTC : 2024-11-19 16:18:32.605389+00:00
 -->

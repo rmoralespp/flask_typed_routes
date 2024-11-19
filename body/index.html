@@ -55,7 +55,7 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Request body</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#using-multiple-pydantic-models-jsonbody-field-with-embed">Using multiple Pydantic Models, JsonBody Field with embed</a>
+    <li class="toctree-l2"><a class="reference internal" href="#multiple-pydantic-models">Multiple Pydantic Models</a>
     </li>
     </ul>
                   </li>
@@ -98,10 +98,10 @@ request body model. However, if you only want to validate specific fields in the
 <p>Basic Usage of request Body Validation:</p>
 <pre><code class="language-python">import typing as t
 
-import flask
 import pydantic
-
+import flask
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -140,13 +140,12 @@ def update_item(
 <li><code>update_item</code>: Route that accepts a URL parameter <code>item_id</code> that must be an integer. The route also accepts two
   optional JSON body parameters: <code>title</code> and <code>author</code>. The parameters are validated using the library field <code>JsonBody</code>.</li>
 </ul>
-<p><strong>Create a new Item</strong></p>
-<p>Invalid request Body: <code>POST http://127.0.0.1:5000/items/</code></p>
+<p><strong>Create a new Item:</strong> Invalid request Body <code>POST http://127.0.0.1:5000/items/</code></p>
 <pre><code class="language-json">{
   &quot;title&quot;: &quot;Hello, World!&quot;
 }
 </code></pre>
-<p>Http Response:</p>
+<p><em>Http Response:</em></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -164,13 +163,12 @@ def update_item(
   ]
 }
 </code></pre>
-<p><strong>Update an Item</strong></p>
-<p>Invalid request Body: <code>PUT http://127.0.0.1:5000/items/123</code></p>
+<p><strong>Update an Item:</strong> Invalid request Body <code>PUT http://127.0.0.1:5000/items/123</code></p>
 <pre><code class="language-json">{
   &quot;title&quot;: 111
 }
 </code></pre>
-<p>Http Response:</p>
+<p><em>Http Response:</em></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -186,13 +184,18 @@ def update_item(
   ]
 }
 </code></pre>
-<h3 id="using-multiple-pydantic-models-jsonbody-field-with-embed">Using multiple Pydantic Models, <code>JsonBody</code> Field with <code>embed</code></h3>
+<h3 id="multiple-pydantic-models">Multiple Pydantic Models</h3>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
+<code>JsonBody</code> field with the <code>embed</code> parameter.</p>
+</div>
 <pre><code class="language-python">import typing as t
 
-import flask
 import pydantic
-
+import flask
 import flask_typed_routes as flask_tpr
+
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -222,8 +225,7 @@ def create_item_by_user(
     }
     return flask.jsonify(data)
 </code></pre>
-<p><strong>Request Body</strong></p>
-<p><code>POST http://127.0.0.1:5000/users/123/items/</code></p>
+<p><strong>Request Body</strong> <code>POST http://127.0.0.1:5000/users/123/items/</code></p>
 <pre><code class="language-json">{
   &quot;item&quot;: {
     &quot;title&quot;: &quot;Hello, World!&quot;,
@@ -235,7 +237,7 @@ def create_item_by_user(
   }
 }
 </code></pre>
-<p><strong>Http Response</strong></p>
+<p><em>Http Response</em></p>
 <pre><code class="language-json">{
   &quot;item&quot;: {
     &quot;author&quot;: &quot;John Doe&quot;,
