@@ -47,7 +47,7 @@
               <ul class="current">
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Path parameters</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#custom-validations">Custom Validations</a>
+    <li class="toctree-l2"><a class="reference internal" href="#additional-validations">Additional validations</a>
     </li>
     </ul>
                   </li>
@@ -88,49 +88,48 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="path-parameters">Path Parameters</h1>
-<p>You can validate path parameters in your route by adding type hints to the function signature.</p>
+<p>You can validate <strong>Path parameters</strong> in your route by adding standard type hints to the function signature.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>If no type hint is provided, the route parameters are not validated.</p>
+<p>If no type hint is provided, the <strong>Path parameters</strong> are not validated.</p>
 </div>
 <pre><code class="language-python">import typing as t
-
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
-@app.route('/items/&lt;user_id&gt;/&lt;country_iso&gt;')
-def read_items(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_length=2)]):
-    data = {
-        'user_id': user_id,
-        'country_iso': country_iso,
-    }
+@app.route('/items/&lt;category_id&gt;/&lt;lang&gt;/')
+def read_items(category_id: int, lang: t.Literal['es', 'en']):
+    data = {'category_id': category_id, 'lang': lang}
     return flask.jsonify(data)
 </code></pre>
-<p><strong>Validations:</strong></p>
+<p><strong>Conversion:</strong> The library automatically converts path parameters to their specified types:</p>
 <ul>
-<li>user_id: Must be an integer.</li>
-<li>country_iso: Must be a string with a maximum length of 2 characters. This parameter is validated using the libray
-  field <code>Path</code>.</li>
+<li><code>category_id</code> is converted to an integer, so your function receives it as an integer.</li>
+<li><code>lang</code> is treated as a string, so your function receives it as a string.</li>
 </ul>
-<p><strong>Valid Request:</strong> <code>http://127.0.0.1:5000/posts/12/ES</code></p>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>category_id</code> Must be an integer.</li>
+<li><code>lang</code> Must be either 'es' or 'en'.</li>
+</ul>
+<p><strong>Example request:</strong> <code>GET http://127.0.0.1:5000/items/12/es</code></p>
 <pre><code class="language-json">{
-  &quot;country_iso&quot;: &quot;ES&quot;,
-  &quot;user_id&quot;: 12
+  &quot;category_id&quot;: 12,
+  &quot;lang&quot;: &quot;es&quot;
 }
 </code></pre>
-<p><strong>Bad Request:</strong> If "user_id" is not an integer: <code>http://127.0.0.1:5000/posts/abc/ES</code></p>
+<p><strong>Bad request example:</strong> If <code>category_id</code> is not an integer <code>GET http://127.0.0.1:5000/items/abc/es</code></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
       &quot;input&quot;: &quot;abc&quot;,
       &quot;loc&quot;: [
         &quot;path&quot;,
-        &quot;user_id&quot;
+        &quot;category_id&quot;
       ],
       &quot;msg&quot;: &quot;Input should be a valid integer, unable to parse string as an integer&quot;,
       &quot;type&quot;: &quot;int_parsing&quot;,
@@ -139,14 +138,33 @@ def read_items(user_id: int, country_iso: t.Annotated[str, flask_tpr.Path(max_le
   ]
 }
 </code></pre>
-<h2 id="custom-validations">Custom Validations</h2>
-<p>Additionally, you can use the <code>Path</code> field which allows you to define more complex validations.</p>
+<h2 id="additional-validations">Additional validations</h2>
+<p>You can use the <code>Path</code> field with Python's standard <code>Annotated</code> field to enforce additional validations on your route
+parameters, enabling more complex rules.</p>
 <p>The <code>Path</code> field is an extension of Pydantic's field, offering powerful validation capabilities.
-This flexibility allows you to tailor path parameter validation to your application's specific needs.`</p>
+This flexibility allows you to tailor path parameter validation to your application's specific needs.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The <code>Path</code> field is not supported aliasing. You must respect the field's name when using it.</p>
+<p>The <code>Path</code> field is not supported aliasing. You must respect the <strong>path name</strong> when using it.</p>
 </div>
+<pre><code class="language-python">import typing as t
+
+import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.route('/items/&lt;category_id&gt;/')
+def read_items(category_id: t.Annotated[int, flask_tpr.Path(ge=1, le=100)]):
+    data = {'category_id': category_id}
+    return flask.jsonify(data)
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>category_id</code> must be an integer between 1 and 100.</li>
+</ul>
               
             </div>
           </div><footer>

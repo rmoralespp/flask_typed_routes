@@ -91,7 +91,7 @@
 <p>To declare a request body, you use Pydantic models with all their power and benefits</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>By default, the library interprets a Pydantic model used as a type annotation in a function signature as a 
+<p>By default, the library interprets a Pydantic model used as a type annotation in a function signature as a
 request body model. However, if you only want to validate specific fields in the request body, you can use the
 <code>JsonBody()</code> annotation.</p>
 </div>
@@ -101,7 +101,6 @@ request body model. However, if you only want to validate specific fields in the
 import pydantic
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -185,17 +184,13 @@ def update_item(
 }
 </code></pre>
 <h3 id="multiple-pydantic-models">Multiple Pydantic Models</h3>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
 <p>You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
 <code>JsonBody</code> field with the <code>embed</code> parameter.</p>
-</div>
 <pre><code class="language-python">import typing as t
 
 import pydantic
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -225,7 +220,7 @@ def create_item_by_user(
     }
     return flask.jsonify(data)
 </code></pre>
-<p><strong>Request Body</strong> <code>POST http://127.0.0.1:5000/users/123/items/</code></p>
+<p><strong>Example request:</strong> <code>POST http://127.0.0.1:5000/users/123/items/</code></p>
 <pre><code class="language-json">{
   &quot;item&quot;: {
     &quot;title&quot;: &quot;Hello, World!&quot;,
@@ -235,19 +230,6 @@ def create_item_by_user(
     &quot;email&quot;: &quot;myemail@abc.com&quot;,
     &quot;age&quot;: 25
   }
-}
-</code></pre>
-<p><em>Http Response</em></p>
-<pre><code class="language-json">{
-  &quot;item&quot;: {
-    &quot;author&quot;: &quot;John Doe&quot;,
-    &quot;title&quot;: &quot;Hello, World!&quot;
-  },
-  &quot;user&quot;: {
-    &quot;age&quot;: 25,
-    &quot;email&quot;: &quot;myemail@abc.com&quot;
-  },
-  &quot;user_id&quot;: 123
 }
 </code></pre>
               

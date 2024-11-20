@@ -108,20 +108,19 @@
 <pre><code class="language-bash">pip install flask_typed_routes
 </code></pre>
 <h2 id="getting-started">Getting Started</h2>
-<p>This tool offers comprehensive validation for various types of request parameters, 
-including <strong>Path, Query, Body, Header, and Cookie</strong> parameters.</p>
+<p>This tool offers comprehensive validation for various types of request parameters,
+including <strong>Path, Query, JsonBody, Header, and Cookie</strong> parameters.</p>
 <p>Example of a simple Flask application using <code>flask_typed_routes</code>:</p>
 <p>Create a file <code>items.py</code> with:</p>
 <pre><code class="language-python">import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.get('/items/&lt;user&gt;/')
-def read_items(user: str, skip: int = 0, limit: int = 10):
+def get_items(user: str, skip: int = 0, limit: int = 10):
     # Parameters not included in the &quot;path&quot; are automatically treated as &quot;query&quot; parameters.
     data = {
         'user': user,
@@ -131,9 +130,9 @@ def read_items(user: str, skip: int = 0, limit: int = 10):
     return flask.jsonify(data)
 </code></pre>
 <p><strong>Run the server with:</strong></p>
-<pre><code class="language-bash">flask --app items run
+<pre><code class="language-bash">flask --app items run --debug
 </code></pre>
-<p>Open your browser and go to <code>http://127.0.0.1:5000/posts/myuser/?skip=20</code>
+<p>Open your browser and go to <code>http://127.0.0.1:5000/items/myuser/?skip=20</code>
 You will see the JSON response as:</p>
 <pre><code class="language-json">{
   &quot;limit&quot;: 10,
@@ -141,8 +140,7 @@ You will see the JSON response as:</p>
   &quot;user&quot;: &quot;myuser&quot;
 }
 </code></pre>
-<p><strong>Data validation:</strong></p>
-<p>Open your browser and go to <code>http://127.0.0.1:5000/posts/myuser/?skip=abc</code>
+<p><strong>Validation:</strong> Open your browser and go to <code>http://127.0.0.1:5000/items/myuser/?skip=abc</code>
 You will see the JSON response with the error details because the <code>skip</code> parameter is not an integer:</p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
@@ -166,7 +164,6 @@ Now let's update the <code>items.py</code> file with:</p>
 import flask
 import flask_typed_routes as flask_tpr
 
-
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
@@ -186,8 +183,54 @@ def create_item(item: Item):
 def update_item(item_id: int, item: Item):
     return flask.jsonify({'item_id': item_id, **item.model_dump()})
 </code></pre>
-<h2 id="license">License</h2>
-<p>This project is licensed under the <a href="LICENSE">MIT license</a>.</p>
+<h3 id="using-flask-blueprints">Using Flask Blueprints</h3>
+<p>You can also use <code>flask_typed_routes</code> with Flask Blueprints.</p>
+<p>Now let's update the <code>items.py</code> file with:</p>
+<pre><code class="language-python">import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+app_v2 = flask.Blueprint('items', __name__, url_prefix='/v2')
+
+
+@app_v2.get('/items/')
+def get_items_v2(skip: int = 0, limit: int = 10, country: str = 'US'):
+    data = {'skip': skip, 'limit': limit, 'country': country}
+    return flask.jsonify(data)
+
+
+app.register_blueprint(app_v2)
+</code></pre>
+<h3 id="using-flask-class-based-views">Using Flask Class-Based Views</h3>
+<p>You can also use <code>flask_typed_routes</code> with Flask Class-Based Views.</p>
+<p>Now let's update the <code>items.py</code> file with:</p>
+<pre><code class="language-python">import flask
+import flask.views
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class UserProducts(flask.views.View):
+
+    def dispatch_request(self, user: str, skip: int = 0, limit: int = 10):
+        data = {'user': user, 'skip': skip, 'limit': limit}
+        return flask.jsonify(data)
+
+
+class UserOrders(flask.views.MethodView):
+
+    def get(self, user: str, skip: int = 0, limit: int = 10):
+        data = {'user': user, 'skip': skip, 'limit': limit}
+        return flask.jsonify(data)
+
+
+app.add_url_rule('/products/&lt;user&gt;/all/', view_func=UserProducts.as_view('user_products'))
+app.add_url_rule('/orders/&lt;user&gt;/all/', view_func=UserOrders.as_view('user_orders'))
+</code></pre>
               
             </div>
           </div><footer>
@@ -240,5 +283,5 @@ def update_item(item_id: int, item: Item):
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-11-19 18:26:23.051489+00:00
+Build Date UTC : 2024-11-20 10:57:54.797200+00:00
 -->
