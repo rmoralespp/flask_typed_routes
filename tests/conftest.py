@@ -64,13 +64,13 @@ def flask_app():
         return flask.jsonify({"skip": skip, "limit": limit, "tags": tags})
 
     def func_header(
-        auth: t.Annotated[str, flask_tpr.Header(alias="Authorization")],
+        auth: t.Annotated[str, flask_tpr.Header(alias="Authorization", pattern=r"Bearer \w+")] = None,
         tags: t.Annotated[list[str], flask_tpr.Header(alias="X-Tag", multi=True)] = None,
     ):
         return flask.jsonify({"auth": auth, "tags": tags})
 
     def func_cookie(
-        session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id")],
+        session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id", max_length=4)] = None,
         tags: t.Annotated[list[str], flask_tpr.Cookie(alias="tag", multi=True)] = None,
     ):
         return flask.jsonify({"session_id": session_id, "tags": tags})

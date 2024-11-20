@@ -1,23 +1,20 @@
 # Query parameters
 
-Parameters not included in the **path** are automatically treated as **query** parameters.
+Parameters not included in the **Path** are automatically treated as **Query** parameters.
 
-!!! tip
-    Additionally, you can use the `Query` field which allows you to define more complex validations.
+- **Required:** Declared as function arguments without default values.
+- **Optional:** Declared with default values.
 
 ```python
-import typing as t
-
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.route('/items/')
-def read_items(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Query(alias="max", le=100)] = 100):
+def get_items(needy: str, skip: int = 0, limit: int = 100):
     data = {
         'needy': needy,
         'skip': skip,
@@ -26,27 +23,24 @@ def read_items(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
     return flask.jsonify(data)
 ```
 
-**Validations:**
+**Validation:**
 
-- `needy`: Query parameter that must be included in the request and must be a string.
-- `skip`: Query parameter that is optional and must be an integer. If not included, it defaults to 0.
-- `limit`: Query parameter that is optional and must be a string. If not included, it defaults to 100. The parameter is
-  validated using the library field `Query` with a maximum value of 100. The parameter is also aliased as `max`.
+- `needy`: **Required** and must be a string.
+- `skip`: **Optional** and must be an integer. If not included, it defaults to 0.
+- `limit`: **Optional** and must be an integer. If not included, it defaults to 100.
 
-!!! note
-    The alias is used to demonstrate how the library can support Pydantic's Field class.
 
-**Valid Request:** `http://127.0.0.1:5000/posts/?needy=passed&max=20`
+**Example request:** `GET http://127.0.0.1:5000/items/?needy=passed&skip=20`
 
 ```json
 {
-  "limit": 20,
+  "limit": 100,
   "needy": "passed",
-  "skip": 0
+  "skip": 20
 }
 ```
 
-**Bad Request:** If "needy" is not included in the request `http://127.0.0.1:5000/posts/`
+**Bad request example:** If `needy` is not included in the request `http://127.0.0.1:5000/items/`
 
 ```json
 {
@@ -65,6 +59,55 @@ def read_items(needy: str, skip: int = 0, limit: t.Annotated[int, flask_tpr.Quer
 }
 ```
 
+## Additional validations
+
+You can use the `Query` field with Python's standard `Annotated` field to enforce additional validations on your
+query parameters, enabling more complex rules.
+
+!!! tip
+    The `Query` field is supported aliasing. You can use the `alias` argument to define 
+    the query parameter name in the request.
+
+```python
+import typing as t
+
+import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+@app.route('/items/')
+def get_items(
+    needy: t.Annotated[str, flask_tpr.Query(min_length=3, max_length=10)],
+    skip: int = 0,
+    limit: t.Annotated[int, flask_tpr.Query(ge=1, le=100, alias="size")] = 100,
+):
+    data = {
+        'needy': needy,
+        'skip': skip,
+        'limit': limit,
+    }
+    return flask.jsonify(data)
+```
+
+**Validation:**
+
+- `needy`: **Required** and must be a string between 3 and 10 characters.
+- `skip`: **Optional** and must be an integer.
+- `limit`: **Optional** and must be an integer between 1 and 100, and must be named `size` in the request.
+
+**Example request:** `GET http://127.0.0.1:5000/items/?needy=passed&size=20`
+
+```json
+{
+  "limit": 20,
+  "needy": "passed",
+  "skip": 0
+}
+```
+
 ## Pydantic models
 
 If you have a group of query parameters that are related, you can create a Pydantic model to declare them.
@@ -78,7 +121,6 @@ import typing as t
 import pydantic
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -101,7 +143,11 @@ def get_orders(
     return flask.jsonify(data)
 ```
 
-Go to `http://127.0.0.1:5000/orders/233/?status=true`
+!!! warning
+    The `Query` field can only be directly specified in the **function signature**.
+    When using Pydantic models, you must use **Pydantic's fields**.
+
+**Example request:** `GET ttp://127.0.0.1:5000/orders/233/?status=true`
 
 ```json
 {
@@ -127,7 +173,6 @@ import typing as t
 import flask
 import flask_typed_routes as flask_tpr
 
-
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
@@ -141,7 +186,7 @@ def get_users(
     return flask.jsonify(data)
 ```
 
-Go to `http://127.0.0.1:5000/users/123/?tag=hello&tag=world`
+**Example request:** `GET http://127.0.0.1:5000/users/123/?tag=hello&tag=world`
 
 ```json
 {

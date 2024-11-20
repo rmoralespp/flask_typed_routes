@@ -86,7 +86,7 @@ def typed_route(view_func, rule_params):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
-        
+
         if fields:
             # Get request values from the fields.
             field_values = get_request_values(fields)

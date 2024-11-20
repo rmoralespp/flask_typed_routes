@@ -3,7 +3,7 @@
 To declare a request body, you use Pydantic models with all their power and benefits
 
 !!! note
-    By default, the library interprets a Pydantic model used as a type annotation in a function signature as a 
+    By default, the library interprets a Pydantic model used as a type annotation in a function signature as a
     request body model. However, if you only want to validate specific fields in the request body, you can use the
     `JsonBody()` annotation.
 
@@ -15,7 +15,6 @@ import typing as t
 import pydantic
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -113,10 +112,8 @@ def update_item(
 
 ### Multiple Pydantic Models
 
-!!! tip
-    You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
-    `JsonBody` field with the `embed` parameter.
-
+You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
+`JsonBody` field with the `embed` parameter.
 
 ```python
 import typing as t
@@ -124,7 +121,6 @@ import typing as t
 import pydantic
 import flask
 import flask_typed_routes as flask_tpr
-
 
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
@@ -155,7 +151,7 @@ def create_item_by_user(
     return flask.jsonify(data)
 ```
 
-**Request Body** `POST http://127.0.0.1:5000/users/123/items/`
+**Example request:** `POST http://127.0.0.1:5000/users/123/items/`
 
 ```json
 {
@@ -167,21 +163,5 @@ def create_item_by_user(
     "email": "myemail@abc.com",
     "age": 25
   }
-}
-```
-
-*Http Response*
-
-```json
-{
-  "item": {
-    "author": "John Doe",
-    "title": "Hello, World!"
-  },
-  "user": {
-    "age": 25,
-    "email": "myemail@abc.com"
-  },
-  "user_id": 123
 }
 ```

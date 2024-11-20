@@ -7,6 +7,8 @@
 
 **flask_typed_routes** is a `Python` library designed to validate `Flask` requests effortlessly with `Pydantic`.
 
+**Documentation**: https://rmoralespp.github.io/flask_typed_routes/
+
 ## Features
 
 - 🎯 **Type Safety:** Automatically validates requests based on standard Python type hints.
@@ -30,8 +32,8 @@ pip install flask_typed_routes
 
 ## Getting Started
 
-This tool offers comprehensive validation for various types of request parameters, 
-including **Path, Query, Body, Header, and Cookie** parameters.
+This tool offers comprehensive validation for various types of request parameters,
+including **Path, Query, JsonBody, Header, and Cookie** parameters.
 
 Example of a simple Flask application using `flask_typed_routes`:
 
@@ -41,13 +43,12 @@ Create a file `items.py` with:
 import flask
 import flask_typed_routes as flask_tpr
 
-
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
 
 @app.get('/items/<user>/')
-def read_items(user: str, skip: int = 0, limit: int = 10):
+def get_items(user: str, skip: int = 0, limit: int = 10):
     # Parameters not included in the "path" are automatically treated as "query" parameters.
     data = {
         'user': user,
@@ -60,10 +61,10 @@ def read_items(user: str, skip: int = 0, limit: int = 10):
 **Run the server with:**
 
 ```bash
-flask --app items run
+flask --app items run --debug
 ```
 
-Open your browser and go to `http://127.0.0.1:5000/posts/myuser/?skip=20`
+Open your browser and go to `http://127.0.0.1:5000/items/myuser/?skip=20`
 You will see the JSON response as:
 
 ```json
@@ -74,9 +75,7 @@ You will see the JSON response as:
 }
 ```
 
-**Data validation:**
-
-Open your browser and go to `http://127.0.0.1:5000/posts/myuser/?skip=abc`
+**Validation:** Open your browser and go to `http://127.0.0.1:5000/items/myuser/?skip=abc`
 You will see the JSON response with the error details because the `skip` parameter is not an integer:
 
 ```json
@@ -106,7 +105,6 @@ import pydantic
 import flask
 import flask_typed_routes as flask_tpr
 
-
 app = flask.Flask(__name__)
 flask_tpr.FlaskTypeRoutes(app)
 
@@ -121,9 +119,68 @@ class Item(pydantic.BaseModel):
 def create_item(item: Item):
     return flask.jsonify(item.model_dump())
 
+
 @app.put('/items/<item_id>/')
 def update_item(item_id: int, item: Item):
     return flask.jsonify({'item_id': item_id, **item.model_dump()})
+```
+
+### Using Flask Blueprints
+
+You can also use `flask_typed_routes` with Flask Blueprints.
+
+Now let's update the `items.py` file with:
+
+```python
+import flask
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+app_v2 = flask.Blueprint('items', __name__, url_prefix='/v2')
+
+
+@app_v2.get('/items/')
+def get_items_v2(skip: int = 0, limit: int = 10, country: str = 'US'):
+    data = {'skip': skip, 'limit': limit, 'country': country}
+    return flask.jsonify(data)
+
+
+app.register_blueprint(app_v2)
+```
+
+### Using Flask Class-Based Views
+
+You can also use `flask_typed_routes` with Flask Class-Based Views.
+
+Now let's update the `items.py` file with:
+
+```python
+import flask
+import flask.views
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypeRoutes(app)
+
+
+class UserProducts(flask.views.View):
+
+    def dispatch_request(self, user: str, skip: int = 0, limit: int = 10):
+        data = {'user': user, 'skip': skip, 'limit': limit}
+        return flask.jsonify(data)
+
+
+class UserOrders(flask.views.MethodView):
+    
+    def get(self, user: str, skip: int = 0, limit: int = 10):
+        data = {'user': user, 'skip': skip, 'limit': limit}
+        return flask.jsonify(data)
+
+ 
+app.add_url_rule('/products/<user>/all/', view_func=UserProducts.as_view('user_products'))
+app.add_url_rule('/orders/<user>/all/', view_func=UserOrders.as_view('user_orders'))
 ```
 
 ## Documentation
