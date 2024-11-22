@@ -1,7 +1,7 @@
 [project]
 name = "flask_typed_routes"
-version = "0.0.2"
-description = "Validate Flask request parameters effortlessly with Pydantic"
+version = "0.0.3"
+description = "Validate Flask requests effortlessly with Pydantic"
 readme = "README.md"
 license = { file = "LICENSE" }
 keywords = ["python", "flask", "pydantic", "validation", "routes"]
