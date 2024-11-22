@@ -14,7 +14,12 @@ class ValidationError(Exception):
         self.errors = errors
 
 
-def handler(error: ValidationError):
-    """Handle validation errors."""
+def handler(error, /):
+    """
+    Handle validation errors.
+
+    :param ValidationError error: Validation error instance.
+    :return: JSON response with the errors.
+    """
 
     return flask.jsonify({"errors": error.errors}), 400

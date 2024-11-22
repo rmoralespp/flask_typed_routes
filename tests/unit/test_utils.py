@@ -12,13 +12,21 @@ import flask_typed_routes.utils as utils
 def test_check_param_annotation_raises_error_for_multiple_meta():
     with pytest.raises(flask_tpr_errors.InvalidParameterTypeError):
         utils.check_param_annotation(
-            "func", inspect.Parameter.empty, "param", t.Annotated[int, flask_tpr_fields.Path(), flask_tpr_fields.Path()]
+            "func",
+            inspect.Parameter.empty,
+            "param",
+            t.Annotated[int, flask_tpr_fields.Path(), flask_tpr_fields.Path()],
         )
 
 
 def test_check_param_annotation_raises_error_for_non_field_meta():
     with pytest.raises(flask_tpr_errors.InvalidParameterTypeError):
-        utils.check_param_annotation("func", inspect.Parameter.empty, "param", t.Annotated[int, "not_a_field"])
+        utils.check_param_annotation(
+            "func",
+            inspect.Parameter.empty,
+            "param",
+            t.Annotated[int, "not_a_field"],
+        )
 
 
 def test_check_param_annotation_raises_error_for_default_value_mismatch():
@@ -98,10 +106,10 @@ def test_is_annotated_false():
 
 
 def test_pretty_errors_with_alias():
-    fields = {"name": (str, flask_tpr_fields.Path(alias="alias_name"))}
-    errors = [{"loc": ["name"]}]
+    fields = {"name": (str, flask_tpr_fields.Query(alias="alias_name"))}
+    errors = [{"loc": ["alias_name"]}]
     result = utils.pretty_errors(fields, errors)
-    assert result[0]["loc"] == ['path', 'name']
+    assert result[0]["loc"] == ['query', 'alias_name']
 
 
 def test_pretty_errors_without_alias():

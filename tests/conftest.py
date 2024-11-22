@@ -40,6 +40,11 @@ class QueryParams(pydantic.BaseModel):
     limit: int = 10
     sort_by: t.Annotated[str, pydantic.Field(alias='order-by')] = 'id'  # Testing alias
 
+    @pydantic.computed_field()
+    @property
+    def extra_field(self) -> str:
+        return "Extra field"
+
 
 @pytest.fixture(scope='package')
 def flask_app():
@@ -62,6 +67,9 @@ def flask_app():
         tags: t.Annotated[list[str], flask_tpr.Query(alias="tag", multi=True)] = None,
     ):
         return flask.jsonify({"skip": skip, "limit": limit, "tags": tags})
+
+    def func_query_model(query: t.Annotated[QueryParams, flask_tpr.Query()]):
+        return flask.jsonify(query.model_dump())
 
     def func_header(
         auth: t.Annotated[str, flask_tpr.Header(alias="Authorization", pattern=r"Bearer \w+")] = None,
@@ -89,6 +97,9 @@ def flask_app():
         user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
     ):
         return flask.jsonify({"product": product.model_dump(), "user": user.model_dump()})
+
+    def test_body_forward_refs(order: 'ForwardRefModel'):
+        return flask.jsonify(order.model_dump())
 
     def func_all_params(
         category: str,
@@ -130,11 +141,13 @@ def flask_app():
     # Registering view functions ==================================================================================
     add_url('/products/path/<string:category>/<product_id>/', view_func=func_path_field)
     add_url('/products/query/', view_func=func_query)
+    add_url('/products/query/model/', view_func=func_query_model)
     add_url('/products/header/', view_func=func_header)
     add_url('/products/cookie/', view_func=func_cookie)
     add_url('/products/body/model/', view_func=func_body_model, methods=['POST'])
     add_url('/products/body/field/', view_func=func_body_field, methods=['POST'])
     add_url('/products/body/embed/', view_func=func_body_embed, methods=['POST'])
+    add_url('/products/body/forward-refs/', view_func=test_body_forward_refs, methods=['POST'])
     add_url('/products/all/<string:category>/<product_id>/', view_func=func_all_params, methods=['POST'])
 
     # Registering class-based views
@@ -149,3 +162,10 @@ def flask_app():
 @pytest.fixture(scope='package')
 def client(flask_app):
     return flask_app.test_client()
+
+
+# Forward reference Model for testing
+
+class ForwardRefModel(pydantic.BaseModel):
+    pk: int
+    related: 't.Optional[ForwardRefModel]'

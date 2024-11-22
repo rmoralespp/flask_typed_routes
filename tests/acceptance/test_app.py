@@ -48,6 +48,13 @@ def test_query(client, url_prefix):
     assert response.json == expected
 
 
+def test_query_model(client, url_prefix):
+    url = f"{url_prefix}products/query/model/"
+    expected = {'extra_field': 'Extra field', 'limit': 10, 'skip': 0, 'sort_by': 'id'}
+    response = client.get(url)
+    assert response.json == expected
+
+
 def test_query_bad(client, url_prefix):
     url = f"{url_prefix}products/query/?tag=foo&tag=bar&limit=bad"
     response = client.get(url)
@@ -278,6 +285,20 @@ def test_body_embed_bad(client, url_prefix):
     }
     response = client.post(url, json=payload)
     assert response.status_code == 400
+    assert response.json == expected
+
+
+def test_body_forward_refs(client, url_prefix):
+    url = f"{url_prefix}products/body/forward-refs/"
+    payload = {
+        'pk': 123,
+        'related': {'pk': 42, 'related': None},
+    }
+    expected = {
+        'pk': 123,
+        'related': {'pk': 42, 'related': None},
+    }
+    response = client.post(url, json=payload)
     assert response.json == expected
 
 

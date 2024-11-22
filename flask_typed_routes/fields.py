@@ -29,6 +29,8 @@ class Field(abc.ABC):
 
     kind = None
 
+    __slots__ = ("embed", "multi", "field_info")
+
     def __init__(self, *args, embed=False, multi=False, **kwargs):
         self.embed = embed  # "JsonBody" fields can be embedded
         self.multi = multi  # "Header", "Cookie" and "Query" fields can have multiple values

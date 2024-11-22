@@ -10,8 +10,8 @@ class FlaskTypeRoutes:
     Flask extension for automatically validating Requests with Pydantic
     by decorating route functions.
 
-    :param app: Flask application instance
-    :param validation_error_handler:
+    :param app: Flask application instance.
+    :param Callable validation_error_handler:
         Custom error handler for the "ValidationError" exception,
         by default it uses the default error handler provided by the library.
     """
@@ -24,18 +24,18 @@ class FlaskTypeRoutes:
         if app:
             self.init_app(app)
 
-    def init_app(self, app):
+    def init_app(self, app, /):
         # Register the error handler for the "ValidationError"
         app.register_error_handler(errors.ValidationError, self.error_handler or errors.handler)
         # Replace the "add_url_rule" method with a wrapper that adds the "typed_route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
-    def add_url_rule(self, func):
+    def add_url_rule(self, func, /):
         """
         Decorator for the "add_url_rule" method of the Flask application.
         Applies the "typed_route" decorator to the view functions.
 
-        :param func: Original "add_url_rule" method
+        :param func: Flask "add_url_rule" method
         """
 
         @functools.wraps(func)
@@ -52,8 +52,7 @@ class FlaskTypeRoutes:
                             method = getattr(view, verb.lower())
                             setattr(view, verb.lower(), core.typed_route(method, path_args))
                     else:  # no implemented methods, use the default "dispatch_request"
-                        method = view.dispatch_request
-                        view.dispatch_request = core.typed_route(method, path_args)
+                        view.dispatch_request = core.typed_route(view.dispatch_request, path_args)
                 else:  # function-based view
                     view_func = core.typed_route(view_func, path_args)
 
