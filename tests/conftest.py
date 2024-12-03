@@ -65,11 +65,21 @@ def flask_app():
         return flask.jsonify({"category": category, "product_id": product_id})
 
     def func_query(
+        status1: t.Annotated[str, flask_tpr.Query(default='active')],  # Testing default value for query parameter
+        status2: str = 'active',  # Testing default value for query parameter
         skip: int = 0,
         limit: int = 10,
         tags: t.Annotated[list[str], flask_tpr.Query(alias="tag", multi=True)] = None,
     ):
-        return flask.jsonify({"skip": skip, "limit": limit, "tags": tags})
+        return flask.jsonify(
+            {
+                "skip": skip,
+                "limit": limit,
+                "tags": tags,
+                "status1": status1,
+                "status2": status2,
+            }
+        )
 
     def func_query_model(query: t.Annotated[QueryParams, flask_tpr.Query()]):
         return flask.jsonify(query.model_dump())
@@ -169,6 +179,7 @@ def client(flask_app):
 
 
 # Forward reference Model for testing
+
 
 class ForwardRefModel(pydantic.BaseModel):
     pk: int

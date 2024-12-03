@@ -11,8 +11,7 @@ def url_prefix(request):
 
 
 pydantic_url = functools.partial(
-    urllib.parse.urljoin,
-    f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
+    urllib.parse.urljoin, f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
 )
 
 
@@ -51,7 +50,13 @@ def test_path_bad(client, url_prefix):
 
 def test_query(client, url_prefix):
     url = f"{url_prefix}products/query/?tag=foo&tag=bar"
-    expected = {'limit': 10, 'skip': 0, 'tags': ['foo', 'bar']}
+    expected = {
+        'limit': 10,
+        'skip': 0,
+        'tags': ['foo', 'bar'],
+        "status1": "active",
+        "status2": "active",
+    }
     response = client.get(url)
     assert response.json == expected
 

@@ -50,7 +50,9 @@ class Field(abc.ABC):
         self.field_info.alias = value
 
     def set_default(self, is_required, default):
-        self.field_info.default = Undef if is_required else default
+        # Set the default value if the field is not required.
+        if not is_required:
+            self.field_info.default = default
 
     def fetch(self, data):
         return data.get(self.alias, Unset) if self.alias else data
