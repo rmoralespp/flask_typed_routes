@@ -57,6 +57,9 @@ def flask_app():
         api.add_url_rule(*args, **kwargs)
         bp.add_url_rule(*args, **kwargs)
 
+    def non_typed_view(pk):
+        return flask.jsonify({"pk": pk})
+
     # Simple view functions ============================================================================================
     def func_path_field(category: str, product_id: int):
         return flask.jsonify({"category": category, "product_id": product_id})
@@ -139,6 +142,7 @@ def flask_app():
             return flask.jsonify({"category": category, "skip": skip, "limit": limit})
 
     # Registering view functions ==================================================================================
+    add_url('/products/<int:pk>/', view_func=non_typed_view)
     add_url('/products/path/<string:category>/<product_id>/', view_func=func_path_field)
     add_url('/products/query/', view_func=func_query)
     add_url('/products/query/model/', view_func=func_query_model)
@@ -168,4 +172,4 @@ def client(flask_app):
 
 class ForwardRefModel(pydantic.BaseModel):
     pk: int
-    related: 't.Optional[ForwardRefModel]'
+    related: 'ForwardRefModel | None'

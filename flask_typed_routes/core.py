@@ -89,20 +89,17 @@ def typed_route(view_func, rule_params, /):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
-        if fields := view_func.__flask_tpr_fields__:
-            # Get request values from the fields and validate them.
-            field_values = get_request_values(fields)
-            try:
-                instance = view_func.__flask_tpr_validator__.model_validate(field_values)
-            except pydantic.ValidationError as e:
-                errors = utils.pretty_errors(fields, e.errors())
-                raise flask_tpr_errors.ValidationError(errors) from None
-            else:
-                inject = {k: getattr(instance, k) for k in fields}
-                kwargs.update(inject)
-                return view_func(*args, **kwargs)
+        # Get request values from the fields and validate them.
+        fields = view_func.__flask_tpr_fields__
+        values = get_request_values(fields)
+        try:
+            instance = view_func.__flask_tpr_validator__.model_validate(values)
+        except pydantic.ValidationError as e:
+            errors = utils.pretty_errors(fields, e.errors())
+            raise flask_tpr_errors.ValidationError(errors) from None
         else:
-            # No fields to validate, just call the view function.
+            inject = {k: getattr(instance, k) for k in fields}
+            kwargs.update(inject)
             return view_func(*args, **kwargs)
 
     # Check the types of the function annotations before returning the decorator.
@@ -114,9 +111,6 @@ def typed_route(view_func, rule_params, /):
         model_name = model_name.replace(".", "_")
         view_func.__flask_tpr_fields__ = func_fields
         view_func.__flask_tpr_validator__ = pydantic.create_model(model_name, **definitions)
-        # remove the temporary variables from the function
-        del func_fields
-        del definitions
         return decorator
     else:
         return view_func

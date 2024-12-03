@@ -11,8 +11,16 @@ def url_prefix(request):
 
 
 pydantic_url = functools.partial(
-    urllib.parse.urljoin, f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
+    urllib.parse.urljoin,
+    f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
 )
+
+
+def test_non_typed_view(client, url_prefix):
+    url = f"{url_prefix}products/123/"
+    expected = {'pk': 123}
+    response = client.get(url)
+    assert response.json == expected
 
 
 def test_path(client, url_prefix):

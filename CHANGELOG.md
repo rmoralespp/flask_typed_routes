@@ -1,5 +1,6 @@
 ## Releases
 
+- **Changed**: Simplified the `typed_route` decorator.
 - **Changed**: Updated the application class name, now it is `FlaskTypedRoutes`.
 
 ### v0.0.3 (2024-11-22)
