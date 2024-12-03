@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.4 (2024-12-03)
+
 - **Changed**: Simplified the `typed_route` decorator.
 - **Changed**: Updated the application class name, now it is `FlaskTypedRoutes`.
 - **Changed**: Respect pydantic-field default defined, even if func-param default is empty.

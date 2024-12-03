@@ -16,6 +16,10 @@
 - ⚠️ **Error Handling:** Automatically returns meaningful error responses for validation failures.
 - ✨ **Autocomplete**: Excellent editor integration, offering comprehensive completion across all contexts.
 
+### TODOs:
+
+- Add support for [Pydantic types](https://docs.pydantic.dev/latest/api/types/)
+
 ## Requirements
 
 - Python 3.10+
