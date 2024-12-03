@@ -5,7 +5,7 @@ import flask_typed_routes.errors as errors
 import flask_typed_routes.utils as utils
 
 
-class FlaskTypeRoutes:
+class FlaskTypedRoutes:
     """
     Flask extension for automatically validating Requests with Pydantic
     by decorating route functions.

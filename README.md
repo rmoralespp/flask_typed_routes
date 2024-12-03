@@ -44,7 +44,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.get('/items/<user>/')
@@ -106,7 +106,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 class Item(pydantic.BaseModel):
@@ -136,7 +136,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 app_v2 = flask.Blueprint('items', __name__, url_prefix='/v2')
 
 
@@ -162,7 +162,7 @@ import flask.views
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 class UserProducts(flask.views.View):

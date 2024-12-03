@@ -1,5 +1,7 @@
 ## Releases
 
+- **Changed**: Updated the application class name, now it is `FlaskTypedRoutes`.
+
 ### v0.0.3 (2024-11-22)
 
 - **Fixed**: Resolved an issue with forward annotations during route definition.

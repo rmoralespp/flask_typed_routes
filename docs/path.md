@@ -11,7 +11,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/<category_id>/<lang>/')
@@ -76,7 +76,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/<category_id>/')

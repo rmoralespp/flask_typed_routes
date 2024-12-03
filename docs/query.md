@@ -10,7 +10,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/')
@@ -75,7 +75,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/')
@@ -123,7 +123,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 class QueryParams(pydantic.BaseModel):
@@ -174,7 +174,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.get('/users/<user_id>/')

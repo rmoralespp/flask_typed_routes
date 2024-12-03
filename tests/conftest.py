@@ -49,7 +49,7 @@ class QueryParams(pydantic.BaseModel):
 @pytest.fixture(scope='package')
 def flask_app():
     api = flask.Flask(__name__)
-    flask_tpr.FlaskTypeRoutes(api)
+    flask_tpr.FlaskTypedRoutes(api)
     # Blueprint to test the blueprint registration
     bp = flask.Blueprint('bp', __name__, url_prefix='/bp')
 
