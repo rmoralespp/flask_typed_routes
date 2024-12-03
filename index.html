@@ -116,7 +116,7 @@ including <strong>Path, Query, JsonBody, Header, and Cookie</strong> parameters.
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 @app.get('/items/&lt;user&gt;/')
@@ -165,7 +165,7 @@ import flask
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 class Item(pydantic.BaseModel):
@@ -190,7 +190,7 @@ def update_item(item_id: int, item: Item):
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 app_v2 = flask.Blueprint('items', __name__, url_prefix='/v2')
 
 
@@ -211,7 +211,7 @@ import flask.views
 import flask_typed_routes as flask_tpr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypeRoutes(app)
+flask_tpr.FlaskTypedRoutes(app)
 
 
 class UserProducts(flask.views.View):
@@ -283,5 +283,5 @@ app.add_url_rule('/orders/&lt;user&gt;/all/', view_func=UserOrders.as_view('user
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-11-22 13:21:36.886991+00:00
+Build Date UTC : 2024-12-03 14:15:49.710225+00:00
 -->
