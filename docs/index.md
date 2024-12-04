@@ -16,7 +16,7 @@
 
 ### TODOs:
 
-- Add support for [Pydantic types](https://docs.pydantic.dev/latest/api/types/)
+- Add support for [Pydantic custom types](https://docs.pydantic.dev/latest/api/types/)
 
 ## Requirements
 
