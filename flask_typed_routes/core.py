@@ -15,66 +15,49 @@ import flask_typed_routes.utils as utils
 
 def inspect_route(view_func, view_path_args, /):
     """
-    Return pydantic field definitions for the view function annotations.
+    Return field definitions for the view function annotations.
 
     :param view_func: Flask view function
     :param view_path_args: Parameters of the route rule
-    :return: Dict of field definitions
+    :rtype: Generator[flask_tpr_fields.Field]
     """
 
     sig = inspect.signature(view_func)
-    fields = dict()
-
-    for name, klass in view_func.__annotations__.items():
+    for name, annotation in view_func.__annotations__.items():
         if name == "return":
             continue  # Skip the return annotation
 
         param = sig.parameters[name]
-        if isinstance(klass, str):
+        if isinstance(annotation, str):
             # https://docs.pydantic.dev/latest/internals/resolving_annotations/
-            klass = eval(klass, view_func.__globals__)
+            annotation = eval(annotation, view_func.__globals__)
 
-        func_alias = f"{view_func.__module__}.{view_func.__name__}"
-        utils.check_param_annotation(func_alias, param.default, name, klass)
-        is_required = param.default == inspect.Parameter.empty
+        func_path = f"{view_func.__module__}.{view_func.__name__}"
+        utils.check_param_annotation(func_path, param.default, name, annotation)
 
-        if utils.is_subclass(klass, pydantic.BaseModel):  # Request body
-            field = flask_tpr_fields.JsonBody(default=... if is_required else param.default)
-            field.alias = None  # No alias for the request body
+        if utils.is_subclass(annotation, pydantic.BaseModel):  # Request body
+            field_class = flask_tpr_fields.JsonBody
         elif name in view_path_args:  # Path parameter
-            klass, field = utils.make_field(
-                klass,
-                flask_tpr_fields.Path,
-                is_required,
-                param.default,
-            )
-            field.alias = name  # Respect name offered by Flask
+            field_class = flask_tpr_fields.Path
         else:  # Query parameter by default
-            klass, field = utils.make_field(
-                klass,
-                flask_tpr_fields.Query,
-                is_required,
-                param.default,
-            )
-            if utils.is_subclass(klass, pydantic.BaseModel):
-                # When the parameter is a Pydantic model, use alias if 'embed' is True.
-                field.alias = (field.alias or name) if field.embed else None
-            else:
-                # Otherwise, use the alias if it is set, otherwise use the name.
-                field.alias = field.alias or name
+            field_class = flask_tpr_fields.Query
 
-        fields[name] = (klass, field)
-    return fields
+        yield utils.parse_field(name, annotation, field_class, param.default)
 
 
 def get_request_values(fields, /):
-    """Get the request values from the field definitions."""
+    """
+    Get the request values from the field definitions.
+
+    :param Iterable[flask_tpr_fields.Field] fields: Field definitions
+    :rtype: dict[str, Any]
+    """
 
     result = dict()
-    for name, (_klass, field) in fields.items():
-        value = field.value
+    for field in fields:
+        value = field.value  # use variable to avoid multiple calls to the property
         if value is not flask_tpr_fields.Unset:
-            result[field.alias or name] = value
+            result[field.alias or field.name] = value
     return result
 
 
@@ -89,7 +72,6 @@ def typed_route(view_func, rule_params, /):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
-        # Get request values from the fields and validate them.
         fields = view_func.__flask_tpr_fields__
         values = get_request_values(fields)
         try:
@@ -98,18 +80,18 @@ def typed_route(view_func, rule_params, /):
             errors = utils.pretty_errors(fields, e.errors())
             raise flask_tpr_errors.ValidationError(errors) from None
         else:
-            inject = {k: getattr(instance, k) for k in fields}
+            inject = {field.name: getattr(instance, field.name) for field in fields}
             kwargs.update(inject)
             return view_func(*args, **kwargs)
 
     # Check the types of the function annotations before returning the decorator.
-    func_fields = inspect_route(view_func, rule_params)
+    route_fields = tuple(inspect_route(view_func, rule_params))
     # Create a Pydantic model from the field definitions.
-    definitions = {name: (klass, field.field_info) for name, (klass, field) in func_fields.items()}
+    definitions = {field.name: (field.annotation, field.field_info) for field in route_fields}
     if definitions:
         model_name = f"{view_func.__module__}_{view_func.__name__}_validator"
         model_name = model_name.replace(".", "_")
-        view_func.__flask_tpr_fields__ = func_fields
+        view_func.__flask_tpr_fields__ = route_fields
         view_func.__flask_tpr_validator__ = pydantic.create_model(model_name, **definitions)
         return decorator
     else:

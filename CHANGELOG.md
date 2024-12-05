@@ -1,5 +1,7 @@
 ## Releases
 
+- **Changed**: Refactored codebase to improve readability and maintainability.
+
 ### v0.0.4 (2024-12-03)
 
 - **Changed**: Simplified the `typed_route` decorator.

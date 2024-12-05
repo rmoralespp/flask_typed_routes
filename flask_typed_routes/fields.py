@@ -5,6 +5,7 @@ input fields of the API.
 
 import abc
 import collections
+import inspect
 
 import flask
 import pydantic.fields
@@ -29,12 +30,15 @@ class Field(abc.ABC):
 
     kind = None
 
-    __slots__ = ("embed", "multi", "field_info")
+    __slots__ = ("embed", "multi", "field_info", "annotation", "name")
 
     def __init__(self, *args, embed=False, multi=False, **kwargs):
         self.embed = embed  # "JsonBody" fields can be embedded
         self.multi = multi  # "Header", "Cookie" and "Query" fields can have multiple values
         self.field_info = pydantic.fields.Field(*args, **kwargs)
+        # These attributes are set by the `parse_field` utility function
+        self.annotation = None
+        self.name = None
 
     @property
     @abc.abstractmethod
@@ -49,9 +53,13 @@ class Field(abc.ABC):
     def alias(self, value):
         self.field_info.alias = value
 
-    def set_default(self, is_required, default):
-        # Set the default value if the field is not required.
-        if not is_required:
+    @property
+    def default(self):
+        return self.field_info.default
+
+    @default.setter
+    def default(self, default):
+        if default != inspect.Parameter.empty:
             self.field_info.default = default
 
     def fetch(self, data):
