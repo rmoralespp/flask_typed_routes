@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.5 (2024-12-05)
+
 - **Change**: Refactored codebase to improve readability and maintainability.
 - **Change**: Add support for Pydantic custom types.
 - **Breaking-Change**: Renamed `JsonBody` field to `Body`.
