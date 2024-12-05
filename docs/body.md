@@ -115,7 +115,7 @@ def update_item(
 You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
 `Body` field with the `embed` parameter.
 
-!!! note:
+!!! note
     This `Body` field is an extension of Pydantic's [field](https://pydantic-docs.helpmanual.io/concepts/fields/)
 
 ```python
