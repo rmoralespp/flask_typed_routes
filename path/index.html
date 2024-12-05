@@ -139,9 +139,26 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
 }
 </code></pre>
 <h2 id="additional-validations">Additional validations</h2>
-<p>You can use the <code>Path</code> field with Python's standard <code>Annotated</code> field to enforce additional validations on your route
-parameters, enabling more complex rules.</p>
-<p>The <code>Path</code> field is an extension of Pydantic's field, offering powerful validation capabilities.
+<p>You can use Pydantic <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> to enforce additional 
+validations on your route parameters.</p>
+<pre><code class="language-python">import typing as t
+
+import annotated_types as at
+import flask
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypedRoutes(app)
+
+
+@app.route('/items/&lt;category_id&gt;/')
+def read_items(category_id: t.Annotated[int, at.Ge(1), at.Le(100)]):
+    data = {'category_id': category_id}
+    return flask.jsonify(data)
+</code></pre>
+<p>Alternatively, you can use the <code>Path</code> field, This field is an extension of Pydantic's field, 
+offering powerful validation capabilities.
 This flexibility allows you to tailor path parameter validation to your application's specific needs.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>

@@ -97,10 +97,6 @@
 <li>⚠️ <strong>Error Handling:</strong> Automatically returns meaningful error responses for validation failures.</li>
 <li>✨ <strong>Autocomplete</strong>: Excellent editor integration, offering comprehensive completion across all contexts.</li>
 </ul>
-<h3 id="todos">TODOs:</h3>
-<ul>
-<li>Add support for <a href="https://docs.pydantic.dev/latest/api/types/">Pydantic custom types</a></li>
-</ul>
 <h2 id="requirements">Requirements</h2>
 <ul>
 <li>Python 3.10+</li>
@@ -113,7 +109,7 @@
 </code></pre>
 <h2 id="getting-started">Getting Started</h2>
 <p>This tool offers comprehensive validation for various types of request parameters,
-including <strong>Path, Query, JsonBody, Header, and Cookie</strong> parameters.</p>
+including <strong>Path, Query, Body, Header, and Cookie</strong> parameters.</p>
 <p>Example of a simple Flask application using <code>flask_typed_routes</code>:</p>
 <p>Create a file <code>items.py</code> with:</p>
 <pre><code class="language-python">import flask
@@ -287,5 +283,5 @@ app.add_url_rule('/orders/&lt;user&gt;/all/', view_func=UserOrders.as_view('user
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-12-05 11:03:58.848187+00:00
+Build Date UTC : 2024-12-05 16:09:12.928766+00:00
 -->

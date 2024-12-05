@@ -143,8 +143,36 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 }
 </code></pre>
 <h2 id="additional-validations">Additional validations</h2>
-<p>You can use the <code>Query</code> field with Python's standard <code>Annotated</code> field to enforce additional validations on your
-query parameters, enabling more complex rules.</p>
+<p>You can use Pydantic <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> to enforce additional 
+validations on your query parameters.</p>
+<pre><code class="language-python">import typing as t
+
+import annotated_types as at
+import flask
+import pydantic
+
+import flask_typed_routes as flask_tpr
+
+app = flask.Flask(__name__)
+flask_tpr.FlaskTypedRoutes(app)
+
+
+@app.route('/items/')
+def get_items(
+    needy: t.Annotated[str, at.MinLen(3), at.MaxLen(10)],
+    skip: int = 0,
+    limit: t.Annotated[int, at.Ge(1), at.Le(100), pydantic.Field(alias=&quot;size&quot;)] = 100,
+):
+    data = {
+        'needy': needy,
+        'skip': skip,
+        'limit': limit,
+    }
+    return flask.jsonify(data)
+</code></pre>
+<p>Alternatively, you can use the <code>Query</code> field, This field is an extension of Pydantic's field, 
+offering powerful validation capabilities.
+This flexibility allows you to tailor query parameter validation to your application's specific needs.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>The <code>Query</code> field is supported aliasing. You can use the <code>alias</code> argument to define 

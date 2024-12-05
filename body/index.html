@@ -93,7 +93,7 @@
 <p class="admonition-title">Note</p>
 <p>By default, the library interprets a Pydantic model used as a type annotation in a function signature as a
 request body model. However, if you only want to validate specific fields in the request body, you can use the
-<code>JsonBody()</code> annotation.</p>
+<code>Body()</code> annotation.</p>
 </div>
 <p>Basic Usage of request Body Validation:</p>
 <pre><code class="language-python">import typing as t
@@ -120,10 +120,10 @@ def create_item(item: Item):
 @app.put('/items/&lt;item_id&gt;/')
 def update_item(
     item_id: int,
-    title: t.Annotated[str, flask_tpr.JsonBody()] = None,
-    author: t.Annotated[str, flask_tpr.JsonBody()] = None,
+    title: t.Annotated[str, flask_tpr.Body()] = None,
+    author: t.Annotated[str, flask_tpr.Body()] = None,
 ):
-    # Use `JsonBody` to validate specific fields in the request body
+    # Use `Body` to validate specific fields in the request body
     data = {
         'item_id': item_id,
         'title': title,
@@ -137,7 +137,7 @@ def update_item(
   <code>author</code>.</li>
 <li><code>create_item</code>: Route that accepts a POST request with a JSON body that must match the <code>Item</code> model.</li>
 <li><code>update_item</code>: Route that accepts a URL parameter <code>item_id</code> that must be an integer. The route also accepts two
-  optional JSON body parameters: <code>title</code> and <code>author</code>. The parameters are validated using the library field <code>JsonBody</code>.</li>
+  optional JSON body parameters: <code>title</code> and <code>author</code>. The parameters are validated using the library field <code>Body</code>.</li>
 </ul>
 <p><strong>Create a new Item:</strong> Invalid request Body <code>POST http://127.0.0.1:5000/items/</code></p>
 <pre><code class="language-json">{
@@ -185,7 +185,7 @@ def update_item(
 </code></pre>
 <h3 id="multiple-pydantic-models">Multiple Pydantic Models</h3>
 <p>You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
-<code>JsonBody</code> field with the <code>embed</code> parameter.</p>
+<code>Body</code> field with the <code>embed</code> parameter.</p>
 <pre><code class="language-python">import typing as t
 
 import pydantic
@@ -209,10 +209,10 @@ class User(pydantic.BaseModel):
 @app.post('/users/&lt;user_id&gt;/items/')
 def create_item_by_user(
     user_id: int,
-    item: t.Annotated[Item, flask_tpr.JsonBody(embed=True)],
-    user: t.Annotated[User, flask_tpr.JsonBody(embed=True)],
+    item: t.Annotated[Item, flask_tpr.Body(embed=True)],
+    user: t.Annotated[User, flask_tpr.Body(embed=True)],
 ):
-    # Use `JsonBody` with `embed=True` to validate nested specific fields in the request body
+    # Use `Body` with `embed=True` to validate nested specific fields in the request body
     data = {
         'user_id': user_id,
         'item': item.model_dump(),
