@@ -33,7 +33,7 @@ class Field(abc.ABC):
     __slots__ = ("embed", "multi", "field_info", "annotation", "name")
 
     def __init__(self, *args, embed=False, multi=False, **kwargs):
-        self.embed = embed  # "JsonBody" fields can be embedded
+        self.embed = embed  # "Body" fields can be embedded
         self.multi = multi  # "Header", "Cookie" and "Query" fields can have multiple values
         self.field_info = pydantic.fields.Field(*args, **kwargs)
         # These attributes are set by the `parse_field` utility function
@@ -105,7 +105,7 @@ class Header(Field):
         return self.fetch(data)
 
 
-class JsonBody(Field):
+class Body(Field):
     kind = FieldTypes.body
 
     @property

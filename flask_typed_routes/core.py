@@ -36,7 +36,7 @@ def inspect_route(view_func, view_path_args, /):
         utils.check_param_annotation(func_path, param.default, name, annotation)
 
         if utils.is_subclass(annotation, pydantic.BaseModel):  # Request body
-            field_class = flask_tpr_fields.JsonBody
+            field_class = flask_tpr_fields.Body
         elif name in view_path_args:  # Path parameter
             field_class = flask_tpr_fields.Path
         else:  # Query parameter by default

@@ -1,6 +1,7 @@
 import inspect
 import typing as t
 
+import annotated_types as at
 import flask.views
 import pydantic
 import pytest
@@ -9,112 +10,86 @@ import flask_typed_routes.errors as flask_tpr_errors
 import flask_typed_routes.fields as flask_tpr_fields
 import flask_typed_routes.utils as utils
 
+empty = inspect.Parameter.empty
+
 
 @pytest.mark.parametrize(
-    "annotation, default, field, expected_error",
+    "annotation, default",
     [
-        # Nested meta annotation
-        (
-            t.Annotated[t.Annotated[int, flask_tpr_fields.Path()], flask_tpr_fields.Path()],
-            inspect.Parameter.empty,
-            "param",
-            flask_tpr_errors.InvalidParameterTypeError,
-        ),
-        # Multiple meta annotations
-        (
-            t.Annotated[int, flask_tpr_fields.Path(), flask_tpr_fields.Path()],
-            inspect.Parameter.empty,
-            "param",
-            flask_tpr_errors.InvalidParameterTypeError,
-        ),
-        # Non-field meta annotation
-        (
-            t.Annotated[int, "not_a_field"],
-            inspect.Parameter.empty,
-            "param",
-            flask_tpr_errors.InvalidParameterTypeError,
-        ),
+        # 'Path' must be at the end of the annotation list
+        (t.Annotated[int, flask_tpr_fields.Path(), at.Gt(10)], empty),
+        # Multiple field annotations
+        (t.Annotated[int, flask_tpr_fields.Path(), flask_tpr_fields.Path()], empty),
         # Default value mismatch
-        (
-            t.Annotated[int, flask_tpr_fields.Path(default=1)],
-            2,
-            "param",
-            flask_tpr_errors.InvalidParameterTypeError,
-        ),
+        (t.Annotated[int, flask_tpr_fields.Path(default=1)], 2),
         # Unsupported Path alias
-        (
-            t.Annotated[int, flask_tpr_fields.Path(alias="different_name")],
-            inspect.Parameter.empty,
-            "param",
-            flask_tpr_errors.InvalidParameterTypeError,
-        ),
+        (t.Annotated[int, flask_tpr_fields.Path(alias="different_name")], empty),
     ],
 )
-def test_check_param_annotation_raises_error(annotation, default, field, expected_error):
-    with pytest.raises(expected_error):
-        utils.check_param_annotation("func", default, field, annotation)
+def test_check_param_annotation_raises_error(annotation, default):
+    with pytest.raises(flask_tpr_errors.InvalidParameterTypeError):
+        utils.check_param_annotation("func", default, "param", annotation)
 
 
 @pytest.mark.parametrize(
-    "annotation, default, field",
+    "annotation, default",
     [
         # Valid non-annotated annotation
-        (int, inspect.Parameter.empty, "param"),
+        (int, empty),
         # Valid non-annotated annotation with default value
-        (int, 1, "param"),
+        (int, 1),
+        # Valid annotated with multiple annotations
+        (t.Annotated[int, at.Gt(10), at.Lt(20), at.MultipleOf(2)], empty),
         # Valid annotated annotation
-        (
-            t.Annotated[int, flask_tpr_fields.Path()],
-            inspect.Parameter.empty,
-            "param",
-        ),
+        (t.Annotated[int, flask_tpr_fields.Path()], empty),
         # Matching annotated annotation with default value
-        (
-            t.Annotated[int, flask_tpr_fields.Path(default=1)],
-            1,
-            "param",
-        ),
+        (t.Annotated[int, flask_tpr_fields.Path(default=1)], 1),
         # Path field without alias
-        (
-            t.Annotated[int, flask_tpr_fields.Path()],
-            inspect.Parameter.empty,
-            "param",
-        ),
+        (t.Annotated[int, flask_tpr_fields.Path()], empty),
+        # Pydantic custom types
+        (pydantic.NonNegativeInt, empty),
+        # Pydantic custom types combined with Annotated
+        (t.Annotated[pydantic.NonNegativeInt, at.Gt(10)], 20),
+        # Mixed Annotated types
+        (t.Annotated[int, at.Gt(10), flask_tpr_fields.Path()], empty),
     ],
 )
-def test_check_param_annotation_passes(annotation, default, field):
-    utils.check_param_annotation("func", default, field, annotation)
+def test_check_param_annotation_passes(annotation, default):
+    utils.check_param_annotation("func", default, "param", annotation)
 
 
 @pytest.mark.parametrize(
-    "annotation, default_field_class, default_value, expected_tp, expected_default, expected_field_class",
+    "annotation, default_field_class, default_value, expected_tp, expected_default, expected_field_cls, expected_alias",
     [
         # Test case: Optional Annotated annotation
         (
-            t.Annotated[int, flask_tpr_fields.Header()],
+            t.Annotated[int, pydantic.Field(default=..., alias="foo"), flask_tpr_fields.Header(alias="alias_name")],
             flask_tpr_fields.Query,
             "default",
             int,
             "default",
             flask_tpr_fields.Header,
+            "alias_name",
         ),
         # Test case: Required Annotated annotation
         (
             t.Annotated[int, flask_tpr_fields.Header()],
             flask_tpr_fields.Query,
-            inspect.Parameter.empty,
+            empty,
             int,
             flask_tpr_fields.Undef,
             flask_tpr_fields.Header,
+            "fieldname",
         ),
         # Test case: Required annotation
         (
             int,
             flask_tpr_fields.Query,
-            inspect.Parameter.empty,
+            empty,
             int,
             flask_tpr_fields.Undef,
             flask_tpr_fields.Query,
+            "fieldname",
         ),
         # Test case: Optional annotation
         (
@@ -124,26 +99,59 @@ def test_check_param_annotation_passes(annotation, default, field):
             int,
             "default",
             flask_tpr_fields.Query,
+            "fieldname",
         ),
         # Test case: Nested Annotated annotation
         (
-            t.Annotated[t.Annotated[int, flask_tpr_fields.Header()], flask_tpr_fields.Header()],
+            t.Annotated[t.Annotated[int, pydantic.Field(alias="foo")], flask_tpr_fields.Path(alias="foo")],
             flask_tpr_fields.Query,
             "default",
             int,
             "default",
-            flask_tpr_fields.Header,
+            flask_tpr_fields.Path,
+            "fieldname",
+        ),
+        # Test case: Pydantic custom type
+        (
+            pydantic.NonNegativeInt,
+            flask_tpr_fields.Query,
+            empty,
+            int,
+            flask_tpr_fields.Undef,
+            flask_tpr_fields.Query,
+            "fieldname",
+        ),
+        # Test case: Pydantic custom type combined with Annotated
+        (
+            t.Annotated[pydantic.NonNegativeInt, at.Gt(10), pydantic.Field(default=..., alias="alias_name")],
+            flask_tpr_fields.Query,
+            1,
+            int,
+            1,
+            flask_tpr_fields.Query,
+            "alias_name",
+        ),
+        # Test case: Annotated type with multiple annotations
+        (
+            t.Annotated[int, at.Gt(10), at.Lt(20), at.MultipleOf(2)],
+            flask_tpr_fields.Query,
+            1,
+            int,
+            1,
+            flask_tpr_fields.Query,
+            "fieldname",
         ),
     ],
 )
 def test_parse_field(
-    annotation, default_field_class, default_value, expected_tp, expected_default, expected_field_class
+    annotation, default_field_class, default_value, expected_tp, expected_default, expected_field_cls, expected_alias
 ):
     field = utils.parse_field("fieldname", annotation, default_field_class, default_value)
-    assert field.field_info.default == expected_default
+    assert isinstance(field, expected_field_cls)
+    assert field.default == expected_default
     assert field.annotation == expected_tp
     assert field.name == "fieldname"
-    assert isinstance(field, expected_field_class)
+    assert field.alias == expected_alias
 
 
 def test_is_subclass_valid():
@@ -178,7 +186,7 @@ def test_pretty_errors_without_alias():
     class Model(pydantic.BaseModel):
         age: str
 
-    field = utils.parse_field("name", Model, flask_tpr_fields.JsonBody, None)
+    field = utils.parse_field("name", Model, flask_tpr_fields.Body, None)
     errors = [{"loc": ["name"]}]
     result = utils.pretty_errors([field], errors)
     assert result[0]["loc"] == ["body"]

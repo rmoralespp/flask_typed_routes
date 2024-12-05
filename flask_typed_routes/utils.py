@@ -21,20 +21,28 @@ def check_param_annotation(func_path, default, name, tp, /):
     """
 
     if is_annotated(tp):
-        tp, *meta = t.get_args(tp)
+        tp, *metalist = t.get_args(tp)
+        field = None
+        empty = inspect.Parameter.empty
 
-        if len(meta) > 1 or not isinstance(meta[0], flask_tpr_fields.Field):
-            msg = f"Invalid annotation for {name!r} in {func_path!r}"
-            raise flask_tpr_errors.InvalidParameterTypeError(msg)
-        else:
-            field = meta[0]
-            if default != inspect.Parameter.empty and field.default is not flask_tpr_fields.Undef:
-                if default != field.default:
+        for meta in metalist:
+            if isinstance(meta, flask_tpr_fields.Field):
+                if field:
+                    msg = f"Multiple field annotations for {name!r} in {func_path!r}"
+                    raise flask_tpr_errors.InvalidParameterTypeError(msg)
+                else:
+                    field = meta
+
+                if default != empty and field.default is not flask_tpr_fields.Undef and default != field.default:
                     msg = f"Default value mismatch for {name!r} in {func_path!r}"
                     raise flask_tpr_errors.InvalidParameterTypeError(msg)
 
-            if isinstance(field, flask_tpr_fields.Path) and field.alias and field.alias != name:
-                msg = f"Unsupported alias for Path field {name!r} in {func_path!r}"
+                if isinstance(field, flask_tpr_fields.Path) and field.alias and field.alias != name:
+                    msg = f"Unsupported alias for Path field {name!r} in {func_path!r}"
+                    raise flask_tpr_errors.InvalidParameterTypeError(msg)
+
+            elif field:
+                msg = "'Field' must be at the end of the annotation list."
                 raise flask_tpr_errors.InvalidParameterTypeError(msg)
 
 
@@ -51,8 +59,13 @@ def parse_field(name, tp, default_field_class, default_value, /):
 
     if is_annotated(tp):
         # When the type is annotated, get the field from the annotation.
-        tp, *meta = t.get_args(tp)
-        field = meta[0]
+        original_tp = tp
+        tp, *metalist = t.get_args(original_tp)
+        field = next((m for m in metalist if isinstance(m, flask_tpr_fields.Field)), default_field_class())
+        field_info = pydantic.fields.FieldInfo.from_annotation(original_tp)
+        # Later `FieldInfo` instances override earlier ones.
+        # Prioritize the "flask_tpr_fields.Field" field above any other metadata
+        field.field_info = pydantic.fields.FieldInfo.merge_field_infos(field_info, field.field_info)
     else:
         # Otherwise, create a new field instance.
         field = default_field_class()
@@ -66,10 +79,12 @@ def parse_field(name, tp, default_field_class, default_value, /):
     if is_subclass(field.annotation, pydantic.BaseModel):
         # When the parameter is a Pydantic model, use alias if 'embed' is True.
         field.alias = (field.alias or field.name) if field.embed else None
+    elif isinstance(field, flask_tpr_fields.Path):
+        # Respect the name of the path parameter offered by Flask routing.
+        field.alias = name
     else:
         # Otherwise, use the alias if it is set, otherwise use the name.
         field.alias = field.alias or field.name
-
     return field
 
 

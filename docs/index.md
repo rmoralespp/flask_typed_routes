@@ -14,10 +14,6 @@
 - ⚠️ **Error Handling:** Automatically returns meaningful error responses for validation failures.
 - ✨ **Autocomplete**: Excellent editor integration, offering comprehensive completion across all contexts.
 
-### TODOs:
-
-- Add support for [Pydantic custom types](https://docs.pydantic.dev/latest/api/types/)
-
 ## Requirements
 
 - Python 3.10+
@@ -35,7 +31,7 @@ pip install flask_typed_routes
 ## Getting Started
 
 This tool offers comprehensive validation for various types of request parameters,
-including **Path, Query, JsonBody, Header, and Cookie** parameters.
+including **Path, Query, Body, Header, and Cookie** parameters.
 
 Example of a simple Flask application using `flask_typed_routes`:
 

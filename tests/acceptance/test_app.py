@@ -23,27 +23,47 @@ def test_non_typed_view(client, url_prefix):
 
 
 def test_path(client, url_prefix):
-    url = f"{url_prefix}products/path/foo/123/"
-    expected = {'category': 'foo', 'product_id': 123}
+    url = f"{url_prefix}products/path/foo/90/"
+    expected = {'category': 'foo', 'product_id': 90}
     response = client.get(url)
     assert response.json == expected
 
 
-def test_path_bad(client, url_prefix):
-    url = f"{url_prefix}products/path/foo/var/"
+def test_path_bad_less_than(client, url_prefix):
+    url = f"{url_prefix}products/path/foo/123/"
     response = client.get(url)
     expected = {
         'errors': [
             {
-                'input': 'var',
+                'ctx': {'lt': 100},
+                'input': '123',
                 'loc': ['path', 'product_id'],
-                'msg': 'Input should be a valid integer, unable to parse string ' 'as an integer',
-                'type': 'int_parsing',
-                'url': pydantic_url('int_parsing'),
+                'msg': 'Input should be less than 100',
+                'type': 'less_than',
+                'url': pydantic_url('less_than'),
             }
         ]
     }
 
+    assert response.status_code == 400
+    assert response.json == expected
+
+
+def test_path_bad_greater_than(client, url_prefix):
+    url = f"{url_prefix}products/path/foo/1/"
+    response = client.get(url)
+    expected = {
+        'errors': [
+            {
+                'ctx': {'gt': 5},
+                'input': '1',
+                'loc': ['path', 'product_id'],
+                'msg': 'Input should be greater than 5',
+                'type': 'greater_than',
+                'url': pydantic_url('greater_than'),
+            }
+        ]
+    }
     assert response.status_code == 400
     assert response.json == expected
 
@@ -56,6 +76,24 @@ def test_query(client, url_prefix):
         'tags': ['foo', 'bar'],
         "status1": "active",
         "status2": "active",
+    }
+    response = client.get(url)
+    assert response.json == expected
+
+
+def test_query_bad_limit(client, url_prefix):
+    url = f"{url_prefix}products/query/?limit=-1"
+    expected = {
+        'errors': [
+            {
+                'ctx': {'ge': 0},
+                'input': '-1',
+                'loc': ['query', 'limit'],
+                'msg': 'Input should be greater than or equal to 0',
+                'type': 'greater_than_equal',
+                'url': pydantic_url('greater_than_equal'),
+            }
+        ]
     }
     response = client.get(url)
     assert response.json == expected
@@ -373,4 +411,71 @@ def test_method_view_post(client):
         },
     }
     response = client.post(url, json=payload)
+    assert response.json == expected
+
+
+def test_func_mixed_annotations(client, url_prefix):
+    url = f"{url_prefix}products/mixed/?cat=1234567890"
+    expected = {"category": "1234567890"}
+    response = client.get(url)
+    assert response.json == expected
+
+
+def test_func_mixed_annotations_bad_min_len(client, url_prefix):
+    url = f"{url_prefix}products/mixed/?cat=12345678"
+    response = client.get(url)
+    expected = {
+        'errors': [
+            {
+                'ctx': {'min_length': 9},
+                'input': '12345678',
+                'loc': ['query', 'cat'],
+                'msg': 'String should have at least 9 characters',
+                'type': 'string_too_short',
+                'url': pydantic_url('string_too_short'),
+            }
+        ]
+    }
+
+    assert response.status_code == 400
+    assert response.json == expected
+
+
+def test_func_mixed_annotations_bad_max_len(client, url_prefix):
+    url = f"{url_prefix}products/mixed/?cat=123456789012"
+    response = client.get(url)
+    expected = {
+        'errors': [
+            {
+                'ctx': {'max_length': 11},
+                'input': '123456789012',
+                'loc': ['query', 'cat'],
+                'msg': 'String should have at most 11 characters',
+                'type': 'string_too_long',
+                'url': pydantic_url('string_too_long'),
+            }
+        ]
+    }
+
+    assert response.status_code == 400
+    assert response.json == expected
+
+
+def test_func_mixed_annotations_bad_pattern(client, url_prefix):
+    url = f"{url_prefix}products/mixed/?cat=aaaaaaaaaa"
+    response = client.get(url)
+    expected = {
+        'errors': [
+            {
+                'ctx': {'pattern': '\\d{10}'},
+                'input': 'aaaaaaaaaa',
+                'loc': ['query', 'cat'],
+                'msg': "String should match pattern '\\d{10}'",
+                'type': 'string_pattern_mismatch',
+                'url': pydantic_url('string_pattern_mismatch'),
+            }
+        ]
+    }
+
+    assert response.status_code == 400
     assert response.json == expected

@@ -49,11 +49,11 @@ def test_header_field(flask_app):
 
 def test_body_field(flask_app):
     with flask_app.test_request_context('/', json={'key': 'value'}):
-        result = flask_tpr_fields.JsonBody().value
+        result = flask_tpr_fields.Body().value
     assert result == {'key': 'value'}
 
 
 def test_body_embed_field(flask_app):
     with flask_app.test_request_context('/', json={'key': {"subkey": "value"}}):
-        result = flask_tpr_fields.JsonBody(alias="key", embed=True).value
+        result = flask_tpr_fields.Body(alias="key", embed=True).value
     assert result == {"subkey": "value"}
