@@ -7,14 +7,16 @@ values and validation using Pydantic models.
 import typing as t
 
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
+
+SessionId = t.Annotated[str, ftr.Cookie(alias="session-id")]
 
 
 @app.route('/items/')
-def get_items(session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id")] = None):
+def get_items(session_id: SessionId = None):
     data = {
         'session_id': session_id,
     }

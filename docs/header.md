@@ -7,14 +7,14 @@ values and validation using Pydantic models.
 import typing as t
 
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/')
-def get_items(auth: t.Annotated[str, flask_tpr.Header(alias="Authorization")] = None):
+def get_items(auth: t.Annotated[str, ftr.Header(alias="Authorization")] = None):
     data = {
         'auth': auth,
     }

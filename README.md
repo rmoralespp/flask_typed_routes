@@ -42,15 +42,21 @@ Example of a simple Flask application using `flask_typed_routes`:
 Create a file `items.py` with:
 
 ```python
+import typing as t
+
+import annotated_types as at
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
+import pydantic
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
+Skip = pydantic.NonNegativeInt # custom Pydantic type
+Limit = t.Annotated[int, at.Ge(1), at.Le(100)] # custom Annotated type
 
 @app.get('/items/<user>/')
-def get_items(user: str, skip: int = 0, limit: int = 10):
+def get_items(user: str, skip: Skip = 0, limit: Limit = 10):
     # Parameters not included in the "path" are automatically treated as "query" parameters.
     data = {
         'user': user,
@@ -105,10 +111,10 @@ Now let's update the `items.py` file with:
 ```python
 import pydantic
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 class Item(pydantic.BaseModel):
@@ -135,20 +141,20 @@ Now let's update the `items.py` file with:
 
 ```python
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
-app_v2 = flask.Blueprint('items', __name__, url_prefix='/v2')
+ftr.FlaskTypedRoutes(app)
+blp = flask.Blueprint('items', __name__, url_prefix='/v2')
 
 
-@app_v2.get('/items/')
+@blp.get('/items/')
 def get_items_v2(skip: int = 0, limit: int = 10, country: str = 'US'):
     data = {'skip': skip, 'limit': limit, 'country': country}
     return flask.jsonify(data)
 
 
-app.register_blueprint(app_v2)
+app.register_blueprint(blp)
 ```
 
 ### Using Flask Class-Based Views
@@ -160,11 +166,10 @@ Now let's update the `items.py` file with:
 ```python
 import flask
 import flask.views
-
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 class UserProducts(flask.views.View):

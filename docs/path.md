@@ -7,11 +7,12 @@ You can validate **Path parameters** in your route by adding standard type hints
 
 ```python
 import typing as t
+
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/<category_id>/<lang>/')
@@ -60,19 +61,18 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
 
 ## Additional validations
 
-You can use Pydantic [types](https://docs.pydantic.dev/latest/concepts/types/) to enforce additional 
-validations on your route parameters.
+You can leverage Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) or define your own custom
+data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types) to apply additional validation to your path parameters.
 
 ```python
 import typing as t
 
 import annotated_types as at
 import flask
-
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/<category_id>/')
@@ -81,25 +81,22 @@ def read_items(category_id: t.Annotated[int, at.Ge(1), at.Le(100)]):
     return flask.jsonify(data)
 ```
 
-Alternatively, you can use the `Path` field, This field is an extension of Pydantic's field, 
+Alternatively, you can use the `Path` field. This field is an extension of Pydantic's [field](https://docs.pydantic.dev/latest/concepts/fields/), 
 offering powerful validation capabilities.
 This flexibility allows you to tailor path parameter validation to your application's specific needs.
-
-!!! warning
-    The `Path` field is not supported aliasing. You must respect the **path name** when using it.
 
 ```python
 import typing as t
 
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/<category_id>/')
-def read_items(category_id: t.Annotated[int, flask_tpr.Path(ge=1, le=100)]):
+def read_items(category_id: t.Annotated[int, ftr.Path(ge=1, le=100)]):
     data = {'category_id': category_id}
     return flask.jsonify(data)
 ```
@@ -108,3 +105,7 @@ def read_items(category_id: t.Annotated[int, flask_tpr.Path(ge=1, le=100)]):
 
 - `category_id` must be an integer between 1 and 100.
 
+## Aliasing
+
+!!! warning
+    Aliases defined in Path type hints will be ignored to maintain consistency with the names specified in the Flask route.
