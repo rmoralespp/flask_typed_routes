@@ -112,15 +112,21 @@
 including <strong>Path, Query, Body, Header, and Cookie</strong> parameters.</p>
 <p>Example of a simple Flask application using <code>flask_typed_routes</code>:</p>
 <p>Create a file <code>items.py</code> with:</p>
-<pre><code class="language-python">import flask
-import flask_typed_routes as flask_tpr
+<pre><code class="language-python">import typing as t
+
+import annotated_types as at
+import flask
+import flask_typed_routes as ftr
+import pydantic
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
+Skip = pydantic.NonNegativeInt # custom Pydantic type
+Limit = t.Annotated[int, at.Ge(1), at.Le(100)] # custom Annotated type
 
 @app.get('/items/&lt;user&gt;/')
-def get_items(user: str, skip: int = 0, limit: int = 10):
+def get_items(user: str, skip: Skip = 0, limit: Limit = 10):
     # Parameters not included in the &quot;path&quot; are automatically treated as &quot;query&quot; parameters.
     data = {
         'user': user,
@@ -160,12 +166,12 @@ You will see the JSON response with the error details because the <code>skip</co
 <h3 id="example-with-pydantic-models">Example with Pydantic Models</h3>
 <p>You can also use Pydantic models to validate request data in Flask routes.
 Now let's update the <code>items.py</code> file with:</p>
-<pre><code class="language-python">import pydantic
-import flask
-import flask_typed_routes as flask_tpr
+<pre><code class="language-python">import flask
+import flask_typed_routes as ftr
+import pydantic
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 class Item(pydantic.BaseModel):
@@ -187,31 +193,30 @@ def update_item(item_id: int, item: Item):
 <p>You can also use <code>flask_typed_routes</code> with Flask Blueprints.</p>
 <p>Now let's update the <code>items.py</code> file with:</p>
 <pre><code class="language-python">import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
-app_v2 = flask.Blueprint('items', __name__, url_prefix='/v2')
+ftr.FlaskTypedRoutes(app)
+blp = flask.Blueprint('items', __name__, url_prefix='/v2')
 
 
-@app_v2.get('/items/')
+@blp.get('/items/')
 def get_items_v2(skip: int = 0, limit: int = 10, country: str = 'US'):
     data = {'skip': skip, 'limit': limit, 'country': country}
     return flask.jsonify(data)
 
 
-app.register_blueprint(app_v2)
+app.register_blueprint(blp)
 </code></pre>
 <h3 id="using-flask-class-based-views">Using Flask Class-Based Views</h3>
 <p>You can also use <code>flask_typed_routes</code> with Flask Class-Based Views.</p>
 <p>Now let's update the <code>items.py</code> file with:</p>
 <pre><code class="language-python">import flask
 import flask.views
-
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 class UserProducts(flask.views.View):
@@ -283,5 +288,5 @@ app.add_url_rule('/orders/&lt;user&gt;/all/', view_func=UserOrders.as_view('user
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-12-05 16:39:02.368578+00:00
+Build Date UTC : 2024-12-05 17:31:32.303032+00:00
 -->

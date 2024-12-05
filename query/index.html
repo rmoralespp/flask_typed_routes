@@ -98,10 +98,10 @@
 <li><strong>Optional:</strong> Declared with default values.</li>
 </ul>
 <pre><code class="language-python">import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 @app.route('/items/')
@@ -143,26 +143,25 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 }
 </code></pre>
 <h2 id="additional-validations">Additional validations</h2>
-<p>You can use Pydantic <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> to enforce additional 
-validations on your query parameters.</p>
+<p>You can leverage Pydantic's custom <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> or define your own custom
+data <a href="https://docs.pydantic.dev/latest/concepts/types/#custom-types">types</a> to apply additional validation to your query parameters.</p>
 <pre><code class="language-python">import typing as t
 
 import annotated_types as at
 import flask
 import pydantic
 
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
+# Custom Types for additional validation combining Pydantic and Annotated
+Needy = t.Annotated[str, at.MinLen(3), at.MaxLen(10)]
+Limit = t.Annotated[int, at.Ge(1), at.Le(100), pydantic.Field(alias=&quot;size&quot;)]
 
 @app.route('/items/')
-def get_items(
-    needy: t.Annotated[str, at.MinLen(3), at.MaxLen(10)],
-    skip: int = 0,
-    limit: t.Annotated[int, at.Ge(1), at.Le(100), pydantic.Field(alias=&quot;size&quot;)] = 100,
-):
+def get_items(needy: Needy, skip: int = 0, limit: Limit = 100):
     data = {
         'needy': needy,
         'skip': skip,
@@ -170,7 +169,7 @@ def get_items(
     }
     return flask.jsonify(data)
 </code></pre>
-<p>Alternatively, you can use the <code>Query</code> field, This field is an extension of Pydantic's field, 
+<p>Alternatively, you can use the <code>Query</code> field. This field is an extension of Pydantic's <a href="https://docs.pydantic.dev/latest/concepts/fields/">field</a>, 
 offering powerful validation capabilities.
 This flexibility allows you to tailor query parameter validation to your application's specific needs.</p>
 <div class="admonition tip">
@@ -181,18 +180,16 @@ the query parameter name in the request.</p>
 <pre><code class="language-python">import typing as t
 
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
+Needy = t.Annotated[str, ftr.Query(min_length=3, max_length=10)]
+Limit = t.Annotated[int, ftr.Query(ge=1, le=100, alias=&quot;size&quot;)]
 
 @app.route('/items/')
-def get_items(
-    needy: t.Annotated[str, flask_tpr.Query(min_length=3, max_length=10)],
-    skip: int = 0,
-    limit: t.Annotated[int, flask_tpr.Query(ge=1, le=100, alias=&quot;size&quot;)] = 100,
-):
+def get_items(needy: Needy, skip: int = 0, limit: Limit = 100):
     data = {
         'needy': needy,
         'skip': skip,
@@ -221,10 +218,10 @@ parameters at once.</p>
 
 import pydantic
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 class QueryParams(pydantic.BaseModel):
@@ -238,7 +235,7 @@ class QueryParams(pydantic.BaseModel):
 @app.get('/orders/&lt;user_id&gt;/')
 def get_orders(
     user_id: int,
-    params: t.Annotated[QueryParams, flask_tpr.Query()]
+    params: t.Annotated[QueryParams, ftr.Query()]
 ):
     data = {'user_id': user_id, &quot;params&quot;: params.model_dump()}
     return flask.jsonify(data)
@@ -246,7 +243,7 @@ def get_orders(
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The <code>Query</code> field can only be directly specified in the <strong>function signature</strong>.
-When using Pydantic models, you must use <strong>Pydantic's fields</strong>.</p>
+When using Pydantic models, you must use <strong>Pydantic's <a href="https://pydantic-docs.helpmanual.io/concepts/fields/">fields</a></strong>.</p>
 </div>
 <p><strong>Example request:</strong> <code>GET ttp://127.0.0.1:5000/orders/233/?status=true</code></p>
 <pre><code class="language-json">{
@@ -266,17 +263,15 @@ field.</p>
 <pre><code class="language-python">import typing as t
 
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
+Tags = t.Annotated[list[str], ftr.Query(alias=&quot;tag&quot;, multi=True)]
 
 @app.get('/users/&lt;user_id&gt;/')
-def get_users(
-    user_id: int,
-    tags: t.Annotated[list[str], flask_tpr.Query(alias=&quot;tag&quot;, multi=True)] = (),
-):
+def get_users(user_id: int, tags: Tags = ()):
     data = {'user_id': user_id, &quot;tags&quot;: tags}
     return flask.jsonify(data)
 </code></pre>

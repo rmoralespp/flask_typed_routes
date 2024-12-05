@@ -186,14 +186,16 @@ def update_item(
 <h3 id="multiple-pydantic-models">Multiple Pydantic Models</h3>
 <p>You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
 <code>Body</code> field with the <code>embed</code> parameter.</p>
+<p>!!! note:
+    This <code>Body</code> field is an extension of Pydantic's <a href="https://pydantic-docs.helpmanual.io/concepts/fields/">field</a></p>
 <pre><code class="language-python">import typing as t
 
 import pydantic
 import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app)
 
 
 class Item(pydantic.BaseModel):
@@ -209,8 +211,8 @@ class User(pydantic.BaseModel):
 @app.post('/users/&lt;user_id&gt;/items/')
 def create_item_by_user(
     user_id: int,
-    item: t.Annotated[Item, flask_tpr.Body(embed=True)],
-    user: t.Annotated[User, flask_tpr.Body(embed=True)],
+    item: t.Annotated[Item, ftr.Body(embed=True)],
+    user: t.Annotated[User, ftr.Body(embed=True)],
 ):
     # Use `Body` with `embed=True` to validate nested specific fields in the request body
     data = {
