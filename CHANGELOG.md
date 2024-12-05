@@ -1,5 +1,9 @@
 ## Releases
 
+### v0.0.6 (2024-12-05)
+
+- **Fix**: Fix deployment issue with the package.
+
 ### v0.0.5 (2024-12-05)
 
 - **Change**: Refactored codebase to improve readability and maintainability.
