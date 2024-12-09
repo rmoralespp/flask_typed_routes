@@ -1,8 +1,8 @@
 import functools
 
-import flask_typed_routes.core as core
-import flask_typed_routes.errors as errors
-import flask_typed_routes.utils as utils
+import flask_typed_routes.core as ftr_core
+import flask_typed_routes.errors as ftr_erros
+import flask_typed_routes.utils as ftr_utils
 
 
 class FlaskTypedRoutes:
@@ -26,7 +26,7 @@ class FlaskTypedRoutes:
 
     def init_app(self, app, /):
         # Register the error handler for the "ValidationError"
-        app.register_error_handler(errors.ValidationError, self.error_handler or errors.handler)
+        app.register_error_handler(ftr_erros.ValidationError, self.error_handler or ftr_erros.handler)
         # Replace the "add_url_rule" method with a wrapper that adds the "typed_route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
@@ -40,9 +40,9 @@ class FlaskTypedRoutes:
 
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
-            path_args = utils.extract_rule_params(rule)
+            path_args = ftr_utils.extract_rule_params(rule)
             if view_func:
-                view = utils.class_based_view(view_func)
+                view = ftr_utils.class_based_view(view_func)
                 if view:  # class-based view
                     verbs = view.methods or ()  # methods defined in the class
                     verbs = (verb for verb in verbs if hasattr(view, verb.lower()))  # implemented methods
@@ -50,11 +50,11 @@ class FlaskTypedRoutes:
                     if verbs:  # implemented methods
                         for verb in verbs:
                             method = getattr(view, verb.lower())
-                            setattr(view, verb.lower(), core.typed_route(method, path_args))
+                            setattr(view, verb.lower(), ftr_core.typed_route(method, path_args))
                     else:  # no implemented methods, use the default "dispatch_request"
-                        view.dispatch_request = core.typed_route(view.dispatch_request, path_args)
+                        view.dispatch_request = ftr_core.typed_route(view.dispatch_request, path_args)
                 else:  # function-based view
-                    view_func = core.typed_route(view_func, path_args)
+                    view_func = ftr_core.typed_route(view_func, path_args)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
