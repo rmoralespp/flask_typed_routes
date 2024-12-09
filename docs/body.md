@@ -2,10 +2,12 @@
 
 To declare a request body, you use Pydantic models with all their power and benefits
 
+By default, the library interprets a Pydantic model used as a type annotation in a function signature as a
+request body model. However, if you only want to validate specific fields in the request body, you can use the
+`Body` Field annotation.
+
 !!! note
-    By default, the library interprets a Pydantic model used as a type annotation in a function signature as a
-    request body model. However, if you only want to validate specific fields in the request body, you can use the
-    `Body()` annotation.
+    This `Body` Field is an extension of Pydantic's [field](https://pydantic-docs.helpmanual.io/concepts/fields/)
 
 Basic Usage of request Body Validation:
 
@@ -114,9 +116,6 @@ def update_item(
 
 You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
 `Body` field with the `embed` parameter.
-
-!!! note
-    This `Body` field is an extension of Pydantic's [field](https://pydantic-docs.helpmanual.io/concepts/fields/)
 
 ```python
 import typing as t
