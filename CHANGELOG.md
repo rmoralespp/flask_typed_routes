@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.7 (2024-12-09)
+
 - **Change**: Use `inspect.get_annotations()` to get function annotations instead of `func.__annotations__`. Python 
   documentation recommends calling this function.
 - **Change**: Internal refactor to improve code.
