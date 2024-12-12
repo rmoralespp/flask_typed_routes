@@ -5,7 +5,7 @@
 
 ## About
 
-**flask_typed_routes** is a `Flask` extension designed to validate requests effortlessly with `Pydantic`.
+**flask_typed_routes** is a `Flask` extension designed to effortlessly validate requests with `Pydantic` based on standard Python type hints.
 
 ## Features
 
