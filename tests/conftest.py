@@ -1,5 +1,6 @@
 import functools
 import typing as t
+import urllib.parse
 
 import annotated_types as at
 import flask
@@ -8,6 +9,10 @@ import pydantic
 import pytest
 
 import flask_typed_routes as ftr
+
+pydantic_url = functools.partial(
+    urllib.parse.urljoin, f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
+)
 
 
 def login_required(func):
@@ -193,6 +198,7 @@ def flask_app_manual():
 
     @api.get('/products/validate/<int:pk>/')
     @ftr.typed_route
+    @login_required
     def get_product_validate(pk: t.Annotated[int, at.Gt(5), at.Lt(100)]):
         return flask.jsonify({"pk": pk})
 

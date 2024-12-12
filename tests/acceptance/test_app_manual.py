@@ -1,6 +1,6 @@
-import tests.acceptance
+import tests.conftest
 
-pydantic_url = tests.acceptance.pydantic_url
+pydantic_url = tests.conftest.pydantic_url
 
 
 def test_validate(client_manual):

@@ -1,8 +1,8 @@
 import pytest
 
-import tests.acceptance
+import tests.conftest
 
-pydantic_url = tests.acceptance.pydantic_url
+pydantic_url = tests.conftest.pydantic_url
 
 
 @pytest.fixture(params=["/", "/bp/"])
