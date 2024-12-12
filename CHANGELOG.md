@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.8 (2024-12-12)
+
 - **Add**: Supports automatic validation for all routes and manual validation for specific routes using decorators.
 - **Change**: The fields provided are now stricter. If is passed an invalid arg, a `InvalidParameterTypeError` will be raised.
 
