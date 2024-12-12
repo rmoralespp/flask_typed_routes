@@ -11,11 +11,13 @@ _TYPED_ROUTE_VALUE = object()
 
 
 class Mode:
+    """Validation mode for typed routes."""
+
     auto = "auto"
     manual = "manual"
 
 
-def typed_route(view_func):
+def typed_route(view_func, /):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
@@ -94,5 +96,5 @@ class FlaskTypedRoutes:
 
         return wrapper
 
-    def is_typed(self, view_func):
+    def is_typed(self, view_func, /):
         return self.mode == Mode.auto or getattr(view_func, _TYPED_ROUTE_ATTR, None) == _TYPED_ROUTE_VALUE
