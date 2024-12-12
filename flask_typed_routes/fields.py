@@ -10,6 +10,8 @@ import inspect
 import flask
 import pydantic.fields
 
+import flask_typed_routes.errors as ftr_errors
+
 Unset = object()
 Undef = pydantic.fields.PydanticUndefined
 
@@ -33,10 +35,16 @@ class Field(abc.ABC):
     __slots__ = ("embed", "multi", "field_info", "annotation", "name")
 
     def __init__(self, *args, embed=False, multi=False, **kwargs):
-        self.embed = embed  # "Body" fields can be embedded
-        self.multi = multi  # "Header", "Cookie" and "Query" fields can have multiple values
+        if embed and self.kind != FieldTypes.body:
+            raise ftr_errors.InvalidParameterTypeError("Only 'Body' fields can be embedded.")
+        if multi and self.kind not in (FieldTypes.header, FieldTypes.cookie, FieldTypes.query):
+            msg = "Only 'Header', 'Cookie' and 'Query' fields can have multiple values."
+            raise ftr_errors.InvalidParameterTypeError(msg)
+
+        self.embed = embed  # `Body` fields can be embedded
+        self.multi = multi  # `Header`, `Cookie` and `Query` fields can have multiple values
         self.field_info = pydantic.fields.Field(*args, **kwargs)
-        # These attributes are set by the `parse_field` utility function
+        # These attributes are set by the `flask_typed_routes.core.parse_field` function
         self.annotation = None
         self.name = None
 

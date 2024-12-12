@@ -5,6 +5,7 @@ import pytest
 import werkzeug.test
 import werkzeug.wrappers
 
+import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 
 
@@ -57,3 +58,15 @@ def test_body_embed_field(flask_app):
     with flask_app.test_request_context('/', json={'key': {"subkey": "value"}}):
         result = ftr_fields.Body(alias="key", embed=True).value
     assert result == {"subkey": "value"}
+
+
+@pytest.mark.parametrize('field_class', [ftr_fields.Path, ftr_fields.Query, ftr_fields.Cookie])
+def test_bad_embed_field(field_class):
+    with pytest.raises(ftr_errors.InvalidParameterTypeError):
+        field_class(embed=True)
+
+
+@pytest.mark.parametrize('field_class', [ftr_fields.Body, ftr_fields.Path])
+def test_bad_multi_field(field_class):
+    with pytest.raises(ftr_errors.InvalidParameterTypeError):
+        field_class(multi=True)

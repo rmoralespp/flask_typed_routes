@@ -64,7 +64,7 @@ def parse_field(name, tp, default_field_class, default_value, /):
         # Respect the name of the path parameter offered by `Flask` routing.
         field.alias = name
     elif ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
-        # When the parameter is a Pydantic model, use alias if 'embed' is True.
+        # When the parameter is a Pydantic model, use alias if `embed` is True.
         field.alias = (field.alias or field.name) if field.embed else None
     else:
         # Otherwise, use the alias if it is set, otherwise use the name.

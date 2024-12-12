@@ -1,5 +1,7 @@
 ## Releases
 
+- **Change**: The fields provided are now stricter. If is passed an invalid arg, a `InvalidParameterTypeError` will be raised.
+
 ### v0.0.7 (2024-12-09)
 
 - **Change**: Use `inspect.get_annotations()` to get function annotations instead of `func.__annotations__`. Python 
