@@ -59,6 +59,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="errors/">Handling errors</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="mode/">Validation Modes</a>
+                  </li>
               </ul>
       </div>
     </div>
@@ -89,13 +91,15 @@
 <a href="https://app.codecov.io/gh/rmoralespp/flask_typed_routes"><img alt="codecov" src="https://codecov.io/gh/rmoralespp/jsonl/branch/main/graph/badge.svg" /></a>
 <a href="https://github.com/rmoralespp/flask_typed_routes/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/rmoralespp/jsonl.svg" /></a></p>
 <h2 id="about">About</h2>
-<p><strong>flask_typed_routes</strong> is a <code>Flask</code> extension designed to effortlessly validate requests with <code>Pydantic</code> based on standard Python type hints.</p>
+<p><strong>flask_typed_routes</strong> is a <code>Flask</code> extension designed to effortlessly validate requests with <code>Pydantic</code> based on
+standard Python type hints.</p>
 <h2 id="features">Features</h2>
 <ul>
-<li>🎯 <strong>Type Safety:</strong> Automatically validates requests based on standard Python type hints.</li>
-<li>🔌 <strong>Easy Integration:</strong> Simple Flask extension for applying validation to Flask routes.</li>
-<li>⚠️ <strong>Error Handling:</strong> Automatically returns meaningful error responses for validation failures.</li>
-<li>✨ <strong>Autocomplete</strong>: Excellent editor integration, offering comprehensive completion across all contexts.</li>
+<li>🎯 <strong>Type Safety:</strong> Automatically validates requests using Python type hints.</li>
+<li>🔌 <strong>Easy Integration:</strong> Simple extension for validating Flask routes.</li>
+<li>⚠️ <strong>Error Handling:</strong> Clear and automatic responses for validation failures.</li>
+<li>✨ <strong>Autocomplete:</strong> Editor integration with comprehensive suggestions.</li>
+<li>⚙️ <strong>Validation Modes:</strong> Supports automatic validation for all routes and manual validation for specific routes using decorators.</li>
 </ul>
 <h2 id="requirements">Requirements</h2>
 <ul>
@@ -122,8 +126,9 @@ import pydantic
 app = flask.Flask(__name__)
 ftr.FlaskTypedRoutes(app)
 
-Skip = pydantic.NonNegativeInt # custom Pydantic type
-Limit = t.Annotated[int, at.Ge(1), at.Le(100)] # custom Annotated type
+Skip = pydantic.NonNegativeInt  # custom Pydantic type
+Limit = t.Annotated[int, at.Ge(1), at.Le(100)]  # custom Annotated type
+
 
 @app.get('/items/&lt;user&gt;/')
 def get_items(user: str, skip: Skip = 0, limit: Limit = 10):
@@ -288,5 +293,5 @@ app.add_url_rule('/orders/&lt;user&gt;/all/', view_func=UserOrders.as_view('user
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2024-12-12 09:22:33.853892+00:00
+Build Date UTC : 2024-12-12 12:48:18.514408+00:00
 -->

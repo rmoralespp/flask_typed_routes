@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/mode/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Validation Modes - flask_typed_routes</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Validation Modes";
+        var mkdocs_page_input_path = "mode.md";
+        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/mode/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> flask_typed_routes
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../path/">Path parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../query/">Query parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../cookie/">Cookie parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../header/">Header parameters</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../body/">Request body</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../errors/">Handling errors</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Validation Modes</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#auto-mode-default">auto Mode (Default)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#key-features-of-auto-mode">Key Features of auto Mode:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example">Example:</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#manual-mode">manual Mode</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#key-features-of-manual-mode">Key Features of manual Mode:</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#how-to-enable-manual-mode">How to Enable manual Mode:</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#summary">Summary</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">flask_typed_routes</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Usage</li>
+      <li class="breadcrumb-item active">Validation Modes</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/mode.md">Edit on flask_typed_routes</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h2 id="validation-modes">Validation Modes</h2>
+<p>The library provides two modes of operation for request validation: <code>auto</code> and <code>manual</code>. These modes determine how
+validation is applied to endpoints.</p>
+<h3 id="auto-mode-default"><code>auto</code> Mode (Default)</h3>
+<p>In <code>auto</code> mode, the library automatically validates the requests of all endpoints that have type hints in their function
+signatures. This mode simplifies development by eliminating the need for explicit configuration, ensuring that all typed
+routes are validated without additional effort.</p>
+<h4 id="key-features-of-auto-mode">Key Features of <code>auto</code> Mode:</h4>
+<ul>
+<li>Automatically validates all routes with type hints.</li>
+<li>Minimal configuration required.</li>
+<li>Suitable for most use cases where automatic validation is preferred.</li>
+</ul>
+<h4 id="example">Example:</h4>
+<pre><code class="language-python">import typing as t
+
+import annotated_types as at
+import flask
+import flask_typed_routes as ftr
+
+api = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(api)  # Default mode is 'auto'
+
+
+@api.get('/products/&lt;int:product_id&gt;/')
+def get_product(pk: t.Annotated[int, at.Gt(10)]):
+    # The 'product_id' parameter is automatically validated as an integer.
+    return flask.jsonify({&quot;product_id&quot;: pk})
+
+
+@api.get('/orders/&lt;int:order_id&gt;/')
+def get_order(order_id: t.Annotated[int, at.Gt(10)]):
+    # The 'order_id' parameter is also automatically validated.
+    return flask.jsonify({&quot;order_id&quot;: order_id})
+</code></pre>
+<p>In this example, both <code>get_product</code> and <code>get_order</code> endpoints automatically validate the incoming parameters based on
+their type hints.</p>
+<hr />
+<h3 id="manual-mode"><code>manual</code> Mode</h3>
+<p>In <code>manual</code> mode, the user explicitly specifies which routes should be validated by applying the <code>typed_route</code>
+decorator. This mode provides greater control, allowing developers to selectively enable validation only where needed.</p>
+<h4 id="key-features-of-manual-mode">Key Features of <code>manual</code> Mode:</h4>
+<ul>
+<li>Validation is applied only to routes with the <code>typed_route</code> decorator.</li>
+<li>Offers granular control over validation.</li>
+<li>Useful for advanced use cases where not all routes require validation.</li>
+</ul>
+<h4 id="how-to-enable-manual-mode">How to Enable <code>manual</code> Mode:</h4>
+<p>Set the mode to <code>manual</code> when initializing the library:</p>
+<pre><code class="language-python">import typing as t
+
+import annotated_types as at
+import flask
+
+import flask_typed_routes as ftr
+
+api = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(api, mode=ftr.Mode.manual)
+
+
+@api.get('/products/&lt;int:pk&gt;/')
+@ftr.typed_route  # Validation is explicitly enabled for this route.
+def get_product(pk: t.Annotated[int, at.Gt(10)]):
+    # The 'pk' parameter is validated as an integer.
+    return flask.jsonify({&quot;pk&quot;: pk})
+
+
+@api.get('/orders/&lt;int:order_id&gt;/')
+def get_order(order_id: t.Annotated[int, at.Gt(10)]):
+    # The 'order_id' parameter is NOT validated.
+    return flask.jsonify({&quot;order_id&quot;: order_id})
+</code></pre>
+<p>In this example:</p>
+<ul>
+<li>The <code>get_product</code> endpoint validates the <code>pk</code> parameter because the <code>typed_route</code> decorator is applied.</li>
+<li>The <code>get_order</code> endpoint does not validate the <code>order_id</code> parameter because it lacks the decorator.</li>
+</ul>
+<hr />
+<h3 id="summary">Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Validation Scope</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auto</code></td>
+<td>All endpoints with type hints</td>
+<td>Default, for seamless validation</td>
+</tr>
+<tr>
+<td><code>manual</code></td>
+<td>Only endpoints with <code>typed_route</code> decorator</td>
+<td>Advanced, for selective validation</td>
+</tr>
+</tbody>
+</table>
+<p>Choose the mode that best suits your project's needs. For most cases, <code>auto</code> mode provides a hassle-free experience,
+while <code>manual</code> mode allows for precise control over validation behavior.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../errors/" class="btn btn-neutral float-left" title="Handling errors"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/rmoralespp/flask_typed_routes" class="fa fa-code-fork" style="color: #fcfcfc"> flask_typed_routes</a>
+        </span>
+    
+    
+      <span><a href="../errors/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
