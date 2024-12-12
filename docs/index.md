@@ -5,14 +5,16 @@
 
 ## About
 
-**flask_typed_routes** is a `Flask` extension designed to effortlessly validate requests with `Pydantic` based on standard Python type hints.
+**flask_typed_routes** is a `Flask` extension designed to effortlessly validate requests with `Pydantic` based on
+standard Python type hints.
 
 ## Features
 
-- 🎯 **Type Safety:** Automatically validates requests based on standard Python type hints.
-- 🔌 **Easy Integration:** Simple Flask extension for applying validation to Flask routes.
-- ⚠️ **Error Handling:** Automatically returns meaningful error responses for validation failures.
-- ✨ **Autocomplete**: Excellent editor integration, offering comprehensive completion across all contexts.
+- 🎯 **Type Safety:** Automatically validates requests using Python type hints.
+- 🔌 **Easy Integration:** Simple extension for validating Flask routes.
+- ⚠️ **Error Handling:** Clear and automatic responses for validation failures.
+- ✨ **Autocomplete:** Editor integration with comprehensive suggestions.
+- ⚙️ **Validation Modes:** Supports automatic validation for all routes and manual validation for specific routes using decorators.
 
 ## Requirements
 
@@ -48,8 +50,9 @@ import pydantic
 app = flask.Flask(__name__)
 ftr.FlaskTypedRoutes(app)
 
-Skip = pydantic.NonNegativeInt # custom Pydantic type
-Limit = t.Annotated[int, at.Ge(1), at.Le(100)] # custom Annotated type
+Skip = pydantic.NonNegativeInt  # custom Pydantic type
+Limit = t.Annotated[int, at.Ge(1), at.Le(100)]  # custom Annotated type
+
 
 @app.get('/items/<user>/')
 def get_items(user: str, skip: Skip = 0, limit: Limit = 10):
@@ -176,12 +179,12 @@ class UserProducts(flask.views.View):
 
 
 class UserOrders(flask.views.MethodView):
-    
+
     def get(self, user: str, skip: int = 0, limit: int = 10):
         data = {'user': user, 'skip': skip, 'limit': limit}
         return flask.jsonify(data)
 
- 
+
 app.add_url_rule('/products/<user>/all/', view_func=UserProducts.as_view('user_products'))
 app.add_url_rule('/orders/<user>/all/', view_func=UserOrders.as_view('user_orders'))
 ```

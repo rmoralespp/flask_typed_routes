@@ -12,10 +12,11 @@
 
 ## Features
 
-- 🎯 **Type Safety:** Automatically validates requests based on standard Python type hints.
-- 🔌 **Easy Integration:** Simple Flask extension for applying validation to Flask routes.
-- ⚠️ **Error Handling:** Automatically returns meaningful error responses for validation failures.
-- ✨ **Autocomplete**: Excellent editor integration, offering comprehensive completion across all contexts.
+- 🎯 **Type Safety:** Automatically validates requests using Python type hints.
+- 🔌 **Easy Integration:** Simple extension for validating Flask routes.
+- ⚠️ **Error Handling:** Clear and automatic responses for validation failures.
+- ✨ **Autocomplete:** Editor integration with comprehensive suggestions.
+- ⚙️ **Validation Modes:** Supports automatic validation for all routes and manual validation for specific routes using decorators.
 
 
 ## Requirements

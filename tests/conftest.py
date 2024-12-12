@@ -7,7 +7,7 @@ import flask.views
 import pydantic
 import pytest
 
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 
 def login_required(func):
@@ -48,9 +48,9 @@ class QueryParams(pydantic.BaseModel):
 
 
 @pytest.fixture(scope='package')
-def flask_app():
+def flask_app_auto():
     api = flask.Flask(__name__)
-    flask_tpr.FlaskTypedRoutes(api)
+    ftr.FlaskTypedRoutes(api)
     # Blueprint to test the blueprint registration
     bp = flask.Blueprint('bp', __name__, url_prefix='/bp')
 
@@ -66,11 +66,11 @@ def flask_app():
         return flask.jsonify({"category": category, "product_id": product_id})
 
     def func_query(
-        status1: t.Annotated[str, flask_tpr.Query(default='active')],  # Testing default value for query parameter
+        status1: t.Annotated[str, ftr.Query(default='active')],  # Testing default value for query parameter
         status2: str = 'active',  # Testing default value for query parameter
         skip: int = 0,
         limit: pydantic.NonNegativeInt = 10,
-        tags: t.Annotated[list[str], flask_tpr.Query(alias="tag", multi=True)] = None,
+        tags: t.Annotated[list[str], ftr.Query(alias="tag", multi=True)] = None,
     ):
         return flask.jsonify(
             {
@@ -82,18 +82,18 @@ def flask_app():
             }
         )
 
-    def func_query_model(query: t.Annotated[QueryParams, flask_tpr.Query()]):
+    def func_query_model(query: t.Annotated[QueryParams, ftr.Query()]):
         return flask.jsonify(query.model_dump())
 
     def func_header(
-        auth: t.Annotated[str, flask_tpr.Header(alias="Authorization", pattern=r"Bearer \w+")] = None,
-        tags: t.Annotated[list[str], flask_tpr.Header(alias="X-Tag", multi=True)] = None,
+        auth: t.Annotated[str, ftr.Header(alias="Authorization", pattern=r"Bearer \w+")] = None,
+        tags: t.Annotated[list[str], ftr.Header(alias="X-Tag", multi=True)] = None,
     ):
         return flask.jsonify({"auth": auth, "tags": tags})
 
     def func_cookie(
-        session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id", max_length=4)] = None,
-        tags: t.Annotated[list[str], flask_tpr.Cookie(alias="tag", multi=True)] = None,
+        session_id: t.Annotated[str, ftr.Cookie(alias="session-id", max_length=4)] = None,
+        tags: t.Annotated[list[str], ftr.Cookie(alias="tag", multi=True)] = None,
     ):
         return flask.jsonify({"session_id": session_id, "tags": tags})
 
@@ -101,14 +101,14 @@ def flask_app():
         return flask.jsonify(product.model_dump())
 
     def func_body_field(
-        product_id: t.Annotated[int, flask_tpr.Body(alias='id')],
-        name: t.Annotated[str, flask_tpr.Body()],
+        product_id: t.Annotated[int, ftr.Body(alias='id')],
+        name: t.Annotated[str, ftr.Body()],
     ):
         return flask.jsonify({"product_id": product_id, "name": name})
 
     def func_body_embed(
-        product: t.Annotated[Product, flask_tpr.Body(embed=True)],
-        user: t.Annotated[User, flask_tpr.Body(embed=True)],
+        product: t.Annotated[Product, ftr.Body(embed=True)],
+        user: t.Annotated[User, ftr.Body(embed=True)],
     ):
         return flask.jsonify({"product": product.model_dump(), "user": user.model_dump()})
 
@@ -121,8 +121,8 @@ def flask_app():
         product: Product,
         skip: int = 0,
         limit: int = 10,
-        auth: t.Annotated[str, flask_tpr.Header(alias="Authorization")] = None,
-        session_id: t.Annotated[str, flask_tpr.Cookie(alias="session-id")] = None,
+        auth: t.Annotated[str, ftr.Header(alias="Authorization")] = None,
+        session_id: t.Annotated[str, ftr.Cookie(alias="session-id")] = None,
     ):
         result = {
             "category": category,
@@ -187,8 +187,30 @@ def flask_app():
 
 
 @pytest.fixture(scope='package')
-def client(flask_app):
-    return flask_app.test_client()
+def flask_app_manual():
+    api = flask.Flask(__name__)
+    ftr.FlaskTypedRoutes(api, mode=ftr.Mode.manual)
+
+    @api.get('/products/validate/<int:pk>/')
+    @ftr.typed_route
+    def get_product_validate(pk: t.Annotated[int, at.Gt(5), at.Lt(100)]):
+        return flask.jsonify({"pk": pk})
+
+    @api.get('/products/no-validate/<int:pk>/')
+    def get_product_no_validate(pk: t.Annotated[int, at.Gt(5), at.Lt(100)]):
+        return flask.jsonify({"product_id": pk})
+
+    return api
+
+
+@pytest.fixture(scope='package')
+def client_auto(flask_app_auto):
+    return flask_app_auto.test_client()
+
+
+@pytest.fixture(scope='package')
+def client_manual(flask_app_manual):
+    return flask_app_manual.test_client()
 
 
 # Forward reference Model for testing

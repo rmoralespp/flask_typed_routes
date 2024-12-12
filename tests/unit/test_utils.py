@@ -169,8 +169,8 @@ def test_class_based_view(view, expected):
         (lambda: None, "unit.test_utils.<lambda>"),
         (MyClass.my_staticmethod, "unit.test_utils.MyClass.my_staticmethod"),
         (MyClass.my_staticmethod, "unit.test_utils.MyClass.my_staticmethod"),
-        (MyClass.my_classmethod, "unit.test_utils.MyClass.my_classmethod")
-    ]
+        (MyClass.my_classmethod, "unit.test_utils.MyClass.my_classmethod"),
+    ],
 )
 def test_get_func_path(func, expected):
     assert ftr_utils.get_func_path(func) == expected

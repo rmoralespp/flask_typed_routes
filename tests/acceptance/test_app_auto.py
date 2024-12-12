@@ -1,8 +1,8 @@
-import functools
-import urllib.parse
-
-import pydantic.version
 import pytest
+
+import tests.acceptance
+
+pydantic_url = tests.acceptance.pydantic_url
 
 
 @pytest.fixture(params=["/", "/bp/"])
@@ -10,28 +10,23 @@ def url_prefix(request):
     return request.param
 
 
-pydantic_url = functools.partial(
-    urllib.parse.urljoin, f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
-)
-
-
-def test_non_typed_view(client, url_prefix):
+def test_non_typed_view(client_auto, url_prefix):
     url = f"{url_prefix}products/123/"
     expected = {'pk': 123}
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_path(client, url_prefix):
+def test_path(client_auto, url_prefix):
     url = f"{url_prefix}products/path/foo/90/"
     expected = {'category': 'foo', 'product_id': 90}
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_path_bad_less_than(client, url_prefix):
+def test_path_bad_less_than(client_auto, url_prefix):
     url = f"{url_prefix}products/path/foo/123/"
-    response = client.get(url)
+    response = client_auto.get(url)
     expected = {
         'errors': [
             {
@@ -49,9 +44,9 @@ def test_path_bad_less_than(client, url_prefix):
     assert response.json == expected
 
 
-def test_path_bad_greater_than(client, url_prefix):
+def test_path_bad_greater_than(client_auto, url_prefix):
     url = f"{url_prefix}products/path/foo/1/"
-    response = client.get(url)
+    response = client_auto.get(url)
     expected = {
         'errors': [
             {
@@ -68,7 +63,7 @@ def test_path_bad_greater_than(client, url_prefix):
     assert response.json == expected
 
 
-def test_query(client, url_prefix):
+def test_query(client_auto, url_prefix):
     url = f"{url_prefix}products/query/?tag=foo&tag=bar"
     expected = {
         'limit': 10,
@@ -77,11 +72,11 @@ def test_query(client, url_prefix):
         "status1": "active",
         "status2": "active",
     }
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_query_bad_limit(client, url_prefix):
+def test_query_bad_limit(client_auto, url_prefix):
     url = f"{url_prefix}products/query/?limit=-1"
     expected = {
         'errors': [
@@ -95,20 +90,20 @@ def test_query_bad_limit(client, url_prefix):
             }
         ]
     }
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_query_model(client, url_prefix):
+def test_query_model(client_auto, url_prefix):
     url = f"{url_prefix}products/query/model/"
     expected = {'extra_field': 'Extra field', 'limit': 10, 'skip': 0, 'sort_by': 'id'}
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_query_bad(client, url_prefix):
+def test_query_bad(client_auto, url_prefix):
     url = f"{url_prefix}products/query/?tag=foo&tag=bar&limit=bad"
-    response = client.get(url)
+    response = client_auto.get(url)
     expected = {
         'errors': [
             {
@@ -125,7 +120,7 @@ def test_query_bad(client, url_prefix):
     assert response.json == expected
 
 
-def test_header(client, url_prefix):
+def test_header(client_auto, url_prefix):
     url = f"{url_prefix}products/header/"
     expected = {'auth': 'Bearer token', 'tags': ['foo, bar']}
     headers = [
@@ -133,11 +128,11 @@ def test_header(client, url_prefix):
         ("X-Tag", "foo"),
         ("X-Tag", "bar"),
     ]
-    response = client.get(url, headers=headers)
+    response = client_auto.get(url, headers=headers)
     assert response.json == expected
 
 
-def test_header_bad(client, url_prefix):
+def test_header_bad(client_auto, url_prefix):
     url = f"{url_prefix}products/header/"
     headers = [
         ("Authorization", 123),
@@ -154,21 +149,21 @@ def test_header_bad(client, url_prefix):
             }
         ]
     }
-    response = client.get(url, headers=headers)
+    response = client_auto.get(url, headers=headers)
     assert response.status_code == 400
     assert response.json == expected
 
 
-def test_cookie(client, url_prefix):
+def test_cookie(client_auto, url_prefix):
     url = f"{url_prefix}products/cookie/"
     expected = {'session_id': '123', 'tags': ['foo, bar']}  # Fixed: The `tags` value is wrong
-    client.set_cookie("session-id", "123", path=url)
-    client.set_cookie("tag", 'foo, bar', path=url)
-    response = client.get(url)
+    client_auto.set_cookie("session-id", "123", path=url)
+    client_auto.set_cookie("tag", 'foo, bar', path=url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_cookie_bad(client, url_prefix):
+def test_cookie_bad(client_auto, url_prefix):
     url = f"{url_prefix}products/cookie/"
     expected = {
         'errors': [
@@ -182,13 +177,13 @@ def test_cookie_bad(client, url_prefix):
             }
         ]
     }
-    client.set_cookie("session-id", "12345", path=url)
-    response = client.get(url)
+    client_auto.set_cookie("session-id", "12345", path=url)
+    response = client_auto.get(url)
     assert response.status_code == 400
     assert response.json == expected
 
 
-def test_body_model(client, url_prefix):
+def test_body_model(client_auto, url_prefix):
     url = f"{url_prefix}products/body/model/"
     payload = {"id": 123, "name": "foo", "price": 1.23, "stock": 42, "category": "bar"}
     expected = {
@@ -199,11 +194,11 @@ def test_body_model(client, url_prefix):
         'category': 'bar',
         'description': None,
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.json == expected
 
 
-def test_body_model_bad(client, url_prefix):
+def test_body_model_bad(client_auto, url_prefix):
     url = f"{url_prefix}products/body/model/"
     payload = {"id": 123, "name": "foo", "price": "fob", "stock": 42, "category": 42}
     expected = {
@@ -224,20 +219,20 @@ def test_body_model_bad(client, url_prefix):
             },
         ]
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.status_code == 400
     assert response.json == expected
 
 
-def test_body_field(client, url_prefix):
+def test_body_field(client_auto, url_prefix):
     url = f"{url_prefix}products/body/field/"
     payload = {"id": 123, "name": "foo"}
     expected = {'product_id': 123, 'name': 'foo'}
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.json == expected
 
 
-def test_body_field_bad(client, url_prefix):
+def test_body_field_bad(client_auto, url_prefix):
     url = f"{url_prefix}products/body/field/"
     payload = {"id": "fob", "name": 42}
     expected = {
@@ -258,12 +253,12 @@ def test_body_field_bad(client, url_prefix):
             },
         ]
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.status_code == 400
     assert response.json == expected
 
 
-def test_body_embed(client, url_prefix):
+def test_body_embed(client_auto, url_prefix):
     url = f"{url_prefix}products/body/embed/"
     payload = {
         'product': {"id": 123, "name": "foo", "price": 1.23, "stock": 42, "category": "bar"},
@@ -285,11 +280,11 @@ def test_body_embed(client, url_prefix):
             'username': 'baz',
         },
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.json == expected
 
 
-def test_body_embed_bad(client, url_prefix):
+def test_body_embed_bad(client_auto, url_prefix):
     url = f"{url_prefix}products/body/embed/"
     payload = {
         'product': {"id": 123, "name": "foo", "price": "fob", "stock": 42, "category": 42},
@@ -334,12 +329,12 @@ def test_body_embed_bad(client, url_prefix):
             },
         ]
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.status_code == 400
     assert response.json == expected
 
 
-def test_body_forward_refs(client, url_prefix):
+def test_body_forward_refs(client_auto, url_prefix):
     url = f"{url_prefix}products/body/forward-refs/"
     payload = {
         'pk': 123,
@@ -349,11 +344,11 @@ def test_body_forward_refs(client, url_prefix):
         'pk': 123,
         'related': {'pk': 42, 'related': None},
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.json == expected
 
 
-def test_func_all_params(client, url_prefix):
+def test_func_all_params(client_auto, url_prefix):
     url = f"{url_prefix}products/all/foo/123/"
     payload = {
         'id': 123,
@@ -379,19 +374,19 @@ def test_func_all_params(client, url_prefix):
     }
 
     headers = {"Authorization": "Bearer token"}
-    client.set_cookie("session-id", "123", path=url)
-    response = client.post(url, json=payload, headers=headers)
+    client_auto.set_cookie("session-id", "123", path=url)
+    response = client_auto.post(url, json=payload, headers=headers)
     assert response.json == expected
 
 
 @pytest.mark.parametrize("url", ["/views/products/foo/", "/method_views/products/foo/"])
-def test_view_get(client, url):
+def test_view_get(client_auto, url):
     expected = {'category': 'foo', 'limit': 10, 'skip': 0}
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_method_view_post(client):
+def test_method_view_post(client_auto):
     url = "/method_views/products/foo/"
     payload = {
         'id': 123,
@@ -410,20 +405,20 @@ def test_method_view_post(client):
             'stock': 42,
         },
     }
-    response = client.post(url, json=payload)
+    response = client_auto.post(url, json=payload)
     assert response.json == expected
 
 
-def test_func_mixed_annotations(client, url_prefix):
+def test_func_mixed_annotations(client_auto, url_prefix):
     url = f"{url_prefix}products/mixed/?cat=1234567890"
     expected = {"category": "1234567890"}
-    response = client.get(url)
+    response = client_auto.get(url)
     assert response.json == expected
 
 
-def test_func_mixed_annotations_bad_min_len(client, url_prefix):
+def test_func_mixed_annotations_bad_min_len(client_auto, url_prefix):
     url = f"{url_prefix}products/mixed/?cat=12345678"
-    response = client.get(url)
+    response = client_auto.get(url)
     expected = {
         'errors': [
             {
@@ -441,9 +436,9 @@ def test_func_mixed_annotations_bad_min_len(client, url_prefix):
     assert response.json == expected
 
 
-def test_func_mixed_annotations_bad_max_len(client, url_prefix):
+def test_func_mixed_annotations_bad_max_len(client_auto, url_prefix):
     url = f"{url_prefix}products/mixed/?cat=123456789012"
-    response = client.get(url)
+    response = client_auto.get(url)
     expected = {
         'errors': [
             {
@@ -461,9 +456,9 @@ def test_func_mixed_annotations_bad_max_len(client, url_prefix):
     assert response.json == expected
 
 
-def test_func_mixed_annotations_bad_pattern(client, url_prefix):
+def test_func_mixed_annotations_bad_pattern(client_auto, url_prefix):
     url = f"{url_prefix}products/mixed/?cat=aaaaaaaaaa"
-    response = client.get(url)
+    response = client_auto.get(url)
     expected = {
         'errors': [
             {
