@@ -101,7 +101,7 @@ def parse_route(view_func, view_func_path, view_path_args, /):
         yield parse_field(name, annotation, field_class, param.default)
 
 
-def typed_route(view_func, rule_params, /):
+def route(view_func, rule_params, /):
     """
     A decorator that validates the request parameters using Pydantic models.
 

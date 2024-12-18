@@ -23,7 +23,7 @@ def typed_route(view_func, /):
     validation using type hints.
 
     :param view_func: Flask view function
-    :rtype: view_func
+    :return: Flask view function
     """
 
     setattr(view_func, _TYPED_ROUTE_ATTR, _TYPED_ROUTE_VALUE)
@@ -83,14 +83,14 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view, verb.lower())
                             if self.is_typed(method):
-                                setattr(view, verb.lower(), ftr_core.typed_route(method, path_args))
+                                setattr(view, verb.lower(), ftr_core.route(method, path_args))
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view.dispatch_request):
-                        view.dispatch_request = ftr_core.typed_route(view.dispatch_request, path_args)
+                        view.dispatch_request = ftr_core.route(view.dispatch_request, path_args)
 
                 elif self.is_typed(view_func):  # function-based view
-                    view_func = ftr_core.typed_route(view_func, path_args)
+                    view_func = ftr_core.route(view_func, path_args)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
