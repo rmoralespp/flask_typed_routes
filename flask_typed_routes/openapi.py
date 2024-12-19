@@ -7,6 +7,14 @@ import flask_typed_routes.fields as ftr_fields
 
 ref_template = "#/components/schemas/{model}"
 
+parameter_types = (
+    ftr_fields.FieldTypes.path,
+    ftr_fields.FieldTypes.query,
+    ftr_fields.FieldTypes.cookie,
+    ftr_fields.FieldTypes.header,
+)
+parameter_types = frozenset(parameter_types)
+
 
 def get_parameters(data, fields):
     """
@@ -20,12 +28,6 @@ def get_parameters(data, fields):
     required = set(data.get("required", ()))
     definitions = data.get("$defs", dict())
     schemas = dict()
-    kinds = (
-        ftr_fields.FieldTypes.path,
-        ftr_fields.FieldTypes.query,
-        ftr_fields.FieldTypes.cookie,
-        ftr_fields.FieldTypes.header,
-    )
     for name, schema in data["properties"].items():
         if "$ref" in schema:
             reference = schema["$ref"].split("/")[-1]  # basename
@@ -39,7 +41,7 @@ def get_parameters(data, fields):
 
     params = collections.defaultdict(dict)
     for field in fields:
-        if field.kind in kinds:
+        if field.kind in parameter_types:
             slot = params[field.kind]
 
             if issubclass(field.annotation, pydantic.BaseModel):
