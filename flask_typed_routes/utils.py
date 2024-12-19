@@ -65,10 +65,10 @@ def pretty_errors(fields, errors, /):
     :rtype: list[dict]
     """
 
-    aliases = {(field.alias or field.name): field for field in fields}
+    locators = {(field.locator): field for field in fields}
     for error in errors:
         loc = list(error["loc"])
-        field = aliases[loc[0]]
+        field = locators[loc[0]]
         if field.alias:
             # If the field has an alias, use "kind", "alias", and the rest of the location.
             loc = [field.kind, field.alias] + loc[1:]

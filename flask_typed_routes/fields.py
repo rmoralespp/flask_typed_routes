@@ -49,6 +49,10 @@ class Field(abc.ABC):
         self.name = None
 
     @property
+    def locator(self):
+        return self.alias or self.name
+
+    @property
     @abc.abstractmethod
     def value(self):
         raise NotImplementedError

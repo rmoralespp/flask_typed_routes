@@ -26,7 +26,7 @@ def get_request_values(fields, /):
     for field in fields:
         value = field.value  # use variable to avoid multiple calls to the property
         if value is not ftr_fields.Unset:
-            result[field.alias or field.name] = value
+            result[field.locator] = value
     return result
 
 
@@ -65,10 +65,10 @@ def parse_field(name, tp, default_field_class, default_value, /):
         field.alias = name
     elif ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
         # When the parameter is a Pydantic model, use alias if `embed` is True.
-        field.alias = (field.alias or field.name) if field.embed else None
+        field.alias = field.locator if field.embed else None
     else:
         # Otherwise, use the alias if it is set, otherwise use the name.
-        field.alias = field.alias or field.name
+        field.alias = field.locator
     return field
 
 
