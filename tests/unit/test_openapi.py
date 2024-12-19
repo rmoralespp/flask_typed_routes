@@ -17,7 +17,7 @@ b.annotation = str
 
 class QueryParams(pydantic.BaseModel):
     inner: t.Annotated[str, pydantic.Field(alias="inner-alias", max_length=3)]
-    outer: t.Annotated[str, pydantic.Field(title="Outer Title", max_length=3)]
+    outer: t.Annotated[str, pydantic.Field(title="Outer Title", max_length=3)] = "default"
 
 
 # Embedded Query field
@@ -57,8 +57,8 @@ def test_get_parameters():
             'description': 'Outer Title',
             'in': 'query',
             'name': 'outer',
-            'required': True,
-            'schema': {'maxLength': 3, 'type': 'string'},
+            'required': False,
+            'schema': {'maxLength': 3, 'type': 'string', 'default': 'default'},
         },
     )
     result = tuple(ftr_openapi.get_parameters(data, fields))
