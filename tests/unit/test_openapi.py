@@ -1,18 +1,15 @@
+import inspect
 import typing as t
 
 import pydantic
+import pytest
 
+import flask_typed_routes.core as ftr_core
+import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.openapi as ftr_openapi
 
-# Path field
-a = ftr_fields.Path()
-a.name = "a"
-a.annotation = str
-# Query field
-b = ftr_fields.Query()
-b.name = "b"
-b.annotation = str
+nondefault = inspect.Parameter.empty
 
 
 class QueryParams(pydantic.BaseModel):
@@ -20,16 +17,32 @@ class QueryParams(pydantic.BaseModel):
     outer: t.Annotated[str, pydantic.Field(title="Outer Title", max_length=3)] = "default"
 
 
-# Embedded Query field
-c = ftr_fields.Query()
-c.name = "c"
-c.annotation = QueryParams
+class Client(pydantic.BaseModel):
+    name: str
+    age: int
+
+
+class User(pydantic.BaseModel):
+    email: str
+
+
+path_field = ftr_core.parse_field("a", str, ftr_fields.Path, nondefault)
+query_field = ftr_core.parse_field("b", str, ftr_fields.Query, nondefault)
+embed_query_field = ftr_core.parse_field("c", QueryParams, ftr_fields.Query, nondefault)
+single_body_field = ftr_core.parse_field("d", str, ftr_fields.Body, None)
+body_field = ftr_core.parse_field("e", Client, ftr_fields.Body, nondefault)
+embed_body_field1 = ftr_core.parse_field(
+    "f", t.Annotated[User, ftr_fields.Body(embed=True)], ftr_fields.Body, nondefault
+)
+embed_body_field2 = ftr_core.parse_field(
+    "g", t.Annotated[User, ftr_fields.Body(embed=True)], ftr_fields.Body, nondefault
+)
 
 
 def test_get_parameters():
     model = pydantic.create_model("model", a=(str, ...), b=(str, ...), c=(QueryParams, ...))
     data = model.model_json_schema(ref_template=ftr_openapi.ref_template)
-    fields = [a, b, c]
+    fields = [path_field, query_field, embed_query_field]
 
     expected = (
         {
@@ -63,3 +76,133 @@ def test_get_parameters():
     )
     result = tuple(ftr_openapi.get_parameters(data, fields))
     assert result == expected
+
+
+def test_get_request_body_body_field():
+    model = pydantic.create_model(
+        "model",
+        e=(Client, ...),
+    )
+    data = model.model_json_schema(ref_template=ftr_openapi.ref_template)
+    fields = [body_field]
+
+    expected = {
+        'content': {
+            'application/json': {
+                'schema': {'$ref': '#/components/schemas/Client'},
+            },
+        },
+        'description': 'Request Body',
+        'required': True,
+    }
+    result = ftr_openapi.get_request_body(data, fields)
+    assert result == expected
+
+
+def test_get_request_body_embed_body_field():
+    model = pydantic.create_model(
+        "model",
+        d=(str, None),
+        f=(User, ...),
+        g=(Client, ...),
+    )
+    data = model.model_json_schema(ref_template=ftr_openapi.ref_template)
+    fields = [single_body_field, embed_body_field1, embed_body_field2]
+
+    expected = {
+        'content': {
+            'application/json': {
+                'schema': {
+                    "type": "object",
+                    "properties": {
+                        'd': {'type': 'string', 'description': 'D', 'default': None},
+                        'f': {'$ref': '#/components/schemas/User'},
+                        'g': {'$ref': '#/components/schemas/Client'},
+                    },
+                    "required": ['f', 'g'],
+                },
+            },
+        },
+        'description': 'Request Body',
+        'required': True,
+    }
+    result = ftr_openapi.get_request_body(data, fields)
+    assert result == expected
+
+
+def test_request_body_multiple_body_parameters():
+    model = pydantic.create_model(
+        "model",
+        d=(str, ...),
+        e=(Client, ...),
+    )
+    data = model.model_json_schema(ref_template=ftr_openapi.ref_template)
+    fields = [single_body_field, body_field]
+
+    with pytest.raises(ftr_errors.InvalidParameterTypeError):
+        _ = ftr_openapi.get_request_body(data, fields)
+
+
+def test_request_body_duplicate_field():
+    model = pydantic.create_model(
+        "model",
+        d=(str, ...),
+        e=(str, ...),
+    )
+    data = model.model_json_schema(ref_template=ftr_openapi.ref_template)
+    fields = [single_body_field, single_body_field]
+
+    with pytest.raises(ftr_errors.InvalidParameterTypeError):
+        _ = ftr_openapi.get_request_body(data, fields)
+
+
+def test_get_request_body_refs_yields_single_ref():
+    request_body = {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Example"}}}}
+    result = list(ftr_openapi.get_request_body_refs(request_body))
+    assert result == ["#/components/schemas/Example"]
+
+
+def test_get_request_body_refs_yields_multiple_refs():
+    request_body = {
+        "content": {
+            "application/json": {
+                "schema": {
+                    "properties": {
+                        "field1": {"$ref": "#/components/schemas/Example1"},
+                        "field2": {"$ref": "#/components/schemas/Example2"},
+                    }
+                }
+            }
+        }
+    }
+    result = list(ftr_openapi.get_request_body_refs(request_body))
+    assert result == ["#/components/schemas/Example1", "#/components/schemas/Example2"]
+
+
+def test_get_request_body_refs_handles_no_refs():
+    request_body = {
+        "content": {
+            "application/json": {
+                "schema": {"properties": {"field1": {"type": "string"}, "field2": {"type": "integer"}}}
+            }
+        }
+    }
+    result = list(ftr_openapi.get_request_body_refs(request_body))
+    assert result == []
+
+
+def test_get_request_body_refs_handles_mixed_refs():
+    request_body = {
+        "content": {
+            "application/json": {
+                "schema": {
+                    "properties": {
+                        "field1": {"$ref": "#/components/schemas/Example1"},
+                        "field2": {"type": "integer"},
+                    }
+                }
+            }
+        }
+    }
+    result = list(ftr_openapi.get_request_body_refs(request_body))
+    assert result == ["#/components/schemas/Example1"]
