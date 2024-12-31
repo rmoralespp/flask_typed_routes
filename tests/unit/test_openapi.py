@@ -3,6 +3,7 @@ import typing as t
 
 import pydantic
 import pytest
+from typing_extensions import deprecated
 
 import flask_typed_routes.core as ftr_core
 import flask_typed_routes.errors as ftr_errors
@@ -28,6 +29,9 @@ class User(pydantic.BaseModel):
 
 path_field = ftr_core.parse_field("a", str, ftr_fields.Path, nondefault)
 query_field = ftr_core.parse_field("b", str, ftr_fields.Query, nondefault)
+deprecated_query_field = ftr_core.parse_field(
+    "b1", t.Annotated[str, ftr_fields.Query(deprecated=True)], ftr_fields.Query, nondefault
+)
 embed_query_field = ftr_core.parse_field("c", QueryParams, ftr_fields.Query, nondefault)
 single_body_field = ftr_core.parse_field("d", str, ftr_fields.Body, None)
 body_field = ftr_core.parse_field("e", Client, ftr_fields.Body, nondefault)
@@ -40,9 +44,15 @@ embed_body_field2 = ftr_core.parse_field(
 
 
 def test_get_parameters():
-    model = pydantic.create_model("model", a=(str, ...), b=(str, ...), c=(QueryParams, ...))
+    model = pydantic.create_model(
+        "model",
+        a=(str, ...),
+        b=(str, ...),
+        b1=(t.Annotated[str, pydantic.Field(deprecated=True)], ...),
+        c=(QueryParams, ...),
+    )
     data = model.model_json_schema(ref_template=ftr_openapi.ref_template)
-    fields = [path_field, query_field, embed_query_field]
+    fields = [path_field, query_field, deprecated_query_field, embed_query_field]
 
     expected = (
         {
@@ -51,6 +61,7 @@ def test_get_parameters():
             'name': 'a',
             'required': True,
             'schema': {'type': 'string'},
+            'deprecated': False,
         },
         {
             'description': 'B',
@@ -58,6 +69,15 @@ def test_get_parameters():
             'name': 'b',
             'required': True,
             'schema': {'type': 'string'},
+            'deprecated': False,
+        },
+        {
+            'description': 'B1',
+            'in': 'query',
+            'name': 'b1',
+            'required': True,
+            'schema': {'type': 'string'},
+            'deprecated': True,
         },
         {
             'description': 'Inner-Alias',
@@ -65,6 +85,7 @@ def test_get_parameters():
             'name': 'inner-alias',
             'required': True,
             'schema': {'maxLength': 3, 'type': 'string'},
+            'deprecated': False,
         },
         {
             'description': 'Outer Title',
@@ -72,6 +93,7 @@ def test_get_parameters():
             'name': 'outer',
             'required': False,
             'schema': {'maxLength': 3, 'type': 'string', 'default': 'default'},
+            'deprecated': False,
         },
     )
     result = tuple(ftr_openapi.get_parameters(data, fields))

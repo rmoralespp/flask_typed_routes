@@ -1,4 +1,5 @@
 import flask_typed_routes.app as ftr_app
+import flask_typed_routes.utils as ftr_utils
 
 
 def test_typed_route():
@@ -6,8 +7,8 @@ def test_typed_route():
         pass
 
     typed_view_func = ftr_app.typed_route(view_func)
-    assert hasattr(typed_view_func, ftr_app._TYPED_ROUTE_ATTR)
-    assert getattr(typed_view_func, ftr_app._TYPED_ROUTE_ATTR) == ftr_app._TYPED_ROUTE_VALUE
+    assert hasattr(typed_view_func, ftr_utils.TYPED_ROUTE_ATTR)
+    assert getattr(typed_view_func, ftr_utils.TYPED_ROUTE_ATTR) == ftr_utils.TYPED_ROUTE_VALUE
 
 
 def test_is_typed_false():

@@ -4,6 +4,7 @@ import pydantic
 
 import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
+import flask_typed_routes.utils as ftr_utils
 
 ref_template = "#/components/schemas/{model}"
 
@@ -16,14 +17,18 @@ parameter_types = (
 parameter_types = frozenset(parameter_types)
 
 
-def duplicate_field(field):
+def duplicate_request_field(field):
     msg = f"Duplicate parameter: [name={field.locator}, in={field.kind}]"
     return ftr_errors.InvalidParameterTypeError(msg)
 
 
+def duplicate_request_body():
+    return ftr_errors.InvalidParameterTypeError("Duplicate request body")
+
+
 def get_parameters(model_schema, fields):
     """
-    Get OpenAPI schema Route parameters.
+    Get OpenAPI operation parameters.
 
     :param model_schema: Python dictionary with the Pydantic JSON model schema.
     :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
@@ -49,22 +54,31 @@ def get_parameters(model_schema, fields):
     for field in fields:
         if field.kind in parameter_types:
             slot = params[field.kind]
-            if issubclass(field.annotation, pydantic.BaseModel):
+            if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
                 names = (info.alias or name for name, info in field.annotation.model_fields.items())
             else:
                 names = (field.locator,)
             for name in names:
                 if name in slot:
-                    raise duplicate_field(field)
+                    raise duplicate_request_field(field)
                 else:
                     schema = properties[name]
-                    slot[name] = {
+                    title = schema.pop("title")
+                    description = schema.pop("description", title)
+                    example_values = schema.pop("examples", ())
+                    param_spec = {
                         "name": name,
-                        "description": schema.pop("title"),  # title is the description
+                        "description": description,
+                        "deprecated": schema.pop("deprecated", False),
                         "in": field.kind,
                         "required": name in required,
                         "schema": schema,
+                        # "allowEmptyValue": False,  # TODO: Implement!!, use official default value
                     }
+                    if example_values:
+                        examples = ({f"{name}-{i}": {"value": value} for i, value in enumerate(example_values)},)
+                        param_spec["examples"] = examples
+                    slot[name] = param_spec
 
     for value in params.values():
         yield from value.values()
@@ -72,7 +86,7 @@ def get_parameters(model_schema, fields):
 
 def get_request_body(model_schema, fields):
     """
-    Get OpenAPI schema Request Body.
+    Get OpenAPI operation Request body.
 
     :param model_schema: Python dictionary with the Pydantic JSON model schema.
     :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
@@ -88,22 +102,22 @@ def get_request_body(model_schema, fields):
     for field in body_fields:
         if issubclass(field.annotation, pydantic.BaseModel):
             if schema_ref:
-                raise ftr_errors.InvalidParameterTypeError("Multiple body parameters")
+                raise duplicate_request_body()
             elif field.embed:
                 if field.locator in schema_obj:
-                    raise duplicate_field(field)
+                    raise duplicate_request_field(field)
                 else:
                     # FIXME: title ?
                     schema_obj[field.locator] = properties[field.locator]
                     if field.locator in required:
                         schema_obj_req.append(field.locator)
             elif schema_obj:
-                raise ftr_errors.InvalidParameterTypeError("Multiple body parameters")
+                raise duplicate_request_body()
             else:
                 schema_ref = properties[field.locator]
 
         elif field.locator in schema_obj:
-            raise duplicate_field(field)
+            raise duplicate_request_field(field)
         else:
             schema_field = properties[field.locator]
             schema_field["description"] = schema_field.pop("title")  # title is the description
@@ -144,3 +158,45 @@ def get_request_body_refs(request_body):
         for field in schema.get("properties", dict()).values():
             if "$ref" in field:
                 yield field["$ref"]
+
+
+def get_components(request_body_refs, model_schema):
+    components = model_schema.get("$defs", dict())
+    for ref in request_body_refs:
+        reference = ref.split("/")[-1]  # basename
+        yield (reference, components[reference])
+
+
+def get_route_paths(func, rule, endpoint, methods):
+    """Get OpenAPI path specifications of a typed route."""
+
+    model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
+    fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
+    path = ftr_utils.rule_regex.sub(r"{\1}", rule)
+
+    result = {
+        "schemas": dict(),
+        "paths": collections.defaultdict(dict),
+    }
+
+    if model and fields:
+        model_schema = model.model_json_schema(ref_template=ref_template)
+
+        parameters = get_parameters(model_schema, fields)
+        request_body = get_request_body(model_schema, fields)
+
+        spec = {
+            "parameters": tuple(parameters),
+            "summary": func.__doc__,
+            "description": func.__doc__,
+            "operationId": endpoint,
+        }
+        if request_body:
+            schemas = get_components(get_request_body_refs(request_body), model_schema)
+            result["schemas"] = dict(schemas)
+            spec["requestBody"] = request_body
+
+        for method in methods:
+            result["paths"][path][method.lower()] = spec
+
+    return result

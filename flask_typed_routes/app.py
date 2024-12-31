@@ -1,13 +1,11 @@
+import collections
+import dataclasses
 import functools
-import uuid
 
 import flask_typed_routes.core as ftr_core
 import flask_typed_routes.errors as ftr_erros
+import flask_typed_routes.openapi as ftr_openapi
 import flask_typed_routes.utils as ftr_utils
-
-# Constants for marking a route function as typed for request validation
-_TYPED_ROUTE_ATTR = f"__flask_typed_routes_{uuid.uuid4()}__"
-_TYPED_ROUTE_VALUE = object()
 
 
 class Mode:
@@ -15,6 +13,19 @@ class Mode:
 
     auto = "auto"
     manual = "manual"
+
+
+@dataclasses.dataclass(frozen=True)
+class OpenAPI:
+    """
+    OpenAPI specification for typed routes.
+
+    :param dict paths: The available paths and operations for the API.
+    :param dict components_schemas: Reusable schema objects that are inferred from Pydantic models.
+    """
+
+    paths: dict
+    components_schemas: dict[str:dict]
 
 
 def typed_route(view_func, /):
@@ -26,7 +37,7 @@ def typed_route(view_func, /):
     :return: Flask view function
     """
 
-    setattr(view_func, _TYPED_ROUTE_ATTR, _TYPED_ROUTE_VALUE)
+    setattr(view_func, ftr_utils.TYPED_ROUTE_ATTR, ftr_utils.TYPED_ROUTE_VALUE)
     return view_func
 
 
@@ -51,6 +62,9 @@ class FlaskTypedRoutes:
         if mode not in (Mode.auto, Mode.manual):
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
+
+        self.openapi = OpenAPI(paths=collections.defaultdict(dict), components_schemas=dict())
+
         if app:
             self.init_app(app)
 
@@ -83,18 +97,31 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view, verb.lower())
                             if self.is_typed(method):
-                                setattr(view, verb.lower(), ftr_core.route(method, path_args))
+                                new_method = ftr_core.route(method, path_args)
+                                self.update_openapi(new_method, rule, endpoint, kwargs)
+                                setattr(view, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view.dispatch_request):
-                        view.dispatch_request = ftr_core.route(view.dispatch_request, path_args)
+                        new_method = ftr_core.route(view.dispatch_request, path_args)
+                        self.update_openapi(new_method, rule, endpoint, kwargs)
+                        view.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
                     view_func = ftr_core.route(view_func, path_args)
+                    self.update_openapi(view_func, rule, endpoint, kwargs)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
         return wrapper
 
     def is_typed(self, view_func, /):
-        return self.mode == Mode.auto or getattr(view_func, _TYPED_ROUTE_ATTR, None) == _TYPED_ROUTE_VALUE
+        manual = getattr(view_func, ftr_utils.TYPED_ROUTE_ATTR, None) == ftr_utils.TYPED_ROUTE_VALUE
+        return self.mode == Mode.auto or manual
+
+    def update_openapi(self, func, rule, endpoint, kwargs):
+        methods = kwargs.get("methods", ()) or getattr(func, "methods", ()) or ("GET",)
+        endpoint = endpoint or func.__name__
+        spec = ftr_openapi.get_route_paths(func, rule, endpoint, methods)
+        self.openapi.components_schemas.update(spec["schemas"])
+        self.openapi.paths.update(spec["paths"])

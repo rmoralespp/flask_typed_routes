@@ -1,7 +1,9 @@
 import contextlib
+import functools
 import inspect
 import re
 import typing as t
+import uuid
 
 import flask
 import flask.views
@@ -11,6 +13,16 @@ import flask_typed_routes.fields as ftr_fields
 
 # RegExp for extracting parameters from the route.
 rule_regex = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
+# Function to replace the parameters with the OpenAPI format.
+format_openapi_path = functools.partial(rule_regex.sub, r"{\1}")
+
+# Constants for marking a route function as typed for request validation
+TYPED_ROUTE_ATTR = f"__flask_typed_routes_{uuid.uuid4()}__"
+TYPED_ROUTE_VALUE = object()
+
+# Constants for storing the model and fields in the route function
+TYPED_ROUTE_MODEL = "__flask_typed_routes_model__"
+TYPED_ROUTE_FIELDS = "__flask_typed_routes_fields__"
 
 
 def validate_field_annotation(func_path, default, name, tp, /):
