@@ -1,5 +1,7 @@
 ## Releases
 
+- **Change**: Update the CI trigger to avoid runs on opened pull-request.
+
 ### v0.0.8 (2024-12-12)
 
 - **Add**: Supports automatic validation for all routes and manual validation for specific routes using decorators.
