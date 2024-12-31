@@ -62,21 +62,23 @@ def get_parameters(model_schema, fields):
                     raise duplicate_request_field(field)
                 else:
                     schema = properties[name]
-                    title = schema.pop("title")
-                    description = schema.pop("description", title)
-                    example_values = schema.pop("examples", ())
+
+                    _ = schema.pop("title", None)  # title is dont used
+                    description = schema.pop("description", None)
+                    examples = schema.pop("examples", ())
+                    examples = {f"{name}-{value}": {"value": value} for i, value in enumerate(examples)}
                     deprecated = schema.pop("deprecated", False)
                     param_spec = {
                         "name": name,
-                        "description": description,
                         "in": field.kind,
                         "required": name in required,
                         "schema": schema,
                     }
+                    if description:
+                        param_spec["description"] = description
                     if deprecated:
                         param_spec["deprecated"] = deprecated
-                    if example_values:
-                        examples = {f"{name}-{value}": {"value": value} for i, value in enumerate(example_values)}
+                    if examples:
                         param_spec["examples"] = examples
                     slot[name] = param_spec
 
@@ -182,10 +184,10 @@ def get_route_paths(func, rule, endpoint, methods):
 
         parameters = get_parameters(model_schema, fields)
         request_body = get_request_body(model_schema, fields)
+        summary = " ".join(word.capitalize() for word in func.__name__.split("_") if word)
 
         spec = {
             "parameters": tuple(parameters),
-            "summary": func.__doc__,
             "description": func.__doc__,
             "operationId": endpoint,
         }
@@ -194,7 +196,8 @@ def get_route_paths(func, rule, endpoint, methods):
             spec["requestBody"] = request_body
 
         for method in methods:
-            paths[path][method.lower()] = spec
+            summary = f"{summary} {method.capitalize()}"
+            paths[path][method.lower()] = {**spec, "summary": summary}
 
     return {
         "schemas": schemas,

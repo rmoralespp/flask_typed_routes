@@ -15,7 +15,7 @@ nondefault = inspect.Parameter.empty
 
 class QueryParams(pydantic.BaseModel):
     inner: t.Annotated[str, pydantic.Field(alias="inner-alias", max_length=3)]
-    outer: t.Annotated[str, pydantic.Field(title="Outer Title", max_length=3)] = "default"
+    outer: t.Annotated[str, pydantic.Field(description="Outer description", max_length=3)] = "default"
 
 
 class Client(pydantic.BaseModel):
@@ -56,21 +56,18 @@ def test_get_parameters():
 
     expected = (
         {
-            'description': 'A',
             'in': 'path',
             'name': 'a',
             'required': True,
             'schema': {'type': 'string'},
         },
         {
-            'description': 'B',
             'in': 'query',
             'name': 'b',
             'required': True,
             'schema': {'type': 'string'},
         },
         {
-            'description': 'B1',
             'in': 'query',
             'name': 'b1',
             'required': True,
@@ -78,14 +75,13 @@ def test_get_parameters():
             'deprecated': True,
         },
         {
-            'description': 'Inner-Alias',
             'in': 'query',
             'name': 'inner-alias',
             'required': True,
             'schema': {'maxLength': 3, 'type': 'string'},
         },
         {
-            'description': 'Outer Title',
+            'description': 'Outer description',
             'in': 'query',
             'name': 'outer',
             'required': False,
