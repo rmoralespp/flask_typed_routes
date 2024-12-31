@@ -61,7 +61,6 @@ def test_get_parameters():
             'name': 'a',
             'required': True,
             'schema': {'type': 'string'},
-            'deprecated': False,
         },
         {
             'description': 'B',
@@ -69,7 +68,6 @@ def test_get_parameters():
             'name': 'b',
             'required': True,
             'schema': {'type': 'string'},
-            'deprecated': False,
         },
         {
             'description': 'B1',
@@ -85,7 +83,6 @@ def test_get_parameters():
             'name': 'inner-alias',
             'required': True,
             'schema': {'maxLength': 3, 'type': 'string'},
-            'deprecated': False,
         },
         {
             'description': 'Outer Title',
@@ -93,7 +90,6 @@ def test_get_parameters():
             'name': 'outer',
             'required': False,
             'schema': {'maxLength': 3, 'type': 'string', 'default': 'default'},
-            'deprecated': False,
         },
     )
     result = tuple(ftr_openapi.get_parameters(data, fields))

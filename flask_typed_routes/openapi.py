@@ -8,13 +8,12 @@ import flask_typed_routes.utils as ftr_utils
 
 ref_template = "#/components/schemas/{model}"
 
-parameter_types = (
+parameter_types = frozenset((
     ftr_fields.FieldTypes.path,
     ftr_fields.FieldTypes.query,
     ftr_fields.FieldTypes.cookie,
     ftr_fields.FieldTypes.header,
-)
-parameter_types = frozenset(parameter_types)
+))
 
 
 def duplicate_request_field(field):
@@ -66,15 +65,16 @@ def get_parameters(model_schema, fields):
                     title = schema.pop("title")
                     description = schema.pop("description", title)
                     example_values = schema.pop("examples", ())
+                    deprecated = schema.pop("deprecated", False)
                     param_spec = {
                         "name": name,
                         "description": description,
-                        "deprecated": schema.pop("deprecated", False),
                         "in": field.kind,
                         "required": name in required,
                         "schema": schema,
-                        # "allowEmptyValue": False,  # TODO: Implement!!, use official default value
                     }
+                    if deprecated:
+                        param_spec["deprecated"] = deprecated
                     if example_values:
                         examples = {f"{name}-{value}": {"value": value} for i, value in enumerate(example_values)}
                         param_spec["examples"] = examples
@@ -172,12 +172,10 @@ def get_route_paths(func, rule, endpoint, methods):
 
     model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
     fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
-    path = ftr_utils.rule_regex.sub(r"{\1}", rule)
+    path = ftr_utils.format_openapi_path(rule)
 
-    result = {
-        "schemas": dict(),
-        "paths": collections.defaultdict(dict),
-    }
+    schemas = dict()
+    paths = collections.defaultdict(dict)
 
     if model and fields:
         model_schema = model.model_json_schema(ref_template=ref_template)
@@ -192,11 +190,13 @@ def get_route_paths(func, rule, endpoint, methods):
             "operationId": endpoint,
         }
         if request_body:
-            schemas = get_components(get_request_body_refs(request_body), model_schema)
-            result["schemas"] = dict(schemas)
+            schemas.update(get_components(get_request_body_refs(request_body), model_schema))
             spec["requestBody"] = request_body
 
         for method in methods:
-            result["paths"][path][method.lower()] = spec
+            paths[path][method.lower()] = spec
 
-    return result
+    return {
+        "schemas": schemas,
+        "paths": paths,
+    }
