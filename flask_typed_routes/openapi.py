@@ -76,7 +76,7 @@ def get_parameters(model_schema, fields):
                         # "allowEmptyValue": False,  # TODO: Implement!!, use official default value
                     }
                     if example_values:
-                        examples = ({f"{name}-{i}": {"value": value} for i, value in enumerate(example_values)},)
+                        examples = {f"{name}-{value}": {"value": value} for i, value in enumerate(example_values)}
                         param_spec["examples"] = examples
                     slot[name] = param_spec
 
