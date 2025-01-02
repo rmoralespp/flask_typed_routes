@@ -1,6 +1,7 @@
 import contextlib
 import functools
 import inspect
+import logging
 import re
 import typing as t
 import uuid
@@ -99,3 +100,18 @@ def get_func_path(func):
     """Get the full path of a function/method."""
 
     return f"{func.__module__}.{func.__qualname__}"
+
+
+def cleandoc(obj):
+    docstring = obj.__doc__
+    return inspect.cleandoc(docstring) if docstring else ""
+
+
+def get_annotations(func, func_path, /):
+    # Compute annotations: https://docs.pydantic.dev/latest/internals/resolving_annotations/
+    try:
+        result = inspect.get_annotations(func, globals=func.__globals__, eval_str=True)
+    except NameError:
+        logging.error("Failed to resolve annotations for %s", func_path)
+        result = dict()
+    return result

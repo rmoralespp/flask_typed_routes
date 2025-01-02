@@ -8,16 +8,18 @@ import flask_typed_routes.utils as ftr_utils
 
 ref_template = "#/components/schemas/{model}"
 
-parameter_types = frozenset((
-    ftr_fields.FieldTypes.path,
-    ftr_fields.FieldTypes.query,
-    ftr_fields.FieldTypes.cookie,
-    ftr_fields.FieldTypes.header,
-))
+parameter_types = frozenset(
+    (
+        ftr_fields.FieldTypes.path,
+        ftr_fields.FieldTypes.query,
+        ftr_fields.FieldTypes.cookie,
+        ftr_fields.FieldTypes.header,
+    )
+)
 
 
 def duplicate_request_field(field):
-    msg = f"Duplicate parameter: [name={field.locator}, in={field.kind}]"
+    msg = f"Duplicate request parameter: [name={field.locator}, in={field.kind}]"
     return ftr_errors.InvalidParameterTypeError(msg)
 
 
@@ -86,6 +88,13 @@ def get_parameters(model_schema, fields):
         yield from value.values()
 
 
+def get_field_properties(field, properties, components):
+    props = properties[field.locator]
+    if "$ref" in props:
+        props = components[props["$ref"].split("/")[-1]]["properties"]
+    return props
+
+
 def get_request_body(model_schema, fields):
     """
     Get OpenAPI operation Request body.
@@ -95,78 +104,52 @@ def get_request_body(model_schema, fields):
     :rtype: Iterable[dict]
     """
 
-    properties = model_schema.get("properties", dict())
-    schema_ref = dict()
-    schema_obj = dict()
-    schema_obj_req = []
-    required = frozenset(model_schema.get("required", ()))
+    model_properties = model_schema.get("properties", dict())
+    model_components = model_schema.get("$defs", dict())
+    model_required = frozenset(model_schema.get("required", ()))
+
+    schema = dict()
+    required_fields = []
+    required = True  # TODO: implement!!
     body_fields = (field for field in fields if field.kind == ftr_fields.FieldTypes.body)
     for field in body_fields:
+        name = field.locator
         if issubclass(field.annotation, pydantic.BaseModel):
-            if schema_ref:
-                raise duplicate_request_body()
-            elif field.embed:
-                if field.locator in schema_obj:
+            if field.embed:
+                if name in schema:
                     raise duplicate_request_field(field)
                 else:
-                    # FIXME: title ?
-                    schema_obj[field.locator] = properties[field.locator]
-                    if field.locator in required:
-                        schema_obj_req.append(field.locator)
-            elif schema_obj:
+                    schema[name] = get_field_properties(field, model_properties, model_components)
+                    if name in model_required:
+                        required_fields.append(name)
+            elif schema:
                 raise duplicate_request_body()
             else:
-                schema_ref = properties[field.locator]
+                schema = get_field_properties(field, model_properties, model_components)
 
-        elif field.locator in schema_obj:
+        elif name in schema:
             raise duplicate_request_field(field)
         else:
-            schema_field = properties[field.locator]
-            schema_field["description"] = schema_field.pop("title")  # title is the description
-            schema_obj[field.locator] = schema_field
-            if field.locator in required:
-                schema_obj_req.append(field.locator)
+            schema[name] = get_field_properties(field, model_properties, model_components)
+            if name in model_required:
+                required_fields.append(name)
 
-    if schema_ref:
-        schema = {
+    if schema:
+        return {
             "description": "Request Body",
-            "required": True,
-            "content": {"application/json": {"schema": schema_ref}},
-        }
-    elif schema_obj:
-        schema = {
-            "description": "Request Body",
-            "required": True,
+            "required": required,
             "content": {
                 "application/json": {
                     "schema": {
                         "type": "object",
-                        "properties": schema_obj,
-                        "required": schema_obj_req,
+                        "properties": schema,
+                        "required": required_fields,
                     },
                 },
             },
         }
     else:
-        schema = None
-    return schema
-
-
-def get_request_body_refs(request_body):
-    schema = request_body["content"]["application/json"]["schema"]
-    if "$ref" in schema:
-        yield schema["$ref"]
-    else:
-        for field in schema.get("properties", dict()).values():
-            if "$ref" in field:
-                yield field["$ref"]
-
-
-def get_components(request_body_refs, model_schema):
-    components = model_schema.get("$defs", dict())
-    for ref in request_body_refs:
-        reference = ref.split("/")[-1]  # basename
-        yield (reference, components[reference])
+        return None
 
 
 def get_route_paths(func, rule, endpoint, methods):
@@ -174,10 +157,8 @@ def get_route_paths(func, rule, endpoint, methods):
 
     model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
     fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
-    path = ftr_utils.format_openapi_path(rule)
-
-    schemas = dict()
-    paths = collections.defaultdict(dict)
+    rule_path = ftr_utils.format_openapi_path(rule)
+    result = collections.defaultdict(dict)
 
     if model and fields:
         model_schema = model.model_json_schema(ref_template=ref_template)
@@ -188,18 +169,14 @@ def get_route_paths(func, rule, endpoint, methods):
 
         spec = {
             "parameters": tuple(parameters),
-            "description": func.__doc__,
+            "description": ftr_utils.cleandoc(func),
             "operationId": endpoint,
+            "summary": summary,
         }
         if request_body:
-            schemas.update(get_components(get_request_body_refs(request_body), model_schema))
             spec["requestBody"] = request_body
 
         for method in methods:
-            summary = f"{summary} {method.capitalize()}"
-            paths[path][method.lower()] = {**spec, "summary": summary}
+            result[rule_path][method.lower()] = spec
 
-    return {
-        "schemas": schemas,
-        "paths": paths,
-    }
+    return result

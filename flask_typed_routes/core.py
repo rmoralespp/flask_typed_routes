@@ -1,6 +1,5 @@
 import functools
 import inspect
-import logging
 import typing as t
 
 import pydantic
@@ -79,13 +78,7 @@ def parse_route(view_func, view_func_path, view_path_args, /):
     """
 
     sig = inspect.signature(view_func)
-    # Compute annotations: https://docs.pydantic.dev/latest/internals/resolving_annotations/
-    try:
-        annotations = inspect.get_annotations(view_func, globals=view_func.__globals__, eval_str=True)
-    except NameError:
-        logging.error("Failed to resolve annotations for %s", view_func_path)
-        annotations = dict()
-
+    annotations = ftr_utils.get_annotations(view_func, view_func_path)
     for name, annotation in annotations.items():
         if name == "return":
             continue  # Skip the return annotation
