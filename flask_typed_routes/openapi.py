@@ -8,19 +8,21 @@ import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.utils as ftr_utils
 
-REF_PREFIX = "#/components/schemas/"
-VALIDATION_ERROR_KEY = "ValidationError"
-HTTP_VALIDATION_ERROR_KEY = "HTTPValidationError"
-parameter_types = frozenset(
-    (
-        ftr_fields.FieldTypes.path,
-        ftr_fields.FieldTypes.query,
-        ftr_fields.FieldTypes.cookie,
-        ftr_fields.FieldTypes.header,
-    )
+# Request parameter types
+PARAMETER_TYPES = (
+    ftr_fields.FieldTypes.path,
+    ftr_fields.FieldTypes.query,
+    ftr_fields.FieldTypes.cookie,
+    ftr_fields.FieldTypes.header,
 )
+PARAMETER_TYPES = frozenset(PARAMETER_TYPES)
 
-validation_error_definition = {
+# Component schemas prefix
+REF_PREFIX = "#/components/schemas/"
+
+# Validation errors response
+VALIDATION_ERROR_KEY = "ValidationError"
+VALIDATION_ERROR_DEF = {
     "title": VALIDATION_ERROR_KEY,
     "type": "object",
     "properties": {
@@ -34,8 +36,8 @@ validation_error_definition = {
     },
     "required": ["loc", "msg", "type"],
 }
-
-validation_error_response_definition = {
+HTTP_VALIDATION_ERROR_KEY = "HTTPValidationError"
+HTTP_VALIDATION_ERROR_DEF = {
     "title": HTTP_VALIDATION_ERROR_KEY,
     "type": "object",
     "properties": {
@@ -46,18 +48,18 @@ validation_error_response_definition = {
         }
     },
 }
-
-validation_error_response_ref = {
+HTTP_VALIDATION_ERROR_REF = {
     "description": "Validation Error",
-    "content": {
-        "application/json": {
-            "schema": {"$ref": REF_PREFIX + HTTP_VALIDATION_ERROR_KEY}
-        }
-    },
+    "content": {"application/json": {"schema": {"$ref": REF_PREFIX + HTTP_VALIDATION_ERROR_KEY}}},
 }
 
 
 class Operation(pydantic.BaseModel):
+    """
+    Describes an API operations on a path.
+    It is used to generate OpenAPI specification for the route.
+    """
+
     tags: t.Optional[list[str]] = None
     summary: t.Optional[str] = None
     description: t.Optional[str] = None
@@ -107,7 +109,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
     """
 
     params = collections.defaultdict(dict)
-    params_fields = (field for field in fields if field.kind in parameter_types)
+    params_fields = (field for field in fields if field.kind in PARAMETER_TYPES)
     for field in params_fields:
         slot = params[field.kind]
         if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
@@ -263,7 +265,7 @@ def get_route_spec(func, rule, endpoint, methods):
             "operationId": endpoint,
             "summary": summary,
             "responses": {
-                "400": validation_error_response_ref,
+                "400": HTTP_VALIDATION_ERROR_REF,
             },
         }
         if status_code:

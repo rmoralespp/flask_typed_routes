@@ -79,9 +79,9 @@ class FlaskTypedRoutes:
         self.openapi = ftr_openapi.OpenAPI(
             paths=collections.defaultdict(dict),
             components_schemas={
-                ftr_openapi.VALIDATION_ERROR_KEY: ftr_openapi.validation_error_definition,
-                ftr_openapi.HTTP_VALIDATION_ERROR_KEY: ftr_openapi.validation_error_response_definition,
-            }
+                ftr_openapi.VALIDATION_ERROR_KEY: ftr_openapi.VALIDATION_ERROR_DEF,
+                ftr_openapi.HTTP_VALIDATION_ERROR_KEY: ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
+            },
         )
         if app:
             self.init_app(app)
