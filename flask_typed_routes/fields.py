@@ -74,6 +74,10 @@ class Field(abc.ABC):
         if default != inspect.Parameter.empty:
             self.field_info.default = default
 
+    @property
+    def is_required(self):
+        return self.default == inspect.Parameter.empty
+
     def fetch(self, data):
         return data.get(self.alias, Unset) if self.alias else data
 

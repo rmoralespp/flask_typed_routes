@@ -122,5 +122,6 @@ class FlaskTypedRoutes:
     def update_openapi(self, func, rule, endpoint, kwargs):
         methods = kwargs.get("methods", ()) or getattr(func, "methods", ()) or ("GET",)
         endpoint = endpoint or func.__name__
-        paths = ftr_openapi.get_route_paths(func, rule, endpoint, methods)
-        self.openapi.paths.update(paths)
+        spec = ftr_openapi.get_route_paths(func, rule, endpoint, methods)
+        self.openapi.paths.update(spec["paths"])
+        self.openapi.components_schemas.update(spec["components"]["schemas"])

@@ -6,8 +6,6 @@ import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.utils as ftr_utils
 
-ref_template = "#/components/schemas/{model}"
-
 parameter_types = frozenset(
     (
         ftr_fields.FieldTypes.path,
@@ -42,7 +40,7 @@ def get_parameters(model_schema, fields):
 
     for name, schema in model_schema.get("properties", dict()).items():
         if "$ref" in schema:
-            reference = schema["$ref"].split("/")[-1]  # basename
+            reference = schema["$ref"].split("/")[-1].split(".")[-1]  # basename
             component = components[reference]
             if name in required:
                 required.remove(name)
@@ -68,7 +66,7 @@ def get_parameters(model_schema, fields):
                     _ = schema.pop("title", None)  # title is dont used
                     description = schema.pop("description", None)
                     examples = schema.pop("examples", ())
-                    examples = {f"{name}-{value}": {"value": value} for i, value in enumerate(examples)}
+                    examples = {f"{name}-{i}": {"value": value} for i, value in enumerate(examples, 1)}
                     deprecated = schema.pop("deprecated", False)
                     param_spec = {
                         "name": name,
@@ -88,13 +86,6 @@ def get_parameters(model_schema, fields):
         yield from value.values()
 
 
-def get_field_properties(field, properties, components):
-    props = properties[field.locator]
-    if "$ref" in props:
-        props = components[props["$ref"].split("/")[-1]]["properties"]
-    return props
-
-
 def get_request_body(model_schema, fields):
     """
     Get OpenAPI operation Request body.
@@ -105,46 +96,64 @@ def get_request_body(model_schema, fields):
     """
 
     model_properties = model_schema.get("properties", dict())
-    model_components = model_schema.get("$defs", dict())
     model_required = frozenset(model_schema.get("required", ()))
 
-    schema = dict()
     required_fields = []
-    required = True  # TODO: implement!!
+    required = False
     body_fields = (field for field in fields if field.kind == ftr_fields.FieldTypes.body)
+
+    schema_ref = dict()
+    schema_obj = dict()
+
     for field in body_fields:
         name = field.locator
-        if issubclass(field.annotation, pydantic.BaseModel):
+        if schema_ref:
+            raise duplicate_request_body()
+
+        elif issubclass(field.annotation, pydantic.BaseModel):
             if field.embed:
-                if name in schema:
+                if name in schema_obj:
                     raise duplicate_request_field(field)
                 else:
-                    schema[name] = get_field_properties(field, model_properties, model_components)
+                    schema_obj[name] = model_properties[field.locator]
                     if name in model_required:
                         required_fields.append(name)
-            elif schema:
+
+            elif schema_obj:
                 raise duplicate_request_body()
             else:
-                schema = get_field_properties(field, model_properties, model_components)
+                schema_ref = model_properties[field.locator]
+                required = field.is_required
 
-        elif name in schema:
+        elif name in schema_obj:
             raise duplicate_request_field(field)
         else:
-            schema[name] = get_field_properties(field, model_properties, model_components)
+            schema_obj[name] = model_properties[field.locator]
             if name in model_required:
                 required_fields.append(name)
 
-    if schema:
+    if schema_obj:
         return {
-            "description": "Request Body",
-            "required": required,
+            "required": bool(required_fields),
             "content": {
                 "application/json": {
                     "schema": {
                         "type": "object",
-                        "properties": schema,
+                        "properties": schema_obj,
                         "required": required_fields,
                     },
+                },
+            },
+        }
+    elif schema_ref:
+        examples = schema_ref.pop("examples", ())
+        examples = {f"example-{i}": {"value": value} for i, value in enumerate(examples, 1)}
+        return {
+            "required": required,
+            "content": {
+                "application/json": {
+                    "schema": schema_ref,
+                    "examples": examples,
                 },
             },
         }
@@ -158,10 +167,16 @@ def get_route_paths(func, rule, endpoint, methods):
     model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
     fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
     rule_path = ftr_utils.format_openapi_path(rule)
-    result = collections.defaultdict(dict)
+
+    paths = collections.defaultdict(dict)
+    schemas = dict()
 
     if model and fields:
+        ref_template = "#/components/schemas/{endpoint}.{{model}}".format(endpoint=endpoint)
         model_schema = model.model_json_schema(ref_template=ref_template)
+
+        schemas = model_schema.get("$defs", dict())
+        schemas = {f"{endpoint}.{name}": schema for name, schema in schemas.items()}
 
         parameters = get_parameters(model_schema, fields)
         request_body = get_request_body(model_schema, fields)
@@ -177,6 +192,9 @@ def get_route_paths(func, rule, endpoint, methods):
             spec["requestBody"] = request_body
 
         for method in methods:
-            result[rule_path][method.lower()] = spec
+            paths[rule_path][method.lower()] = spec
 
-    return result
+    return {
+        "paths": dict(paths),
+        "components": {"schemas": schemas},
+    }
