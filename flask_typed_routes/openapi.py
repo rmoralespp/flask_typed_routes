@@ -174,40 +174,37 @@ def get_request_body(fields, model_properties, model_required_fields):
         name = field.locator
         if schema_ref:
             raise duplicate_request_body()
-
         elif issubclass(field.annotation, pydantic.BaseModel):
-            if field.embed:
-                if name in schema_obj:
-                    raise duplicate_request_field(field)
-                else:
-                    schema_obj[name] = model_properties[field.locator]
-                    if name in model_required_fields:
-                        required_fields.append(name)
-
+            if field.embed and name in schema_obj:
+                raise duplicate_request_field(field)
+            elif field.embed:
+                schema_obj[name] = model_properties[name]
+                if name in model_required_fields:
+                    required_fields.append(name)
             elif schema_obj:
                 raise duplicate_request_body()
             else:
-                schema_ref = model_properties[field.locator]
+                schema_ref = model_properties[name]
                 required = field.is_required
-
         elif name in schema_obj:
             raise duplicate_request_field(field)
         else:
-            schema_obj[name] = model_properties[field.locator]
+            schema_obj[name] = model_properties[name]
             if name in model_required_fields:
                 required_fields.append(name)
 
     if schema_obj:
-        config = {
-            "schema": {
-                "type": "object",
-                "properties": schema_obj,
-                "required": required_fields,
-            },
-        }
         return {
             "required": bool(required_fields),
-            "content": {"application/json": config},
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": schema_obj,
+                        "required": required_fields,
+                    },
+                }
+            },
         }
     elif schema_ref:
         examples = schema_ref.pop("examples", ())
@@ -236,23 +233,24 @@ def get_route_spec(func, rule, endpoint, methods):
     """
 
     request_model = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
-    request_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
+    param_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
     status_code = getattr(func, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
     override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
 
     paths = collections.defaultdict(dict)
     schemas = dict()
-    if request_model and request_fields:
-        rule_path = ftr_utils.format_openapi_path(rule)
+    if request_model and param_fields:
+        path = ftr_utils.format_openapi_path(rule)
         ref_template = "{prefix}{endpoint}.{{model}}".format(prefix=REF_PREFIX, endpoint=endpoint)
         model_schema = request_model.model_json_schema(ref_template=ref_template)
-        model_properties = model_schema.get("properties", dict())
-        model_components = model_schema.get("$defs", dict())
-        schemas = {f"{endpoint}.{name}": schema for name, schema in model_components.items()}
-        model_required_fields = frozenset(model_schema.get("required", ()))
+        required_fields = frozenset(model_schema.get("required", ()))
+        properties = model_schema.get("properties", dict())
+        components = model_schema.get("$defs", dict())
+        # Include endpoint in the schema name to avoid conflicts with other models with the same name
+        schemas = {f"{endpoint}.{name}": schema for name, schema in components.items()}
 
-        parameters = get_parameters(request_fields, model_properties, schemas, model_required_fields)
-        request_body = get_request_body(request_fields, model_properties, model_required_fields)
+        parameters = get_parameters(param_fields, properties, schemas, required_fields)
+        request_body = get_request_body(param_fields, properties, required_fields)
         responses = {"400": HTTP_VALIDATION_ERROR_REF}
         spec = {
             "parameters": tuple(parameters),
@@ -262,14 +260,17 @@ def get_route_spec(func, rule, endpoint, methods):
             "responses": responses,
         }
         if status_code:
-            responses[str(status_code)] = {"description": "Successful operation"}
+            responses[f"{status_code}"] = {"description": "Success"}
         if request_body:
             spec["requestBody"] = request_body
         if override_spec:
-            override_spec = override_spec.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True)
-            spec.update(override_spec)
+            spec.update(override_spec.model_dump(
+                exclude_unset=True,
+                exclude_defaults=True,
+                exclude_none=True,
+            ))
         for method in methods:
-            paths[rule_path][method.lower()] = spec
+            paths[path][method.lower()] = spec
 
     return {
         "paths": paths,
