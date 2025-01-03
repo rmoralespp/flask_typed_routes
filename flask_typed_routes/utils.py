@@ -24,6 +24,8 @@ TYPED_ROUTE_VALUE = object()
 # Constants for storing the model and fields in the route function
 TYPED_ROUTE_MODEL = "__flask_typed_routes_model__"
 TYPED_ROUTE_FIELDS = "__flask_typed_routes_fields__"
+# Constants for storing the OpenAPI information in the route function
+TYPED_ROUTE_OPENAPI = "__flask_typed_routes_openapi__"
 
 
 def validate_field_annotation(func_path, default, name, tp, /):

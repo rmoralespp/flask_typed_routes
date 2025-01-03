@@ -28,17 +28,23 @@ class OpenAPI:
     components_schemas: dict[str:dict]
 
 
-def typed_route(view_func, /):
-    """
-    Decorator for marking a route function as typed for request
-    validation using type hints.
+def typed_route(**openapi_kwargs):
 
-    :param view_func: Flask view function
-    :return: Flask view function
-    """
+    def worker(view_func, /):
+        """
+        Decorator for marking a route function as typed for request
+        validation using type hints.
 
-    setattr(view_func, ftr_utils.TYPED_ROUTE_ATTR, ftr_utils.TYPED_ROUTE_VALUE)
-    return view_func
+        :param view_func: Flask view function
+        :return: Flask view function
+        """
+
+        obj = ftr_openapi.OperationModel(**openapi_kwargs)  # validate the OpenAPI parameters
+        setattr(view_func, ftr_utils.TYPED_ROUTE_ATTR, ftr_utils.TYPED_ROUTE_VALUE)
+        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, obj)
+        return view_func
+
+    return worker
 
 
 class FlaskTypedRoutes:

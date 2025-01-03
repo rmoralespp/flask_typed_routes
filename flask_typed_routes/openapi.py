@@ -1,4 +1,5 @@
 import collections
+import typing as t
 
 import pydantic
 
@@ -16,6 +17,20 @@ parameter_types = frozenset(
 )
 
 
+class OperationModel(pydantic.BaseModel):
+    tags: t.Optional[list[str]] = None
+    summary: t.Optional[str] = None
+    description: t.Optional[str] = None
+    externalDocs: t.Optional[dict] = None
+    operationId: t.Optional[str] = None
+    # Using Any for Specification Extensions
+    responses: t.Optional[dict[str, t.Any]] = None
+    callbacks: t.Optional[dict[str, t.Any]] = None
+    deprecated: t.Optional[bool] = None
+    security: t.Optional[list[dict[str, list[str]]]] = None
+    servers: t.Optional[list[dict]] = None
+
+
 def duplicate_request_field(field):
     msg = f"Duplicate request parameter: [name={field.locator}, in={field.kind}]"
     return ftr_errors.InvalidParameterTypeError(msg)
@@ -25,78 +40,72 @@ def duplicate_request_body():
     return ftr_errors.InvalidParameterTypeError("Duplicate request body")
 
 
-def get_parameters(model_schema, fields):
+def get_parameters(fields, model_properties, model_components, model_required_fields):
     """
     Get OpenAPI operation parameters.
 
-    :param model_schema: Python dictionary with the Pydantic JSON model schema.
     :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
+    :param model_properties:
+    :param model_components:
+    :param model_required_fields:
+
     :rtype: Iterable[dict]
     """
 
-    required = set(model_schema.get("required", ()))
-    components = model_schema.get("$defs", dict())
-    properties = dict()
-
-    for name, schema in model_schema.get("properties", dict()).items():
-        if "$ref" in schema:
-            reference = schema["$ref"].split("/")[-1].split(".")[-1]  # basename
-            component = components[reference]
-            if name in required:
-                required.remove(name)
-            required.update(component.get("required", ()))
-            properties.update(component["properties"])
-        else:
-            properties[name] = schema
-
     params = collections.defaultdict(dict)
-    for field in fields:
-        if field.kind in parameter_types:
-            slot = params[field.kind]
-            if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
-                names = (info.alias or name for name, info in field.annotation.model_fields.items())
-            else:
-                names = (field.locator,)
-            for name in names:
-                if name in slot:
-                    raise duplicate_request_field(field)
-                else:
-                    schema = properties[name]
+    params_fields = (field for field in fields if field.kind in parameter_types)
+    for field in params_fields:
+        slot = params[field.kind]
+        if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
+            ref_properties = model_properties[field.locator]
+            ref_name = ref_properties["$ref"].split("/")[-1]
+            ref_schema = model_components[ref_name]
+            properties_slot = ref_schema.get("properties", dict())
+            required_slot = ref_schema.get("required", ())
+            names = (info.alias or name for name, info in field.annotation.model_fields.items())
+        else:
+            properties_slot = model_properties
+            required_slot = model_required_fields
+            names = (field.locator,)
 
-                    _ = schema.pop("title", None)  # title is dont used
-                    description = schema.pop("description", None)
-                    examples = schema.pop("examples", ())
-                    examples = {f"{name}-{i}": {"value": value} for i, value in enumerate(examples, 1)}
-                    deprecated = schema.pop("deprecated", False)
-                    param_spec = {
-                        "name": name,
-                        "in": field.kind,
-                        "required": name in required,
-                        "schema": schema,
-                    }
-                    if description:
-                        param_spec["description"] = description
-                    if deprecated:
-                        param_spec["deprecated"] = deprecated
-                    if examples:
-                        param_spec["examples"] = examples
-                    slot[name] = param_spec
+        for name in names:
+            if name in slot:
+                raise duplicate_request_field(field)
+            else:
+                schema = properties_slot[name]
+                _ = schema.pop("title", None)  # title is dont used
+                description = schema.pop("description", None)
+                examples = schema.pop("examples", ())
+                examples = {f"{name}-{i}": {"value": value} for i, value in enumerate(examples, 1)}
+                deprecated = schema.pop("deprecated", False)
+                param_spec = {
+                    "name": name,
+                    "in": field.kind,
+                    "required": name in required_slot,
+                    "schema": schema,
+                }
+                if description:
+                    param_spec["description"] = description
+                if deprecated:
+                    param_spec["deprecated"] = deprecated
+                if examples:
+                    param_spec["examples"] = examples
+                slot[name] = param_spec
 
     for value in params.values():
         yield from value.values()
 
 
-def get_request_body(model_schema, fields):
+def get_request_body(fields, model_properties, model_required_fields):
     """
     Get OpenAPI operation Request body.
 
-    :param model_schema: Python dictionary with the Pydantic JSON model schema.
+    :param model_properties:
+    :param model_required_fields:
+
     :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
     :rtype: Iterable[dict]
     """
-
-    model_properties = model_schema.get("properties", dict())
-    model_required = frozenset(model_schema.get("required", ()))
 
     required_fields = []
     required = False
@@ -116,7 +125,7 @@ def get_request_body(model_schema, fields):
                     raise duplicate_request_field(field)
                 else:
                     schema_obj[name] = model_properties[field.locator]
-                    if name in model_required:
+                    if name in model_required_fields:
                         required_fields.append(name)
 
             elif schema_obj:
@@ -129,7 +138,7 @@ def get_request_body(model_schema, fields):
             raise duplicate_request_field(field)
         else:
             schema_obj[name] = model_properties[field.locator]
-            if name in model_required:
+            if name in model_required_fields:
                 required_fields.append(name)
 
     if schema_obj:
@@ -166,22 +175,25 @@ def get_route_paths(func, rule, endpoint, methods):
 
     model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
     fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
+    operation_info: OperationModel = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
+
     rule_path = ftr_utils.format_openapi_path(rule)
 
     paths = collections.defaultdict(dict)
-    schemas = dict()
+    model_components = dict()
 
     if model and fields:
         ref_template = "#/components/schemas/{endpoint}.{{model}}".format(endpoint=endpoint)
         model_schema = model.model_json_schema(ref_template=ref_template)
+        model_properties = model_schema.get("properties", dict())
+        model_components = model_schema.get("$defs", dict())
+        model_components = {f"{endpoint}.{name}": schema for name, schema in model_components.items()}
+        model_required_fields = frozenset(model_schema.get("required", ()))
 
-        schemas = model_schema.get("$defs", dict())
-        schemas = {f"{endpoint}.{name}": schema for name, schema in schemas.items()}
+        parameters = get_parameters(fields, model_properties, model_components, model_required_fields)
+        request_body = get_request_body(fields, model_properties, model_required_fields)
 
-        parameters = get_parameters(model_schema, fields)
-        request_body = get_request_body(model_schema, fields)
         summary = " ".join(word.capitalize() for word in func.__name__.split("_") if word)
-
         spec = {
             "parameters": tuple(parameters),
             "description": ftr_utils.cleandoc(func),
@@ -190,11 +202,13 @@ def get_route_paths(func, rule, endpoint, methods):
         }
         if request_body:
             spec["requestBody"] = request_body
+        if operation_info:
+            spec.update(operation_info.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True))
 
         for method in methods:
             paths[rule_path][method.lower()] = spec
 
     return {
         "paths": dict(paths),
-        "components": {"schemas": schemas},
+        "components": {"schemas": model_components},
     }
