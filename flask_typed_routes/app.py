@@ -1,5 +1,4 @@
 import collections
-import dataclasses
 import functools
 
 import flask_typed_routes.core as ftr_core
@@ -15,33 +14,17 @@ class Mode:
     manual = "manual"
 
 
-@dataclasses.dataclass(frozen=True)
-class OpenAPI:
+def typed_route(**openapi_operation):
     """
-    OpenAPI specification for typed routes.
+    Decorator for marking a route function as typed for request
+    validation using type hints.
 
-    :param dict paths: The available paths and operations for the API.
-    :param dict components_schemas: Reusable schema objects that are inferred from Pydantic models.
+    :param dict openapi_operation: OpenAPI operation fields.
     """
-
-    paths: dict
-    components_schemas: dict[str:dict]
-
-
-def typed_route(**openapi_kwargs):
 
     def worker(view_func, /):
-        """
-        Decorator for marking a route function as typed for request
-        validation using type hints.
-
-        :param view_func: Flask view function
-        :return: Flask view function
-        """
-
-        obj = ftr_openapi.OperationModel(**openapi_kwargs)  # validate the OpenAPI parameters
-        setattr(view_func, ftr_utils.TYPED_ROUTE_ATTR, ftr_utils.TYPED_ROUTE_VALUE)
-        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, obj)
+        setattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, True)
+        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.Operation(**openapi_operation))
         return view_func
 
     return worker
@@ -69,7 +52,7 @@ class FlaskTypedRoutes:
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
 
-        self.openapi = OpenAPI(paths=collections.defaultdict(dict), components_schemas=dict())
+        self.openapi = ftr_openapi.OpenAPI(paths=collections.defaultdict(dict), components_schemas=dict())
 
         if app:
             self.init_app(app)
@@ -122,8 +105,8 @@ class FlaskTypedRoutes:
         return wrapper
 
     def is_typed(self, view_func, /):
-        manual = getattr(view_func, ftr_utils.TYPED_ROUTE_ATTR, None) == ftr_utils.TYPED_ROUTE_VALUE
-        return self.mode == Mode.auto or manual
+        enabled = getattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, False)
+        return self.mode == Mode.auto or enabled
 
     def update_openapi(self, func, rule, endpoint, kwargs):
         methods = kwargs.get("methods", ()) or getattr(func, "methods", ()) or ("GET",)

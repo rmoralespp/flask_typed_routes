@@ -7,8 +7,7 @@ def test_typed_route():
         pass
 
     typed_view_func = ftr_app.typed_route()(view_func)
-    assert hasattr(typed_view_func, ftr_utils.TYPED_ROUTE_ATTR)
-    assert getattr(typed_view_func, ftr_utils.TYPED_ROUTE_ATTR) == ftr_utils.TYPED_ROUTE_VALUE
+    assert getattr(typed_view_func, ftr_utils.TYPED_ROUTE_ENABLED)
 
 
 def test_is_typed_false():

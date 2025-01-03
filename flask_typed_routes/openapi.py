@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import typing as t
 
 import pydantic
@@ -17,18 +18,32 @@ parameter_types = frozenset(
 )
 
 
-class OperationModel(pydantic.BaseModel):
+class Operation(pydantic.BaseModel):
     tags: t.Optional[list[str]] = None
     summary: t.Optional[str] = None
     description: t.Optional[str] = None
     externalDocs: t.Optional[dict] = None
     operationId: t.Optional[str] = None
-    # Using Any for Specification Extensions
-    responses: t.Optional[dict[str, t.Any]] = None
-    callbacks: t.Optional[dict[str, t.Any]] = None
+    parameters: t.Optional[list[dict]] = None
+    requestBody: t.Optional[dict] = None
+    responses: t.Optional[dict[str, dict]] = None
+    callbacks: t.Optional[dict[str, dict]] = None
     deprecated: t.Optional[bool] = None
     security: t.Optional[list[dict[str, list[str]]]] = None
     servers: t.Optional[list[dict]] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class OpenAPI:
+    """
+    OpenAPI specification for typed routes.
+
+    :param dict paths: The available paths and operations for the API.
+    :param dict components_schemas: Reusable schema objects that are inferred from Pydantic models.
+    """
+
+    paths: dict
+    components_schemas: dict[str:dict]
 
 
 def duplicate_request_field(field):
@@ -157,14 +172,14 @@ def get_request_body(fields, model_properties, model_required_fields):
     elif schema_ref:
         examples = schema_ref.pop("examples", ())
         examples = {f"example-{i}": {"value": value} for i, value in enumerate(examples, 1)}
+        config = {
+            "schema": schema_ref,
+        }
+        if examples:
+            config["examples"] = examples
         return {
             "required": required,
-            "content": {
-                "application/json": {
-                    "schema": schema_ref,
-                    "examples": examples,
-                },
-            },
+            "content": {"application/json": config},
         }
     else:
         return None
@@ -175,7 +190,7 @@ def get_route_paths(func, rule, endpoint, methods):
 
     model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
     fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
-    operation_info: OperationModel = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
+    override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
 
     rule_path = ftr_utils.format_openapi_path(rule)
 
@@ -202,9 +217,8 @@ def get_route_paths(func, rule, endpoint, methods):
         }
         if request_body:
             spec["requestBody"] = request_body
-        if operation_info:
-            spec.update(operation_info.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True))
-
+        if override_spec:
+            spec.update(override_spec.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True))
         for method in methods:
             paths[rule_path][method.lower()] = spec
 

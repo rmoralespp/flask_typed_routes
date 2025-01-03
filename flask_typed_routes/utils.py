@@ -4,7 +4,6 @@ import inspect
 import logging
 import re
 import typing as t
-import uuid
 
 import flask
 import flask.views
@@ -17,15 +16,12 @@ rule_regex = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
 # Function to replace the parameters with the OpenAPI format.
 format_openapi_path = functools.partial(rule_regex.sub, r"{\1}")
 
-# Constants for marking a route function as typed for request validation
-TYPED_ROUTE_ATTR = f"__flask_typed_routes_{uuid.uuid4()}__"
-TYPED_ROUTE_VALUE = object()
+TYPED_ROUTE_MARK = "__flask_typed_routes__{field}"
 
-# Constants for storing the model and fields in the route function
-TYPED_ROUTE_MODEL = "__flask_typed_routes_model__"
-TYPED_ROUTE_FIELDS = "__flask_typed_routes_fields__"
-# Constants for storing the OpenAPI information in the route function
-TYPED_ROUTE_OPENAPI = "__flask_typed_routes_openapi__"
+TYPED_ROUTE_ENABLED = TYPED_ROUTE_MARK.format(field="enabled")
+TYPED_ROUTE_MODEL = TYPED_ROUTE_MARK.format(field="pydantic_model")
+TYPED_ROUTE_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
+TYPED_ROUTE_OPENAPI = TYPED_ROUTE_MARK.format(field="openapi")
 
 
 def validate_field_annotation(func_path, default, name, tp, /):
