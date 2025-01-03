@@ -100,9 +100,13 @@ def get_func_path(func):
     return f"{func.__module__}.{func.__qualname__}"
 
 
-def cleandoc(obj):
-    docstring = obj.__doc__
+def cleandoc(func):
+    docstring = func.__doc__
     return inspect.cleandoc(docstring) if docstring else ""
+
+
+def get_summary(func):
+    return " ".join(word.capitalize() for word in func.__name__.split("_") if word)
 
 
 def get_annotations(func, func_path, /):

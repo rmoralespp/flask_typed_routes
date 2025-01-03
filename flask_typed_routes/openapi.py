@@ -100,7 +100,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
     """
     Get OpenAPI operation parameters.
 
-    :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
+    :param Iterable[flask_typed_routes.Field] fields: Field definitions
     :param model_properties:
     :param model_components:
     :param model_required_fields:
@@ -198,24 +198,21 @@ def get_request_body(fields, model_properties, model_required_fields):
                 required_fields.append(name)
 
     if schema_obj:
+        config = {
+            "schema": {
+                "type": "object",
+                "properties": schema_obj,
+                "required": required_fields,
+            },
+        }
         return {
             "required": bool(required_fields),
-            "content": {
-                "application/json": {
-                    "schema": {
-                        "type": "object",
-                        "properties": schema_obj,
-                        "required": required_fields,
-                    },
-                },
-            },
+            "content": {"application/json": config},
         }
     elif schema_ref:
         examples = schema_ref.pop("examples", ())
         examples = {f"example-{i}": {"value": value} for i, value in enumerate(examples, 1)}
-        config = {
-            "schema": schema_ref,
-        }
+        config = {"schema": schema_ref}
         if examples:
             config["examples"] = examples
         return {
@@ -241,13 +238,12 @@ def get_route_spec(func, rule, endpoint, methods):
     request_model = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
     request_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
     status_code = getattr(func, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
-    override = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
-    rule_path = ftr_utils.format_openapi_path(rule)
+    override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
 
     paths = collections.defaultdict(dict)
     schemas = dict()
-
     if request_model and request_fields:
+        rule_path = ftr_utils.format_openapi_path(rule)
         ref_template = "{prefix}{endpoint}.{{model}}".format(prefix=REF_PREFIX, endpoint=endpoint)
         model_schema = request_model.model_json_schema(ref_template=ref_template)
         model_properties = model_schema.get("properties", dict())
@@ -257,25 +253,20 @@ def get_route_spec(func, rule, endpoint, methods):
 
         parameters = get_parameters(request_fields, model_properties, schemas, model_required_fields)
         request_body = get_request_body(request_fields, model_properties, model_required_fields)
-
-        summary = " ".join(word.capitalize() for word in func.__name__.split("_") if word)
+        responses = {"400": HTTP_VALIDATION_ERROR_REF}
         spec = {
             "parameters": tuple(parameters),
             "description": ftr_utils.cleandoc(func),
             "operationId": endpoint,
-            "summary": summary,
-            "responses": {
-                "400": HTTP_VALIDATION_ERROR_REF,
-            },
+            "summary": ftr_utils.get_summary(func),
+            "responses": responses,
         }
         if status_code:
-            spec["responses"][str(status_code)] = {
-                "description": "Successful operation",
-            }
+            responses[str(status_code)] = {"description": "Successful operation"}
         if request_body:
             spec["requestBody"] = request_body
-        if override:
-            override_spec = override.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True)
+        if override_spec:
+            override_spec = override_spec.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True)
             spec.update(override_spec)
         for method in methods:
             paths[rule_path][method.lower()] = spec
