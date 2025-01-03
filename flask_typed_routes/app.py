@@ -14,17 +14,42 @@ class Mode:
     manual = "manual"
 
 
-def typed_route(**openapi_operation):
+def typed_route(status_code=200, **openapi):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
+    Raises pydantic.ValidationError If the openapi operation kwargs are invalid.
 
-    :param dict openapi_operation: OpenAPI operation fields.
+    :param int status_code: Status code for the success response.
+    :param dict openapi: Describe the OpenAPI operation fields in the route.
+        Example:
+        openapi = {
+            "summary": "A short summary of what the operation does.",
+            "description": "A verbose explanation of the operation behavior",
+            "tags": ["tag1", "tag2"],
+            "deprecated": False,
+            "security": [{"bearerAuth": ["read", "write"]}],
+        }
+        @typed_route(**openapi)
+        def my_route():
+            pass
     """
+
+    # This library automatically generates OpenAPI fields for path operations:
+    # - summary: Derived from the function name.
+    # - description: Extracted from the function docstring.
+    # - parameters: Determined from the function's parameter annotations.
+    # - requestBody: Defined through the function's parameter annotations.
+    # - operationId: Generated from the endpoint name.
+    # - responses: Default response with the specified status code and Validation Error response.
+
+    # To override default values or add new fields, users can use the "openapi" parameter
+    # and specify the desired fields.
 
     def worker(view_func, /):
         setattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, True)
-        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.Operation(**openapi_operation))
+        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.Operation(**openapi))
+        setattr(view_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, status_code)
         return view_func
 
     return worker
@@ -51,9 +76,13 @@ class FlaskTypedRoutes:
         if mode not in (Mode.auto, Mode.manual):
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
-
-        self.openapi = ftr_openapi.OpenAPI(paths=collections.defaultdict(dict), components_schemas=dict())
-
+        self.openapi = ftr_openapi.OpenAPI(
+            paths=collections.defaultdict(dict),
+            components_schemas={
+                ftr_openapi.VALIDATION_ERROR_KEY: ftr_openapi.validation_error_definition,
+                ftr_openapi.HTTP_VALIDATION_ERROR_KEY: ftr_openapi.validation_error_response_definition,
+            }
+        )
         if app:
             self.init_app(app)
 
@@ -108,9 +137,9 @@ class FlaskTypedRoutes:
         enabled = getattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, False)
         return self.mode == Mode.auto or enabled
 
-    def update_openapi(self, func, rule, endpoint, kwargs):
-        methods = kwargs.get("methods", ()) or getattr(func, "methods", ()) or ("GET",)
+    def update_openapi(self, func, rule, endpoint, kwargs, /):
+        methods = kwargs.get("methods") or getattr(func, "methods", ()) or ("GET",)
         endpoint = endpoint or func.__name__
-        spec = ftr_openapi.get_route_paths(func, rule, endpoint, methods)
+        spec = ftr_openapi.get_route_spec(func, rule, endpoint, methods)
         self.openapi.paths.update(spec["paths"])
         self.openapi.components_schemas.update(spec["components"]["schemas"])

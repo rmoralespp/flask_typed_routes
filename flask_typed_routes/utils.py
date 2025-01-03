@@ -15,13 +15,13 @@ import flask_typed_routes.fields as ftr_fields
 rule_regex = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
 # Function to replace the parameters with the OpenAPI format.
 format_openapi_path = functools.partial(rule_regex.sub, r"{\1}")
-
+# Constants for marking typed routes.
 TYPED_ROUTE_MARK = "__flask_typed_routes__{field}"
-
 TYPED_ROUTE_ENABLED = TYPED_ROUTE_MARK.format(field="enabled")
-TYPED_ROUTE_MODEL = TYPED_ROUTE_MARK.format(field="pydantic_model")
-TYPED_ROUTE_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
+TYPED_ROUTE_REQUEST_MODEL = TYPED_ROUTE_MARK.format(field="request_model")
+TYPED_ROUTE_PARAM_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
 TYPED_ROUTE_OPENAPI = TYPED_ROUTE_MARK.format(field="openapi")
+TYPED_ROUTE_STATUS_CODE = TYPED_ROUTE_MARK.format(field="status_code")
 
 
 def validate_field_annotation(func_path, default, name, tp, /):

@@ -8,6 +8,9 @@ import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.utils as ftr_utils
 
+REF_PREFIX = "#/components/schemas/"
+VALIDATION_ERROR_KEY = "ValidationError"
+HTTP_VALIDATION_ERROR_KEY = "HTTPValidationError"
 parameter_types = frozenset(
     (
         ftr_fields.FieldTypes.path,
@@ -16,6 +19,42 @@ parameter_types = frozenset(
         ftr_fields.FieldTypes.header,
     )
 )
+
+validation_error_definition = {
+    "title": VALIDATION_ERROR_KEY,
+    "type": "object",
+    "properties": {
+        "loc": {
+            "title": "Location",
+            "type": "array",
+            "items": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+        },
+        "msg": {"title": "Message", "type": "string"},
+        "type": {"title": "Error Type", "type": "string"},
+    },
+    "required": ["loc", "msg", "type"],
+}
+
+validation_error_response_definition = {
+    "title": HTTP_VALIDATION_ERROR_KEY,
+    "type": "object",
+    "properties": {
+        "errors": {
+            "title": "Errors",
+            "type": "array",
+            "items": {"$ref": REF_PREFIX + VALIDATION_ERROR_KEY},
+        }
+    },
+}
+
+validation_error_response_ref = {
+    "description": "Validation Error",
+    "content": {
+        "application/json": {
+            "schema": {"$ref": REF_PREFIX + HTTP_VALIDATION_ERROR_KEY}
+        }
+    },
+}
 
 
 class Operation(pydantic.BaseModel):
@@ -185,28 +224,37 @@ def get_request_body(fields, model_properties, model_required_fields):
         return None
 
 
-def get_route_paths(func, rule, endpoint, methods):
-    """Get OpenAPI path specifications of a typed route."""
+def get_route_spec(func, rule, endpoint, methods):
+    """
+    Describes an API operations on a path.
 
-    model = getattr(func, ftr_utils.TYPED_ROUTE_MODEL, None)
-    fields = getattr(func, ftr_utils.TYPED_ROUTE_FIELDS, None)
-    override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
+    :param func: Flask view function
+    :param str rule: URL rule
+    :param str endpoint: Endpoint name
+    :param Iterable[str] methods: HTTP methods
 
+    :return dict: OpenAPI specification for the route
+    """
+
+    request_model = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
+    request_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
+    status_code = getattr(func, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
+    override = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
     rule_path = ftr_utils.format_openapi_path(rule)
 
     paths = collections.defaultdict(dict)
-    model_components = dict()
+    schemas = dict()
 
-    if model and fields:
-        ref_template = "#/components/schemas/{endpoint}.{{model}}".format(endpoint=endpoint)
-        model_schema = model.model_json_schema(ref_template=ref_template)
+    if request_model and request_fields:
+        ref_template = "{prefix}{endpoint}.{{model}}".format(prefix=REF_PREFIX, endpoint=endpoint)
+        model_schema = request_model.model_json_schema(ref_template=ref_template)
         model_properties = model_schema.get("properties", dict())
         model_components = model_schema.get("$defs", dict())
-        model_components = {f"{endpoint}.{name}": schema for name, schema in model_components.items()}
+        schemas = {f"{endpoint}.{name}": schema for name, schema in model_components.items()}
         model_required_fields = frozenset(model_schema.get("required", ()))
 
-        parameters = get_parameters(fields, model_properties, model_components, model_required_fields)
-        request_body = get_request_body(fields, model_properties, model_required_fields)
+        parameters = get_parameters(request_fields, model_properties, schemas, model_required_fields)
+        request_body = get_request_body(request_fields, model_properties, model_required_fields)
 
         summary = " ".join(word.capitalize() for word in func.__name__.split("_") if word)
         spec = {
@@ -214,15 +262,23 @@ def get_route_paths(func, rule, endpoint, methods):
             "description": ftr_utils.cleandoc(func),
             "operationId": endpoint,
             "summary": summary,
+            "responses": {
+                "400": validation_error_response_ref,
+            },
         }
+        if status_code:
+            spec["responses"][str(status_code)] = {
+                "description": "Successful operation",
+            }
         if request_body:
             spec["requestBody"] = request_body
-        if override_spec:
-            spec.update(override_spec.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True))
+        if override:
+            override_spec = override.model_dump(exclude_unset=True, exclude_defaults=True, exclude_none=True)
+            spec.update(override_spec)
         for method in methods:
             paths[rule_path][method.lower()] = spec
 
     return {
-        "paths": dict(paths),
-        "components": {"schemas": model_components},
+        "paths": paths,
+        "components": {"schemas": schemas},
     }

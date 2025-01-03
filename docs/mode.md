@@ -73,7 +73,7 @@ ftr.FlaskTypedRoutes(api, mode=ftr.Mode.manual)
 
 
 @api.get('/products/<int:pk>/')
-@ftr.typed_route  # Validation is explicitly enabled for this route.
+@ftr.typed_route()  # Validation is explicitly enabled for this route.
 def get_product(pk: t.Annotated[int, at.Gt(10)]):
     # The 'pk' parameter is validated as an integer.
     return flask.jsonify({"pk": pk})
