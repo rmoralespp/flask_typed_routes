@@ -53,6 +53,7 @@ HTTP_VALIDATION_ERROR_REF = {
 
 
 def get_openapi_path(
+    *,
     tags: list[str] = None,
     summary: str = None,
     description: str = None,
@@ -96,6 +97,7 @@ def get_openapi_path(
 
 
 def get_openapi(
+    *,
     title: str = "API doc",
     version: str = "0.0.0",
     openapi_version: str = "3.1.0",
@@ -149,7 +151,7 @@ def get_openapi(
     return result
 
 
-def duplicate_request_field(field):
+def duplicate_request_field(field, /):
     msg = f"Duplicate request parameter: [name={field.locator}, in={field.kind}]"
     return ftr_errors.InvalidParameterTypeError(msg)
 
@@ -158,7 +160,7 @@ def duplicate_request_body():
     return ftr_errors.InvalidParameterTypeError("Duplicate request body")
 
 
-def get_parameters(fields, model_properties, model_components, model_required_fields):
+def get_parameters(fields, model_properties, model_components, model_required_fields, /):
     """
     Get OpenAPI operation parameters.
 
@@ -179,7 +181,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
             ref_name = ref_properties["$ref"].split("/")[-1]
             ref_schema = model_components[ref_name]
             properties_slot = ref_schema.get("properties", dict())
-            required_slot = ref_schema.get("required", ())
+            required_slot = frozenset(ref_schema.get("required", ()))
             names = (info.alias or name for name, info in field.annotation.model_fields.items())
         else:
             properties_slot = model_properties
@@ -214,7 +216,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
         yield from value.values()
 
 
-def get_request_body(fields, model_properties, model_required_fields):
+def get_request_body(fields, model_properties, model_required_fields, /):
     """
     Get OpenAPI operation Request body.
 
@@ -282,7 +284,7 @@ def get_request_body(fields, model_properties, model_required_fields):
         return None
 
 
-def get_route_spec(func, rule, endpoint, methods):
+def get_route_spec(func, rule, endpoint, methods, /):
     """
     Describes an API operations on a path.
 
