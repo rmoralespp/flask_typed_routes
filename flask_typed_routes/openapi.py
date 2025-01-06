@@ -1,6 +1,4 @@
 import collections
-import dataclasses
-import typing as t
 
 import pydantic
 
@@ -54,37 +52,101 @@ HTTP_VALIDATION_ERROR_REF = {
 }
 
 
-class Operation(pydantic.BaseModel):
-    """
-    Describes an API operations on a path.
-    It is used to generate OpenAPI specification for the route.
-    """
+def get_openapi_path(
+    tags: list[str] = None,
+    summary: str = None,
+    description: str = None,
+    externalDocs: dict = None,
+    operationId: str = None,
+    parameters: list[dict] = None,
+    requestBody: dict = None,
+    responses: dict[str, dict] = None,
+    callbacks: dict[str, dict] = None,
+    deprecated: bool = None,
+    security: list[dict[str, list[str]]] = None,
+    servers: list[dict] = None,
+):
+    result = dict()
+    if tags:
+        result["tags"] = tags
+    if summary:
+        result["summary"] = summary
+    if description:
+        result["description"] = description
+    if externalDocs:
+        result["externalDocs"] = externalDocs
+    if operationId:
+        result["operationId"] = operationId
+    if parameters:
+        result["parameters"] = parameters
+    if requestBody:
+        result["requestBody"] = requestBody
+    if responses:
+        result["responses"] = responses
+    if callbacks:
+        result["callbacks"] = callbacks
+    if deprecated:
+        result["deprecated"] = deprecated
+    if security:
+        result["security"] = security
+    if servers:
+        result["servers"] = servers
 
-    tags: t.Optional[list[str]] = None
-    summary: t.Optional[str] = None
-    description: t.Optional[str] = None
-    externalDocs: t.Optional[dict] = None
-    operationId: t.Optional[str] = None
-    parameters: t.Optional[list[dict]] = None
-    requestBody: t.Optional[dict] = None
-    responses: t.Optional[dict[str, dict]] = None
-    callbacks: t.Optional[dict[str, dict]] = None
-    deprecated: t.Optional[bool] = None
-    security: t.Optional[list[dict[str, list[str]]]] = None
-    servers: t.Optional[list[dict]] = None
+    return result
 
 
-@dataclasses.dataclass(frozen=True)
-class OpenAPI:
-    """
-    OpenAPI specification for typed routes.
+def get_openapi(
+    title: str = "API doc",
+    version: str = "0.0.0",
+    openapi_version: str = "3.1.0",
+    summary: str = None,
+    description: str = None,
+    terms_of_service: str = None,
+    contact_info: dict = None,
+    license_info: dict = None,
+    servers: list[dict] = None,
+    webhooks: dict[str, dict] = None,
+    components: dict = None,
+    security=None,
+    tags: list[dict] = None,
+    external_docs: dict = None,
+):
+    info = {"title": title, "version": version}
+    if summary:
+        info["summary"] = summary
+    if description:
+        info["description"] = description
+    if terms_of_service:
+        info["termsOfService"] = terms_of_service
+    if contact_info:
+        info["contact"] = contact_info
+    if license_info:
+        info["license"] = license_info
 
-    :param dict paths: The available paths and operations for the API.
-    :param dict components_schemas: Reusable schema objects that are inferred from Pydantic models.
-    """
-
-    paths: dict
-    components_schemas: dict[str:dict]
+    result = {
+        "openapi": openapi_version,
+        "info": info,
+        "paths": collections.defaultdict(dict),
+        "components": {
+            "schemas": {
+                VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
+                HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
+            },
+        },
+    }
+    if servers:
+        result["servers"] = servers
+    if webhooks:
+        result["webhooks"] = webhooks
+    if components:
+        result["components"].update(components)
+    if security:
+        result["security"] = security
+    if tags:
+        result["tags"] = tags
+    if external_docs:
+        result["externalDocs"] = external_docs
+    return result
 
 
 def duplicate_request_field(field):
@@ -264,11 +326,7 @@ def get_route_spec(func, rule, endpoint, methods):
         if request_body:
             spec["requestBody"] = request_body
         if override_spec:
-            spec.update(override_spec.model_dump(
-                exclude_unset=True,
-                exclude_defaults=True,
-                exclude_none=True,
-            ))
+            spec.update(override_spec)
         for method in methods:
             paths[path][method.lower()] = spec
 

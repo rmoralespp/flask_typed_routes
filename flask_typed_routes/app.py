@@ -1,4 +1,3 @@
-import collections
 import functools
 
 import flask_typed_routes.core as ftr_core
@@ -18,7 +17,6 @@ def typed_route(status_code=200, **openapi):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
-    Raises pydantic.ValidationError If the openapi operation kwargs are invalid.
 
     :param int status_code: Status code for the success response.
     :param dict openapi: Describe the OpenAPI operation fields in the route.
@@ -48,7 +46,7 @@ def typed_route(status_code=200, **openapi):
 
     def worker(view_func, /):
         setattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, True)
-        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.Operation(**openapi))
+        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.get_openapi_path(**openapi))
         setattr(view_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, status_code)
         return view_func
 
@@ -70,19 +68,20 @@ class FlaskTypedRoutes:
 
     IGNORE_VERBS = ("HEAD", "OPTIONS")
 
-    def __init__(self, app=None, validation_error_handler=None, ignore_verbs=None, mode=Mode.auto):
+    def __init__(
+        self,
+        app=None,
+        validation_error_handler=None,
+        ignore_verbs=None,
+        mode=Mode.auto,
+        **openapi,
+    ):
         self.error_handler = validation_error_handler
         self.ignore_verbs = ignore_verbs or self.IGNORE_VERBS
         if mode not in (Mode.auto, Mode.manual):
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
-        self.openapi = ftr_openapi.OpenAPI(
-            paths=collections.defaultdict(dict),
-            components_schemas={
-                ftr_openapi.VALIDATION_ERROR_KEY: ftr_openapi.VALIDATION_ERROR_DEF,
-                ftr_openapi.HTTP_VALIDATION_ERROR_KEY: ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
-            },
-        )
+        self.openapi_schema = ftr_openapi.get_openapi(**openapi)
         if app:
             self.init_app(app)
 
@@ -141,5 +140,5 @@ class FlaskTypedRoutes:
         methods = kwargs.get("methods") or getattr(func, "methods", ()) or ("GET",)
         endpoint = endpoint or func.__name__
         spec = ftr_openapi.get_route_spec(func, rule, endpoint, methods)
-        self.openapi.paths.update(spec["paths"])
-        self.openapi.components_schemas.update(spec["components"]["schemas"])
+        self.openapi_schema["paths"].update(spec["paths"])
+        self.openapi_schema["components"]["schemas"].update(spec["components"]["schemas"])
