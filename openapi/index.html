@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/header/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/openapi/" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Header parameters - flask_typed_routes</title>
+    <title>OpenAPI - flask_typed_routes</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Header parameters";
-        var mkdocs_page_input_path = "header.md";
-        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/header/";
+        var mkdocs_page_name = "OpenAPI";
+        var mkdocs_page_input_path = "openapi.md";
+        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/openapi/";
       </script>
     
     <!--[if lt IE 9]>
@@ -51,9 +51,7 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../cookie/">Cookie parameters</a>
                   </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Header parameters</a>
-    <ul class="current">
-    </ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../header/">Header parameters</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../body/">Request body</a>
                   </li>
@@ -61,7 +59,7 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../mode/">Validation Modes</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../openapi/">OpenAPI</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">OpenAPI</a>
                   </li>
               </ul>
       </div>
@@ -79,9 +77,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Usage</li>
-      <li class="breadcrumb-item active">Header parameters</li>
+      <li class="breadcrumb-item active">OpenAPI</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/header.md">Edit on flask_typed_routes</a>
+          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/openapi.md">Edit on flask_typed_routes</a>
     </li>
   </ul>
   <hr/>
@@ -89,31 +87,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h2 id="header-parameters">Header parameters</h2>
-<p>You can define header parameters in the same way as <strong>query/cookie parameters</strong>, with support for multiple
-values and validation using Pydantic models.</p>
-<pre><code class="language-python">import typing as t
-
-import flask
-import flask_typed_routes as ftr
-
-app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
-
-
-@app.route('/items/')
-def get_items(auth: t.Annotated[str, ftr.Header(alias=&quot;Authorization&quot;)] = None):
-    data = {
-        'auth': auth,
-    }
-    return flask.jsonify(data)
-</code></pre>
+                
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../cookie/" class="btn btn-neutral float-left" title="Cookie parameters"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../body/" class="btn btn-neutral float-right" title="Request body">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../mode/" class="btn btn-neutral float-left" title="Validation Modes"><span class="icon icon-circle-arrow-left"></span> Previous</a>
     </div>
 
   <hr/>
@@ -140,10 +119,8 @@ def get_items(auth: t.Annotated[str, ftr.Header(alias=&quot;Authorization&quot;)
         </span>
     
     
-      <span><a href="../cookie/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../mode/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
-    
-      <span><a href="../body/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
