@@ -17,7 +17,7 @@
 - ⚠️ **Error Handling:** Clear and automatic responses for validation failures.
 - ✨ **Autocomplete:** Editor integration with comprehensive suggestions.
 - ⚙️ **Validation Modes:** Supports automatic validation for all routes and manual validation for specific routes using decorators.
-- 📖 **OpenApi Support:** Generate the API documentation using OpenAPI.
+- 📖 **OpenAPI Support:** Automatically generates a comprehensive OpenAPI schema, ensuring clear documentation and seamless integration with API tools.
 
 ## Requirements
 
