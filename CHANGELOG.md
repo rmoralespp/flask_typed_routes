@@ -1,6 +1,10 @@
 ## Releases
 
-### v0.0.8 (2024-12-12)
+### v0.1.0 (2025-01-07)
+
+- **Add**: Add OpenAPI support to generate the API documentation.
+- **Breaking-Change**: `typed_route` decorator now it called with parentheses.
+
 
 - **Add**: Supports automatic validation for all routes and manual validation for specific routes using decorators.
 - **Change**: The fields provided are now stricter. If is passed an invalid arg, a `InvalidParameterTypeError` will be raised.
