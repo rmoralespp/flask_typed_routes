@@ -20,29 +20,18 @@ def typed_route(status_code=200, **openapi):
 
     :param int status_code: Status code for the success response.
     :param dict openapi: Describe the OpenAPI operation fields in the route.
-        Example:
+
+    Example:
         openapi = {
             "summary": "A short summary of what the operation does.",
-            "description": "A verbose explanation of the operation behavior",
-            "tags": ["tag1", "tag2"],
+            "tags": ["my-tag"],
             "deprecated": False,
-            "security": [{"bearerAuth": ["read", "write"]}],
         }
         @typed_route(**openapi)
         def my_route():
             pass
+
     """
-
-    # This library automatically generates OpenAPI fields for path operations:
-    # - summary: Derived from the function name.
-    # - description: Extracted from the function docstring.
-    # - parameters: Determined from the function's parameter annotations.
-    # - requestBody: Defined through the function's parameter annotations.
-    # - operationId: Generated from the endpoint name.
-    # - responses: Default response with the specified status code and Validation Error response.
-
-    # To override default values or add new fields, users can use the "openapi" parameter
-    # and specify the desired fields.
 
     def worker(view_func, /):
         setattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, True)
@@ -139,6 +128,6 @@ class FlaskTypedRoutes:
     def update_openapi(self, func, rule, endpoint, kwargs, /):
         methods = kwargs.get("methods") or getattr(func, "methods", ()) or ("GET",)
         endpoint = endpoint or func.__name__
-        spec = ftr_openapi.get_route_spec(func, rule, endpoint, methods)
+        spec = ftr_openapi.get_openapi_route(func, rule, endpoint, methods)
         self.openapi_schema["paths"].update(spec["paths"])
         self.openapi_schema["components"]["schemas"].update(spec["components"]["schemas"])

@@ -52,6 +52,10 @@ HTTP_VALIDATION_ERROR_REF = {
 }
 
 
+def get_summary(func, /):
+    return " ".join(word.capitalize() for word in func.__name__.split("_") if word)
+
+
 def get_openapi_path(
     *,
     tags: list[str] = None,
@@ -284,9 +288,9 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_route_spec(func, rule, endpoint, methods, /):
+def get_openapi_route(func, rule, endpoint, methods, /):
     """
-    Describes an API operations on a path.
+    Describes an API operations on a flask route.
 
     :param func: Flask view function
     :param str rule: URL rule
@@ -305,7 +309,7 @@ def get_route_spec(func, rule, endpoint, methods, /):
     schemas = dict()
     if request_model and param_fields:
         path = ftr_utils.format_openapi_path(rule)
-        ref_template = "{prefix}{endpoint}.{{model}}".format(prefix=REF_PREFIX, endpoint=endpoint)
+        ref_template = f"{REF_PREFIX}{endpoint}.{{model}}"
         model_schema = request_model.model_json_schema(ref_template=ref_template)
         required_fields = frozenset(model_schema.get("required", ()))
         properties = model_schema.get("properties", dict())
@@ -320,7 +324,7 @@ def get_route_spec(func, rule, endpoint, methods, /):
             "parameters": tuple(parameters),
             "description": ftr_utils.cleandoc(func),
             "operationId": endpoint,
-            "summary": ftr_utils.get_summary(func),
+            "summary": get_summary(func),
             "responses": responses,
         }
         if status_code:

@@ -23,6 +23,8 @@ TYPED_ROUTE_PARAM_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
 TYPED_ROUTE_OPENAPI = TYPED_ROUTE_MARK.format(field="openapi")
 TYPED_ROUTE_STATUS_CODE = TYPED_ROUTE_MARK.format(field="status_code")
 
+logger = logging.getLogger("flask_typed_routes")
+
 
 def validate_field_annotation(func_path, default, name, tp, /):
     """
@@ -105,15 +107,11 @@ def cleandoc(func):
     return inspect.cleandoc(docstring) if docstring else ""
 
 
-def get_summary(func):
-    return " ".join(word.capitalize() for word in func.__name__.split("_") if word)
-
-
 def get_annotations(func, func_path, /):
     # Compute annotations: https://docs.pydantic.dev/latest/internals/resolving_annotations/
     try:
         result = inspect.get_annotations(func, globals=func.__globals__, eval_str=True)
     except NameError:
-        logging.error("Failed to resolve annotations for %s", func_path)
+        logger.error("Failed to resolve annotations for %s", func_path)
         result = dict()
     return result
