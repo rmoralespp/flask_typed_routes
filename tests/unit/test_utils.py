@@ -147,6 +147,22 @@ def test_extract_rule_params(rule, expected):
 
 
 @pytest.mark.parametrize(
+    "rule, expected",
+    [
+        ("/user/<int:id>", "/user/{id}"),
+        ("/user/<int:id>/post/<int:post_id>", "/user/{id}/post/{post_id}"),
+        ("/user/list", "/user/list"),
+        ("/user/<int:id>/post/<string:title>", "/user/{id}/post/{title}"),
+        ("/user/<path:subpath>", '/user/{subpath}'),
+        ("/user/<user_id>/details/<detail_id>", '/user/{user_id}/details/{detail_id}'),
+    ],
+)
+def test_format_openapi_path(rule, expected):
+    result = ftr_utils.format_openapi_path(rule)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
     "view, expected",
     [
         (MockView(), ValidView),  # Caso válido

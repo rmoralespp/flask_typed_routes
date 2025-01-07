@@ -197,7 +197,7 @@ def flask_app_manual():
     ftr.FlaskTypedRoutes(api, mode=ftr.Mode.manual)
 
     @api.get('/products/validate/<int:pk>/')
-    @ftr.typed_route
+    @ftr.typed_route()
     @login_required
     def get_product_validate(pk: t.Annotated[int, at.Gt(5), at.Lt(100)]):
         return flask.jsonify({"pk": pk})

@@ -1,5 +1,9 @@
 ## Releases
 
+### v0.1.0 (2025-01-07)
+
+- **Add**: Add OpenAPI support to generate the API documentation.
+- **Breaking-Change**: `typed_route` decorator now it called with parentheses.
 - **Change**: Update the CI trigger to avoid runs on opened pull-request.
 
 ### v0.0.8 (2024-12-12)

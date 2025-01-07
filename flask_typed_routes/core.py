@@ -1,8 +1,3 @@
-"""
-Contains the main application logic.
-Offers a decorator to validate the request parameters using Pydantic models.
-"""
-
 import functools
 import inspect
 import typing as t
@@ -83,8 +78,7 @@ def parse_route(view_func, view_func_path, view_path_args, /):
     """
 
     sig = inspect.signature(view_func)
-    # Compute annotations: https://docs.pydantic.dev/latest/internals/resolving_annotations/
-    annotations = inspect.get_annotations(view_func, globals=view_func.__globals__, eval_str=True)
+    annotations = ftr_utils.get_annotations(view_func, view_func_path)
     for name, annotation in annotations.items():
         if name == "return":
             continue  # Skip the return annotation
@@ -129,9 +123,12 @@ def route(view_func, rule_params, /):
     # Create a Pydantic model from the field definitions.
     definitions = {field.name: (field.annotation, field.field_info) for field in fields}
     if definitions:
-        model_name = f"{view_func_path}.pydantic_model"
+        model_name = f"{view_func_path}.request_model"
         model_name = model_name.replace(".", "__")
         model = pydantic.create_model(model_name, **definitions)
+
+        setattr(decorator, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, model)
+        setattr(decorator, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, fields)
         return decorator
     else:
         return view_func

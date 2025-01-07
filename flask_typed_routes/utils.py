@@ -1,5 +1,7 @@
 import contextlib
+import functools
 import inspect
+import logging
 import re
 import typing as t
 
@@ -11,6 +13,17 @@ import flask_typed_routes.fields as ftr_fields
 
 # RegExp for extracting parameters from the route.
 rule_regex = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
+# Function to replace the parameters with the OpenAPI format.
+format_openapi_path = functools.partial(rule_regex.sub, r"{\1}")
+# Constants for marking typed routes.
+TYPED_ROUTE_MARK = "__flask_typed_routes__{field}"
+TYPED_ROUTE_ENABLED = TYPED_ROUTE_MARK.format(field="enabled")
+TYPED_ROUTE_REQUEST_MODEL = TYPED_ROUTE_MARK.format(field="request_model")
+TYPED_ROUTE_PARAM_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
+TYPED_ROUTE_OPENAPI = TYPED_ROUTE_MARK.format(field="openapi")
+TYPED_ROUTE_STATUS_CODE = TYPED_ROUTE_MARK.format(field="status_code")
+
+logger = logging.getLogger("flask_typed_routes")
 
 
 def validate_field_annotation(func_path, default, name, tp, /):
@@ -87,3 +100,18 @@ def get_func_path(func):
     """Get the full path of a function/method."""
 
     return f"{func.__module__}.{func.__qualname__}"
+
+
+def cleandoc(func):
+    docstring = func.__doc__
+    return inspect.cleandoc(docstring) if docstring else ""
+
+
+def get_annotations(func, func_path, /):
+    # Compute annotations: https://docs.pydantic.dev/latest/internals/resolving_annotations/
+    try:
+        result = inspect.get_annotations(func, globals=func.__globals__, eval_str=True)
+    except NameError:
+        logger.error("Failed to resolve annotations for %s", func_path)
+        result = dict()
+    return result

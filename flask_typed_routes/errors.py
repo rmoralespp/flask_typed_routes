@@ -19,6 +19,7 @@ def handler(error, /):
     Handle validation errors.
 
     :param ValidationError error: Validation error instance.
+    :param ValidationError error: Validation error instance.
     :return: JSON response with the errors.
     """
 
