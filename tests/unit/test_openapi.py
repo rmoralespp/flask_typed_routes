@@ -16,8 +16,8 @@ def test_get_summary():
     assert result == "Sample Func"
 
 
-def test_get_openapi_path_includes_all_fields():
-    result = ftr_openapi.get_openapi_path(
+def test_get_operation_includes_all_fields():
+    result = ftr_openapi.get_operation(
         tags=["tag1"],
         summary="Summary",
         description="Description",
@@ -48,8 +48,8 @@ def test_get_openapi_path_includes_all_fields():
     assert result == expected
 
 
-def test_get_openapi_path_handles_empty_fields():
-    result = ftr_openapi.get_openapi_path()
+def test_get_operation_handles_empty_fields():
+    result = ftr_openapi.get_operation()
     assert result == dict()
 
 
@@ -108,7 +108,7 @@ def test_get_openapi_handles_empty_fields():
     assert result == expected
 
 
-def test_get_openapi_route_includes_all_fields():
+def test_get_operations_includes_all_fields():
     def sample_func():
         """Sample function"""
 
@@ -120,7 +120,7 @@ def test_get_openapi_route_includes_all_fields():
     setattr(sample_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, 200)
     setattr(sample_func, ftr_utils.TYPED_ROUTE_OPENAPI, {"summary": "Sample summary"})
 
-    result = ftr_openapi.get_openapi_route(sample_func, "/sample", "sample_endpoint", ["GET"])
+    result = ftr_openapi.get_operations(sample_func, "/sample", "sample_endpoint", ["GET"])
     result = dict(result)
     expected = {
         'components': {'schemas': {}},
@@ -138,7 +138,12 @@ def test_get_openapi_route_includes_all_fields():
                         },
                     ),
                     'responses': {
-                        '200': {'description': 'Success'},
+                        '200': {
+                            'content': {
+                                'application/json': {'schema': {'type': 'string'}},
+                            },
+                            'description': 'Success'
+                        },
                         '400': {
                             'content': {
                                 'application/json': {'schema': {'$ref': '#/components/schemas/HTTPValidationError'}}
@@ -154,11 +159,11 @@ def test_get_openapi_route_includes_all_fields():
     assert result == expected
 
 
-def test_get_openapi_route_handles_empty_fields():
+def test_get_operations_handles_empty_fields():
     def sample_func():
         """Sample function"""
 
-    result = ftr_openapi.get_openapi_route(sample_func, "/sample", "sample_endpoint", ["GET"])
+    result = ftr_openapi.get_operations(sample_func, "/sample", "sample_endpoint", ["GET"])
     expected = {
         "paths": collections.defaultdict(dict),
         "components": {"schemas": {}},

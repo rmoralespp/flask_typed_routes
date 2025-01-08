@@ -50,109 +50,10 @@ HTTP_VALIDATION_ERROR_REF = {
     "description": "Validation Error",
     "content": {"application/json": {"schema": {"$ref": REF_PREFIX + HTTP_VALIDATION_ERROR_KEY}}},
 }
-
-
-def get_summary(func, /):
-    return " ".join(word.capitalize() for word in func.__name__.split("_") if word)
-
-
-def get_openapi_path(
-    *,
-    tags: list[str] = None,
-    summary: str = None,
-    description: str = None,
-    externalDocs: dict = None,
-    operationId: str = None,
-    parameters: list[dict] = None,
-    requestBody: dict = None,
-    responses: dict[str, dict] = None,
-    callbacks: dict[str, dict] = None,
-    deprecated: bool = None,
-    security: list[dict[str, list[str]]] = None,
-    servers: list[dict] = None,
-):
-    result = dict()
-    if tags:
-        result["tags"] = tags
-    if summary:
-        result["summary"] = summary
-    if description:
-        result["description"] = description
-    if externalDocs:
-        result["externalDocs"] = externalDocs
-    if operationId:
-        result["operationId"] = operationId
-    if parameters:
-        result["parameters"] = parameters
-    if requestBody:
-        result["requestBody"] = requestBody
-    if responses:
-        result["responses"] = responses
-    if callbacks:
-        result["callbacks"] = callbacks
-    if deprecated:
-        result["deprecated"] = deprecated
-    if security:
-        result["security"] = security
-    if servers:
-        result["servers"] = servers
-
-    return result
-
-
-def get_openapi(
-    *,
-    title: str = "API doc",
-    version: str = "0.0.0",
-    openapi_version: str = "3.1.0",
-    summary: str = None,
-    description: str = None,
-    terms_of_service: str = None,
-    contact_info: dict = None,
-    license_info: dict = None,
-    servers: list[dict] = None,
-    webhooks: dict[str, dict] = None,
-    components: dict = None,
-    security=None,
-    tags: list[dict] = None,
-    external_docs: dict = None,
-):
-    info = {"title": title, "version": version}
-    if summary:
-        info["summary"] = summary
-    if description:
-        info["description"] = description
-    if terms_of_service:
-        info["termsOfService"] = terms_of_service
-    if contact_info:
-        info["contact"] = contact_info
-    if license_info:
-        info["license"] = license_info
-
-    result = {
-        "openapi": openapi_version,
-        "info": info,
-        "paths": collections.defaultdict(dict),
-        "components": {
-            "schemas": {
-                VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
-                HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
-            },
-        },
-    }
-    if servers:
-        result["servers"] = servers
-    if webhooks:
-        result["webhooks"] = webhooks
-    if components:
-        result["components"].update(components)
-    if security:
-        result["security"] = security
-    if tags:
-        result["tags"] = tags
-    if external_docs:
-        result["externalDocs"] = external_docs
-    return result
+HTTP_SUCCESS_RESPONSE = {
+    "description": "Success",
+    "content": {"application/json": {"schema": {"type": "string"}}},
+}
 
 
 def duplicate_request_field(field, /):
@@ -162,6 +63,12 @@ def duplicate_request_field(field, /):
 
 def duplicate_request_body():
     return ftr_errors.InvalidParameterTypeError("Duplicate request body")
+
+
+def get_summary(func, /):
+    """Get the summary for the OpenAPI operation."""
+
+    return " ".join(word.capitalize() for word in func.__name__.split("_") if word)
 
 
 def get_parameters(fields, model_properties, model_components, model_required_fields, /):
@@ -288,16 +195,15 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_openapi_route(func, rule, endpoint, methods, /):
+def get_operations(func, rule, endpoint, methods, /):
     """
-    Describes an API operations on a flask route.
+    Get OpenAPI operations for a flask view function.
 
     :param func: Flask view function
     :param str rule: URL rule
     :param str endpoint: Endpoint name
     :param Iterable[str] methods: HTTP methods
-
-    :return dict: OpenAPI specification for the route
+    :rtype dict:
     """
 
     request_model = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
@@ -319,7 +225,12 @@ def get_openapi_route(func, rule, endpoint, methods, /):
 
         parameters = get_parameters(param_fields, properties, schemas, required_fields)
         request_body = get_request_body(param_fields, properties, required_fields)
-        responses = {"400": HTTP_VALIDATION_ERROR_REF}
+        status_code = f"{status_code}" if status_code else "default"
+        responses = {
+            "400": HTTP_VALIDATION_ERROR_REF,
+            status_code: HTTP_SUCCESS_RESPONSE,
+        }
+
         spec = {
             "parameters": tuple(parameters),
             "description": ftr_utils.cleandoc(func),
@@ -327,8 +238,7 @@ def get_openapi_route(func, rule, endpoint, methods, /):
             "summary": get_summary(func),
             "responses": responses,
         }
-        if status_code:
-            responses[f"{status_code}"] = {"description": "Success"}
+
         if request_body:
             spec["requestBody"] = request_body
         if override_spec:
@@ -340,3 +250,105 @@ def get_openapi_route(func, rule, endpoint, methods, /):
         "paths": paths,
         "components": {"schemas": schemas},
     }
+
+
+def get_operation(
+    *,
+    tags: list[str] = None,
+    summary: str = None,
+    description: str = None,
+    externalDocs: dict = None,
+    operationId: str = None,
+    parameters: list[dict] = None,
+    requestBody: dict = None,
+    responses: dict[str, dict] = None,
+    callbacks: dict[str, dict] = None,
+    deprecated: bool = None,
+    security: list[dict[str, list[str]]] = None,
+    servers: list[dict] = None,
+):
+    """Get specification of OpenAPI operation according to the given parameters."""
+
+    result = dict()
+    if tags:
+        result["tags"] = tags
+    if summary:
+        result["summary"] = summary
+    if description:
+        result["description"] = description
+    if externalDocs:
+        result["externalDocs"] = externalDocs
+    if operationId:
+        result["operationId"] = operationId
+    if parameters:
+        result["parameters"] = parameters
+    if requestBody:
+        result["requestBody"] = requestBody
+    if responses:
+        result["responses"] = responses
+    if callbacks:
+        result["callbacks"] = callbacks
+    if deprecated:
+        result["deprecated"] = deprecated
+    if security:
+        result["security"] = security
+    if servers:
+        result["servers"] = servers
+    return result
+
+
+def get_openapi(
+    *,
+    title: str = "API doc",
+    version: str = "0.0.0",
+    openapi_version: str = "3.1.0",
+    summary: str = None,
+    description: str = None,
+    terms_of_service: str = None,
+    contact_info: dict = None,
+    license_info: dict = None,
+    servers: list[dict] = None,
+    webhooks: dict[str, dict] = None,
+    components: dict = None,
+    security=None,
+    tags: list[dict] = None,
+    external_docs: dict = None,
+):
+    """Get specification of OpenAPI document according to the given parameters."""
+
+    info = {"title": title, "version": version}
+    if summary:
+        info["summary"] = summary
+    if description:
+        info["description"] = description
+    if terms_of_service:
+        info["termsOfService"] = terms_of_service
+    if contact_info:
+        info["contact"] = contact_info
+    if license_info:
+        info["license"] = license_info
+
+    result = {
+        "openapi": openapi_version,
+        "info": info,
+        "paths": collections.defaultdict(dict),
+        "components": {
+            "schemas": {
+                VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
+                HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
+            },
+        },
+    }
+    if servers:
+        result["servers"] = servers
+    if webhooks:
+        result["webhooks"] = webhooks
+    if components:
+        result["components"].update(components)
+    if security:
+        result["security"] = security
+    if tags:
+        result["tags"] = tags
+    if external_docs:
+        result["externalDocs"] = external_docs
+    return result

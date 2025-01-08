@@ -35,7 +35,7 @@ def typed_route(status_code=200, **openapi):
 
     def worker(view_func, /):
         setattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, True)
-        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.get_openapi_path(**openapi))
+        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.get_operation(**openapi))
         setattr(view_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, status_code)
         return view_func
 
@@ -128,7 +128,7 @@ class FlaskTypedRoutes:
     def update_openapi(self, func, rule, endpoint, kwargs, /):
         methods = kwargs.get("methods") or getattr(func, "methods", ()) or ("GET",)
         endpoint = endpoint or func.__name__
-        spec = ftr_openapi.get_openapi_route(func, rule, endpoint, methods)
+        spec = ftr_openapi.get_operations(func, rule, endpoint, methods)
         paths = self.openapi_schema["paths"]
         schemas = self.openapi_schema["components"]["schemas"]
         for path, path_spec in spec["paths"].items():
