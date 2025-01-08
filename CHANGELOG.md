@@ -1,5 +1,9 @@
 ## Releases
 
+### v0.1.1 (2025-01-08)
+
+- **Change**: Improved OpenAPI schema to include default HTTP response.
+
 ### v0.1.0 (2025-01-07)
 
 - **Add**: Add OpenAPI support to generate the API documentation.
