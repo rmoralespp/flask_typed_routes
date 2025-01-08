@@ -233,7 +233,7 @@ def update_item(item_id: int, item: Item):
 
 Open your browser and go to `http://127.0.0.1:5000/api/doc/`
 
-![OpenApi Example](./docs/openapi_example0.png)
+![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/openapi_example0.png)
 
 ## Documentation
 
