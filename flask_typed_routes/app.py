@@ -104,18 +104,18 @@ class FlaskTypedRoutes:
                             method = getattr(view, verb.lower())
                             if self.is_typed(method):
                                 new_method = ftr_core.route(method, path_args)
-                                self.update_openapi(new_method, rule, endpoint, kwargs)
+                                self.merge_openapi_route(new_method, rule, endpoint, kwargs)
                                 setattr(view, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view.dispatch_request):
                         new_method = ftr_core.route(view.dispatch_request, path_args)
-                        self.update_openapi(new_method, rule, endpoint, kwargs)
+                        self.merge_openapi_route(new_method, rule, endpoint, kwargs)
                         view.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
                     view_func = ftr_core.route(view_func, path_args)
-                    self.update_openapi(view_func, rule, endpoint, kwargs)
+                    self.merge_openapi_route(view_func, rule, endpoint, kwargs)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
@@ -125,15 +125,24 @@ class FlaskTypedRoutes:
         enabled = getattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, False)
         return self.mode == Mode.auto or enabled
 
-    def update_openapi(self, func, rule, endpoint, kwargs, /):
+    def merge_openapi_route(self, func, rule, endpoint, kwargs, /):
         methods = kwargs.get("methods") or getattr(func, "methods", ()) or ("GET",)
         endpoint = endpoint or func.__name__
         spec = ftr_openapi.get_operations(func, rule, endpoint, methods)
-        paths = self.openapi_schema["paths"]
-        schemas = self.openapi_schema["components"]["schemas"]
-        for path, path_spec in spec["paths"].items():
-            if path in paths:
-                paths[path].update(path_spec)
+        self.merge_openapi_paths(spec["paths"])
+        self.merge_openapi_schemas(spec["components"]["schemas"])
+
+    def merge_openapi_paths(self, paths, /):
+        current = self.openapi_schema["paths"]
+        for path, spec in paths.items():
+            current[path].update(spec)
+
+    def merge_openapi_schemas(self, schemas, /):
+        merged = self.openapi_schema["components"]["schemas"]
+        for name, schema in schemas.items():
+            matches = (mg_name for mg_name, mg_schema in merged.items() if mg_schema == schema)
+            mg_name = next(matches, None)
+            if mg_name:
+                merged[name] = {"$ref": f"#/components/schemas/{mg_name}"}
             else:
-                paths[path] = path_spec
-        schemas.update(spec["components"]["schemas"])
+                merged[name] = schema
