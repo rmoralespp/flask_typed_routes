@@ -267,13 +267,13 @@ class Item(pydantic.BaseModel):
     status: typing.Literal['reserved', 'available']
 
 
-@app.get(&quot;/items/{user_id}/&quot;)
+@app.get(&quot;/items/&lt;user_id&gt;/&quot;)
 def read_items(user_id: int, status: typing.Literal['reserved', 'available'] = 'available'):
     result = {&quot;user_id&quot;: user_id, &quot;status&quot;: status}
     return flask.jsonify(result)
 
 
-@app.put(&quot;/items/{item_id}&quot;)
+@app.put(&quot;/items/&lt;user_id&gt;&quot;)
 def update_item(item_id: int, item: Item):
     result = {&quot;item_id&quot;: item_id, &quot;item_name&quot;: item.name, &quot;item_price&quot;: item.price}
     return flask.jsonify(result)
@@ -332,5 +332,5 @@ def update_item(item_id: int, item: Item):
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-01-08 09:37:46.632357+00:00
+Build Date UTC : 2025-01-08 09:50:05.679452+00:00
 -->
