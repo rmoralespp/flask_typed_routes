@@ -4,6 +4,8 @@
 - **Change**: Register endpoints that do not have type annotations in the OpenApi schema.
 - **Add**: `FlaskTypedRoutes` class allows through the `exclude_doc_url_prefix` parameter to exclude from the OpenApi scheme 
    the endpoints associated with the generation of the Interactive documentation.
+- **Add**: `FlaskTypedRoutes` class allows through the `validation_error_status_code` parameter to define the status code 
+   to be returned when a validation error occurs. The default value is 400.
 
 ### v0.1.1 (2025-01-08)
 

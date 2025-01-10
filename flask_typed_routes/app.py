@@ -51,6 +51,7 @@ class FlaskTypedRoutes:
     :param Callable validation_error_handler:
         Custom error handler for the "ValidationError" exception,
         by default it uses the default error handler provided by the library.
+    :param int validation_error_status_code: Status code for the validation error response.
     :param Tuple[str] ignore_verbs: HTTP verbs to ignore.
     :param str mode: Mode of operation, 'auto' or 'manual'. Default is 'auto'.
     :param str exclude_doc_url_prefix: Exclude the OpenAPI documentation URL prefix.
@@ -63,6 +64,7 @@ class FlaskTypedRoutes:
         self,
         app=None,
         validation_error_handler=None,
+        validation_error_status_code=400,
         ignore_verbs=None,
         mode=Mode.auto,
         exclude_doc_url_prefix=None,
@@ -74,13 +76,17 @@ class FlaskTypedRoutes:
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
         self.api_doc_prefix = exclude_doc_url_prefix
+        self.validation_error_status_code = validation_error_status_code
         self.openapi_schema = ftr_openapi.get_openapi(**openapi)
         if app:
             self.init_app(app)
 
+    def default_error_handler(self, error, /):
+        return ftr_erros.handler(error, self.validation_error_status_code)
+
     def init_app(self, app, /):
         # Register the error handler for the "ValidationError"
-        app.register_error_handler(ftr_erros.ValidationError, self.error_handler or ftr_erros.handler)
+        app.register_error_handler(ftr_erros.ValidationError, self.error_handler or self.default_error_handler)
         # Replace the "add_url_rule" method with a wrapper that adds the "typed_route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
@@ -134,7 +140,7 @@ class FlaskTypedRoutes:
 
     def register_openapi_route(self, func, rule, func_name, kwargs, path_args, /):
         methods = kwargs.get("methods") or ("GET",)
-        spec = ftr_openapi.get_operations(func, rule, func_name, methods, path_args)
+        spec = ftr_openapi.get_operations(func, rule, func_name, methods, path_args, self.validation_error_status_code)
         self.register_openapi_paths(spec["paths"])
         self.register_openapi_schemas(spec["components"]["schemas"])
 
@@ -149,6 +155,6 @@ class FlaskTypedRoutes:
             matches = (mg_name for mg_name, mg_schema in merged.items() if mg_schema == schema)
             mg_name = next(matches, None)
             if mg_name:
-                merged[name] = {"$ref": f"#/components/schemas/{mg_name}"}
+                merged[name] = {"$ref": f"{ftr_openapi.REF_PREFIX}{mg_name}"}
             else:
                 merged[name] = schema

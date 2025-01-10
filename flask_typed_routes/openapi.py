@@ -212,7 +212,7 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_operations(func, rule, func_name, methods, path_args, /):
+def get_operations(func, rule, func_name, methods, path_args, validation_error_status_code, /):
     """
     Get OpenAPI operations for a flask view function.
 
@@ -221,6 +221,7 @@ def get_operations(func, rule, func_name, methods, path_args, /):
     :param str func_name: Safe function name
     :param Iterable[str] methods: HTTP methods
     :param path_args: Parameters of the route rule
+    :param int validation_error_status_code: Status code for validation errors response.
     :rtype dict:
     """
 
@@ -249,7 +250,7 @@ def get_operations(func, rule, func_name, methods, path_args, /):
             "parameters": tuple(parameters),
             "description": ftr_utils.cleandoc(func),
             "responses": {
-                "400": HTTP_VALIDATION_ERROR_REF,
+                str(validation_error_status_code): HTTP_VALIDATION_ERROR_REF,
                 status_code: HTTP_SUCCESS_RESPONSE,
             },
         }
