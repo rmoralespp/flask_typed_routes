@@ -209,7 +209,7 @@ import swagger_ui
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app, title="Items API", openapi_version='3.1.1')
+app_ftr = ftr.FlaskTypedRoutes(app, exclude_doc_url_prefix='/api/doc', title="Items API", openapi_version='3.1.1')
 swagger_ui.api_doc(app, config=app_ftr.openapi_schema, url_prefix='/api/doc')
 
 
@@ -233,7 +233,13 @@ def update_item(item_id: int, item: Item):
 
 Open your browser and go to `http://127.0.0.1:5000/api/doc/`
 
+**Read Items** endpoint:
+
 ![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/openapi_example0.png)
+
+**Update Item** endpoint:
+
+![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/openapi_example01.png)
 
 ## Documentation
 
