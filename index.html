@@ -257,7 +257,7 @@ import swagger_ui
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app, title=&quot;Items API&quot;, openapi_version='3.1.1')
+app_ftr = ftr.FlaskTypedRoutes(app, exclude_doc_url_prefix='/api/doc', title=&quot;Items API&quot;, openapi_version='3.1.1')
 swagger_ui.api_doc(app, config=app_ftr.openapi_schema, url_prefix='/api/doc')
 
 
@@ -279,7 +279,10 @@ def update_item(item_id: int, item: Item):
     return flask.jsonify(result)
 </code></pre>
 <p>Open your browser and go to <code>http://127.0.0.1:5000/api/doc/</code></p>
+<p><strong>Read Items</strong> endpoint:</p>
 <p><img alt="OpenApi Example" src="openapi_example0.png" /></p>
+<p><strong>Update Item</strong> endpoint:</p>
+<p><img alt="OpenApi Example" src="openapi_example01.png" /></p>
               
             </div>
           </div><footer>
@@ -332,5 +335,5 @@ def update_item(item_id: int, item: Item):
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-01-10 13:02:27.254519+00:00
+Build Date UTC : 2025-01-10 13:37:41.255135+00:00
 -->
