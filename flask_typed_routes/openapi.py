@@ -270,9 +270,9 @@ def get_operations(func, rule, func_name, methods, path_args, /):
     for method in methods:
         method = method.lower()
         # Include the method in the operation ID to avoid conflicts with other operations
-        operation_id = operation_id or f"{func_name}_{method}"
-        summary = summary or get_summary(operation_id)
-        operation = {**spec, "operationId": operation_id, "summary": summary}
+        method_id = operation_id or f"{func_name}_{method}"
+        method_summary = summary or get_summary(method_id)
+        operation = {**spec, "operationId": method_id, "summary": method_summary}
         paths[path][method] = operation
 
     return {
