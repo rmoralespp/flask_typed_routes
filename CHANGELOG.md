@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.1.2 (2025-01-10)
+
 - **Change**: Improved the OpenApi schema `summary` and `operationId` of class-based view endpoints.
 - **Change**: Register endpoints that do not have type annotations in the OpenApi schema.
 - **Add**: `FlaskTypedRoutes` class allows through the `exclude_doc_url_prefix` parameter to exclude from the OpenApi scheme 
