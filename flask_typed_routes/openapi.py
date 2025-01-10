@@ -233,7 +233,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     paths = collections.defaultdict(dict)
     schemas = dict()
     path = ftr_utils.format_openapi_path(rule)
-    status_code = f"{status_code}" if status_code else "default"
+    status_code = status_code or "default"
 
     if request_model and param_fields:
         ref_template = f"{REF_PREFIX}{func_name}.{{model}}"
@@ -251,7 +251,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
             "description": ftr_utils.cleandoc(func),
             "responses": {
                 str(validation_error_status_code): HTTP_VALIDATION_ERROR_REF,
-                status_code: HTTP_SUCCESS_RESPONSE,
+                str(status_code): HTTP_SUCCESS_RESPONSE,
             },
         }
         if request_body:

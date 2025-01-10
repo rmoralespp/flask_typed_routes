@@ -21,7 +21,7 @@ requirements.
 ## Basic Usage
 
 !!! tip
-Ensure that the `swagger-ui-py` library is installed to visualize the OpenApi schema.
+    Ensure that the `swagger-ui-py` library is installed to visualize the OpenApi schema.
 
 ```bash
 pip install swagger-ui-py  # ignore if already installed

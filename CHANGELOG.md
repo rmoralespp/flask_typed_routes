@@ -1,5 +1,7 @@
 ## Releases
 
+- **Change**: Use OpenApi `default` response if `status_code` is not specified in `typed_route` decorator.
+
 ### v0.1.2 (2025-01-10)
 
 - **Change**: Improved the OpenApi schema `summary` and `operationId` of class-based view endpoints.

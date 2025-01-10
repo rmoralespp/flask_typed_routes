@@ -13,7 +13,7 @@ class Mode:
     manual = "manual"
 
 
-def typed_route(status_code=200, **openapi):
+def typed_route(status_code=None, **openapi):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
@@ -87,7 +87,7 @@ class FlaskTypedRoutes:
     def init_app(self, app, /):
         # Register the error handler for the "ValidationError"
         app.register_error_handler(ftr_erros.ValidationError, self.error_handler or self.default_error_handler)
-        # Replace the "add_url_rule" method with a wrapper that adds the "typed_route" decorator
+        # Replace the "add_url_rule" method with a wrapper that adds the "route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
     def add_url_rule(self, func, /):
