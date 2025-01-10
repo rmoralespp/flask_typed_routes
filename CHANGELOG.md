@@ -1,5 +1,10 @@
 ## Releases
 
+- **Change**: Improved the OpenApi schema `summary` and `operationId` of class-based view endpoints.
+- **Change**: Register endpoints that do not have type annotations in the OpenApi schema.
+- **Add**: `FlaskTypedRoutes` class allows through the `exclude_doc_url_prefix` parameter to exclude from the OpenApi scheme 
+   the endpoints associated with the generation of the Interactive documentation.
+
 ### v0.1.1 (2025-01-08)
 
 - **Change**: Improved OpenAPI schema to include default HTTP response.

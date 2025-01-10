@@ -9,11 +9,8 @@ import flask_typed_routes.utils as ftr_utils
 
 
 def test_get_summary():
-    def sample_func():
-        pass
-
-    result = ftr_openapi.get_summary(sample_func)
-    assert result == "Sample Func"
+    result = ftr_openapi.get_summary("sample_func_name")
+    assert result == "Sample Func Name"
 
 
 def test_get_operation_includes_all_fields():
@@ -120,7 +117,7 @@ def test_get_operations_includes_all_fields():
     setattr(sample_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, 200)
     setattr(sample_func, ftr_utils.TYPED_ROUTE_OPENAPI, {"summary": "Sample summary"})
 
-    result = ftr_openapi.get_operations(sample_func, "/sample", "sample_endpoint", ["GET"])
+    result = ftr_openapi.get_operations(sample_func, "/sample", "sample_endpoint", ["GET"], [])
     result = dict(result)
     expected = {
         'components': {'schemas': {}},
@@ -128,7 +125,7 @@ def test_get_operations_includes_all_fields():
             '/sample': {
                 'get': {
                     'description': 'Sample function',
-                    'operationId': 'sample_endpoint',
+                    'operationId': 'sample_endpoint_get',
                     'parameters': (
                         {
                             'in': 'query',
@@ -142,7 +139,7 @@ def test_get_operations_includes_all_fields():
                             'content': {
                                 'application/json': {'schema': {'type': 'string'}},
                             },
-                            'description': 'Success'
+                            'description': 'Success',
                         },
                         '400': {
                             'content': {
@@ -163,9 +160,45 @@ def test_get_operations_handles_empty_fields():
     def sample_func():
         """Sample function"""
 
-    result = ftr_openapi.get_operations(sample_func, "/sample", "sample_endpoint", ["GET"])
+    result = ftr_openapi.get_operations(sample_func, "/sample", "sample_endpoint", ["GET"], ["field"])
     expected = {
-        "paths": collections.defaultdict(dict),
-        "components": {"schemas": {}},
+        'components': {'schemas': {}},
+        'paths': {
+            '/sample': {
+                'get': {
+                    'summary': 'Sample Endpoint Get',
+                    'description': 'Sample function',
+                    'operationId': 'sample_endpoint_get',
+                    'parameters': (
+                        {
+                            'in': 'path',
+                            'name': 'field',
+                            'required': True,
+                            'schema': {'type': 'string'},
+                        },
+                    ),
+                    'responses': {
+                        'default': {
+                            'content': {'application/json': {'schema': {'type': 'string'}}},
+                            'description': 'Success',
+                        }
+                    },
+                }
+            }
+        },
     }
+
     assert result == expected
+
+
+def test_get_unvalidated_parameters():
+    result = ftr_openapi.get_unvalidated_parameters(["sample_field"])
+    expected = [
+        {
+            'in': 'path',
+            'name': 'sample_field',
+            'required': True,
+            'schema': {'type': 'string'},
+        }
+    ]
+    assert list(result) == expected

@@ -65,10 +65,10 @@ def duplicate_request_body():
     return ftr_errors.InvalidParameterTypeError("Duplicate request body")
 
 
-def get_summary(func, /):
+def get_summary(operation_id, /):
     """Get the summary for the OpenAPI operation."""
 
-    return " ".join(word.capitalize() for word in func.__name__.split("_") if word)
+    return " ".join(word.capitalize() for word in operation_id.split("_") if word)
 
 
 def get_parameters(fields, model_properties, model_components, model_required_fields, /):
@@ -125,6 +125,23 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
 
     for value in params.values():
         yield from value.values()
+
+
+def get_unvalidated_parameters(path_args):
+    """
+    Get OpenAPI operation parameters for unvalidated fields.
+
+    :param Iterable[str] path_args: Parameters of the route rule
+    :rtype: Iterable[dict]
+    """
+
+    for name in path_args:
+        yield {
+            "name": name,
+            "in": "path",
+            "required": True,
+            "schema": {"type": "string"},
+        }
 
 
 def get_request_body(fields, model_properties, model_required_fields, /):
@@ -195,14 +212,15 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_operations(func, rule, endpoint, methods, /):
+def get_operations(func, rule, func_name, methods, path_args, /):
     """
     Get OpenAPI operations for a flask view function.
 
     :param func: Flask view function
     :param str rule: URL rule
-    :param str endpoint: Endpoint name
+    :param str func_name: Safe function name
     :param Iterable[str] methods: HTTP methods
+    :param path_args: Parameters of the route rule
     :rtype dict:
     """
 
@@ -213,38 +231,49 @@ def get_operations(func, rule, endpoint, methods, /):
 
     paths = collections.defaultdict(dict)
     schemas = dict()
+    path = ftr_utils.format_openapi_path(rule)
+    status_code = f"{status_code}" if status_code else "default"
+
     if request_model and param_fields:
-        path = ftr_utils.format_openapi_path(rule)
-        ref_template = f"{REF_PREFIX}{endpoint}.{{model}}"
+        ref_template = f"{REF_PREFIX}{func_name}.{{model}}"
         model_schema = request_model.model_json_schema(ref_template=ref_template)
         required_fields = frozenset(model_schema.get("required", ()))
         properties = model_schema.get("properties", dict())
         components = model_schema.get("$defs", dict())
         # Include endpoint in the schema name to avoid conflicts with other models with the same name
-        schemas = {f"{endpoint}.{name}": schema for name, schema in components.items()}
+        schemas = {f"{func_name}.{name}": schema for name, schema in components.items()}
 
         parameters = get_parameters(param_fields, properties, schemas, required_fields)
         request_body = get_request_body(param_fields, properties, required_fields)
-        status_code = f"{status_code}" if status_code else "default"
-        responses = {
-            "400": HTTP_VALIDATION_ERROR_REF,
-            status_code: HTTP_SUCCESS_RESPONSE,
-        }
-
         spec = {
             "parameters": tuple(parameters),
             "description": ftr_utils.cleandoc(func),
-            "operationId": endpoint,
-            "summary": get_summary(func),
-            "responses": responses,
+            "responses": {
+                "400": HTTP_VALIDATION_ERROR_REF,
+                status_code: HTTP_SUCCESS_RESPONSE,
+            },
         }
-
         if request_body:
             spec["requestBody"] = request_body
-        if override_spec:
-            spec.update(override_spec)
-        for method in methods:
-            paths[path][method.lower()] = spec
+    else:
+        spec = {
+            "parameters": tuple(get_unvalidated_parameters(path_args)),
+            "description": ftr_utils.cleandoc(func),
+            "responses": {status_code: HTTP_SUCCESS_RESPONSE},
+        }
+
+    if override_spec:
+        spec.update(override_spec)
+
+    operation_id = spec.get("operationId")
+    summary = spec.get("summary")
+    for method in methods:
+        method = method.lower()
+        # Include the method in the operation ID to avoid conflicts with other operations
+        operation_id = operation_id or f"{func_name}_{method}"
+        summary = summary or get_summary(operation_id)
+        operation = {**spec, "operationId": operation_id, "summary": summary}
+        paths[path][method] = operation
 
     return {
         "paths": paths,
