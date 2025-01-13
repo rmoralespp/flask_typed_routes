@@ -1,5 +1,6 @@
 ## Releases
 
+- **Fix**: Exclude validation errors "ctx" because can't be serialized to JSON.
 - **Change**: Use OpenApi `default` response if `status_code` is not specified in `typed_route` decorator.
 
 ### v0.1.2 (2025-01-10)

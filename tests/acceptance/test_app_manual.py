@@ -9,7 +9,6 @@ def test_validate(client_manual):
     expected = {
         'errors': [
             {
-                'ctx': {'lt': 100},
                 'input': 123,
                 'loc': ['path', 'pk'],
                 'msg': 'Input should be less than 100',

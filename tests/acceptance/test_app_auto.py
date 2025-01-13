@@ -30,7 +30,6 @@ def test_path_bad_less_than(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'lt': 100},
                 'input': '123',
                 'loc': ['path', 'product_id'],
                 'msg': 'Input should be less than 100',
@@ -50,7 +49,6 @@ def test_path_bad_greater_than(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'gt': 5},
                 'input': '1',
                 'loc': ['path', 'product_id'],
                 'msg': 'Input should be greater than 5',
@@ -81,7 +79,6 @@ def test_query_bad_limit(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'ge': 0},
                 'input': '-1',
                 'loc': ['query', 'limit'],
                 'msg': 'Input should be greater than or equal to 0',
@@ -140,7 +137,6 @@ def test_header_bad(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'pattern': 'Bearer \\w+'},
                 'input': '123',
                 'loc': ['header', 'Authorization'],
                 'msg': "String should match pattern 'Bearer \\w+'",
@@ -168,7 +164,6 @@ def test_cookie_bad(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'max_length': 4},
                 'input': '12345',
                 'loc': ['cookie', 'session-id'],
                 'msg': 'String should have at most 4 characters',
@@ -422,7 +417,6 @@ def test_func_mixed_annotations_bad_min_len(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'min_length': 9},
                 'input': '12345678',
                 'loc': ['query', 'cat'],
                 'msg': 'String should have at least 9 characters',
@@ -442,7 +436,6 @@ def test_func_mixed_annotations_bad_max_len(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'max_length': 11},
                 'input': '123456789012',
                 'loc': ['query', 'cat'],
                 'msg': 'String should have at most 11 characters',
@@ -462,7 +455,6 @@ def test_func_mixed_annotations_bad_pattern(client_auto, url_prefix):
     expected = {
         'errors': [
             {
-                'ctx': {'pattern': '\\d{10}'},
                 'input': 'aaaaaaaaaa',
                 'loc': ['query', 'cat'],
                 'msg': "String should match pattern '\\d{10}'",

@@ -110,7 +110,7 @@ def route(view_func, rule_params, /):
         try:
             instance = model.model_validate(values)
         except pydantic.ValidationError as e:
-            errors = ftr_utils.pretty_errors(fields, e.errors())
+            errors = ftr_utils.pretty_errors(fields, e.errors(include_context=False))
             raise ftr_errors.ValidationError(errors) from None
         else:
             inject = {field.name: getattr(instance, field.name) for field in fields}
