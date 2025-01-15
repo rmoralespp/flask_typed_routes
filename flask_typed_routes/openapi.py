@@ -1,5 +1,6 @@
 import collections
 import itertools
+import urllib.parse
 
 import pydantic
 
@@ -328,7 +329,7 @@ class OpenApi:
         title: str = "API doc",
         version: str = "0.0.0",
         openapi_version: str = "3.1.0",
-        openapi_url_prefix: str = "",
+        openapi_url_prefix: str = "/api/doc",
         openapi_url_json: str = "/openapi.json",
         summary: str = None,
         description: str = None,
@@ -347,7 +348,7 @@ class OpenApi:
         self.title = title
         self.version = version
         self.openapi_version = openapi_version
-        self.openapi_url_prefix = openapi_url_prefix
+        self.openapi_url_prefix = openapi_url_prefix.rstrip('/')
         self.openapi_url_json = openapi_url_json
         self.summary = summary
         self.description = description
@@ -384,14 +385,13 @@ class OpenApi:
         for path, spec in paths.items():
             self.paths[path].update(spec)
 
-    def get_routes_models(self, routes):
+    @staticmethod
+    def get_routes_models(routes):
         models = dict()
         for route in routes:
-            if not route.rule_url.startswith(self.openapi_url_prefix):
-                model = getattr(route.view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
-                if model:
-                    models[model] = route
-
+            model = getattr(route.view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
+            if model:
+                models[model] = route
         return models
 
     @staticmethod

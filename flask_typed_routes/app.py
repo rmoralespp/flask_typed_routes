@@ -108,6 +108,15 @@ class FlaskTypedRoutes:
             openapi_bp.add_url_rule(url_json, view_func=openapi_json_view)
             app.register_blueprint(openapi_bp)
 
+    def is_openapi_url(self, rule, /):
+        if url_prefix := self.openapi_manager.openapi_url_prefix:
+            result = rule.startswith(url_prefix)
+        elif url_json := self.openapi_manager.openapi_url_json:
+            result = rule == url_json
+        else:
+            result = False
+        return result
+
     def add_url_rule(self, func, /):
         """
         Decorator for the "add_url_rule" method of the Flask application.
@@ -119,8 +128,7 @@ class FlaskTypedRoutes:
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
             path_args = ftr_utils.extract_rule_params(rule)
-            urlapidoc = self.openapi_manager.openapi_url_prefix
-            is_apidoc = urlapidoc and rule.startswith(urlapidoc)
+            is_apidoc = self.is_openapi_url(rule)
             if view_func and not is_apidoc:
                 # name of the view function or view class if not endpoint is provided
                 view_name = endpoint or view_func.__name__
