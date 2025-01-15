@@ -77,8 +77,8 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
     Get OpenAPI operation parameters.
 
     :param Iterable[flask_typed_routes.Field] fields: Field definitions
-    :param model_properties: View function model properties
-    :param model_components:
+    :param dict model_properties: View function model properties
+    :param dict[str, dict] model_components: OpenAPI definitions.
     :param model_required_fields:
 
     :rtype: Iterable[dict]
@@ -149,8 +149,8 @@ def get_request_body(fields, model_properties, model_required_fields, /):
     """
     Get OpenAPI operation Request body.
 
-    :param model_properties:
-    :param model_required_fields:
+    :param model_properties: View function model properties
+    :param model_required_fields: Model required fields
 
     :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
     :rtype: Iterable[dict]
@@ -213,40 +213,40 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_operations(func, rule, func_name, methods, path_args, validation_error_status_code, request_model_schema, /):
+def get_operations(fn, rule, fn_name, methods, path_args, error_status_code, model_schema, definitions, /):
     """
     Get OpenAPI operations for a flask view function.
 
-    :param func: Flask view function
+    :param fn: Flask view function
     :param str rule: URL rule
-    :param str func_name: Safe function name
+    :param str fn_name: Safe function name
     :param Iterable[str] methods: HTTP methods
     :param path_args: Parameters of the route rule
-    :param int validation_error_status_code: Status code for validation errors response.
-    :param request_model_schema: Request model schema for the view function
+    :param int error_status_code: Status code for validation errors response.
+    :param dict model_schema: JSON Model schema for the view function
+    :param dict[str, dict] definitions: OpenAPI definitions.
     :rtype dict:
     """
 
-    param_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
-    status_code = getattr(func, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
-    override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
+    param_fields = getattr(fn, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
+    status_code = getattr(fn, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
+    override_spec = getattr(fn, ftr_utils.TYPED_ROUTE_OPENAPI, None)
 
     paths = collections.defaultdict(dict)
-    schemas = dict()
     path = ftr_utils.format_openapi_path(rule)
     status_code = status_code or "default"
 
     if param_fields:
-        required_fields = frozenset(request_model_schema.get("required", ()))
-        properties = request_model_schema.get("properties", dict())
+        required_fields = frozenset(model_schema.get("required", ()))
+        properties = model_schema.get("properties", dict())
 
-        parameters = get_parameters(param_fields, properties, schemas, required_fields)
+        parameters = get_parameters(param_fields, properties, definitions, required_fields)
         request_body = get_request_body(param_fields, properties, required_fields)
         spec = {
             "parameters": tuple(parameters),
-            "description": ftr_utils.cleandoc(func),
+            "description": ftr_utils.cleandoc(fn),
             "responses": {
-                str(validation_error_status_code): HTTP_VALIDATION_ERROR_REF,
+                str(error_status_code): HTTP_VALIDATION_ERROR_REF,
                 str(status_code): HTTP_SUCCESS_RESPONSE,
             },
         }
@@ -255,7 +255,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     else:
         spec = {
             "parameters": tuple(get_unvalidated_parameters(path_args)),
-            "description": ftr_utils.cleandoc(func),
+            "description": ftr_utils.cleandoc(fn),
             "responses": {status_code: HTTP_SUCCESS_RESPONSE},
         }
 
@@ -267,7 +267,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     for method in methods:
         method = method.lower()
         # Include the method in the operation ID to avoid conflicts with other operations
-        method_id = operation_id or f"{func_name}_{method}"
+        method_id = operation_id or f"{fn_name}_{method}"
         method_summary = summary or get_summary(method_id)
         operation = {**spec, "operationId": method_id, "summary": method_summary}
         paths[path][method] = operation
@@ -359,13 +359,14 @@ class OpenApi:
         # Calculated attributes
         self.paths = collections.defaultdict(dict)
 
-    def register_route(self, route, validation_error_status_code, model_schema, /):
+    def register_route(self, route, validation_error_status_code, model_schema, definitions, /):
         """
         Register a route in the OpenAPI schema document.
 
         :param flask_typed_routes.utils.Route route: Route to register.
         :param int validation_error_status_code: Status code for validation errors response.
-        :param model_schema: Request model schema for the view function.
+        :param dict model_schema: JSON Model schema for the view function
+        :param dict[str, dict] definitions: OpenAPI definitions.
         """
 
         paths = get_operations(
@@ -376,6 +377,7 @@ class OpenApi:
             route.rule_args,
             validation_error_status_code,
             model_schema,
+            definitions,
         )
         for path, spec in paths.items():
             self.paths[path].update(spec)
@@ -451,7 +453,7 @@ class OpenApi:
                 # Remove the view function model schema from the definitions
                 model_schema = definitions.pop(model_schema_ref)
                 route = models[model]
-                self.register_route(route, validation_error_status_code, model_schema)
+                self.register_route(route, validation_error_status_code, model_schema, definitions)
 
             # Finally, update the definitions with the model schemas
             schemas.update(definitions)
