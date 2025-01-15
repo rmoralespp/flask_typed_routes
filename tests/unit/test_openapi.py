@@ -51,7 +51,7 @@ def test_get_operation_handles_empty_fields():
 
 
 def test_get_openapi_includes_all_fields():
-    result = ftr_openapi.get_openapi(
+    result = ftr_openapi.OpenApi(
         title="API Title",
         version="1.0.0",
         openapi_version="3.0.0",
@@ -66,7 +66,7 @@ def test_get_openapi_includes_all_fields():
         security=[{"apiKey": []}],
         tags=[{"name": "tag1"}],
         external_docs={"url": "http://example.com/docs"},
-    )
+    ).get_schema((), 400)
     expected = {
         "openapi": "3.0.0",
         "info": {
@@ -90,7 +90,7 @@ def test_get_openapi_includes_all_fields():
 
 
 def test_get_openapi_handles_empty_fields():
-    result = ftr_openapi.get_openapi()
+    result = ftr_openapi.OpenApi().get_schema((), 400)
     expected = {
         "openapi": "3.1.0",
         "info": {"title": "API doc", "version": "0.0.0"},
@@ -118,41 +118,45 @@ def test_get_operations_includes_all_fields():
     setattr(sample_func, ftr_utils.TYPED_ROUTE_OPENAPI, {"summary": "Sample summary"})
 
     result = ftr_openapi.get_operations(
-        sample_func, "/sample", "sample_endpoint", ["GET"], [], 400)
+        sample_func,
+        "/sample",
+        "sample_endpoint",
+        ["GET"],
+        [],
+        400,
+        model.model_json_schema(ref_template="#/components/schemas/{model}"),
+    )
     result = dict(result)
     expected = {
-        'components': {'schemas': {}},
-        'paths': {
-            '/sample': {
-                'get': {
-                    'description': 'Sample function',
-                    'operationId': 'sample_endpoint_get',
-                    'parameters': (
-                        {
-                            'in': 'query',
-                            'name': 'sample_field',
-                            'required': False,
-                            'schema': {'default': None, 'type': 'string'},
-                        },
-                    ),
-                    'responses': {
-                        '200': {
-                            'content': {
-                                'application/json': {'schema': {'type': 'string'}},
-                            },
-                            'description': 'Success',
-                        },
-                        '400': {
-                            'content': {
-                                'application/json': {'schema': {'$ref': '#/components/schemas/HTTPValidationError'}}
-                            },
-                            'description': 'Validation Error',
-                        },
+        '/sample': {
+            'get': {
+                'description': 'Sample function',
+                'operationId': 'sample_endpoint_get',
+                'parameters': (
+                    {
+                        'in': 'query',
+                        'name': 'sample_field',
+                        'required': False,
+                        'schema': {'default': None, 'type': 'string'},
                     },
-                    'summary': 'Sample summary',
-                }
+                ),
+                'responses': {
+                    '200': {
+                        'content': {
+                            'application/json': {'schema': {'type': 'string'}},
+                        },
+                        'description': 'Success',
+                    },
+                    '400': {
+                        'content': {
+                            'application/json': {'schema': {'$ref': '#/components/schemas/HTTPValidationError'}}
+                        },
+                        'description': 'Validation Error',
+                    },
+                },
+                'summary': 'Sample summary',
             }
-        },
+        }
     }
     assert result == expected
 
@@ -162,32 +166,36 @@ def test_get_operations_handles_empty_fields():
         """Sample function"""
 
     result = ftr_openapi.get_operations(
-        sample_func, "/sample", "sample_endpoint", ["GET"], ["field"], 400)
+        sample_func,
+        "/sample",
+        "sample_endpoint",
+        ["GET"],
+        ["field"],
+        400,
+        dict(),
+    )
     expected = {
-        'components': {'schemas': {}},
-        'paths': {
-            '/sample': {
-                'get': {
-                    'summary': 'Sample Endpoint Get',
-                    'description': 'Sample function',
-                    'operationId': 'sample_endpoint_get',
-                    'parameters': (
-                        {
-                            'in': 'path',
-                            'name': 'field',
-                            'required': True,
-                            'schema': {'type': 'string'},
-                        },
-                    ),
-                    'responses': {
-                        'default': {
-                            'content': {'application/json': {'schema': {'type': 'string'}}},
-                            'description': 'Success',
-                        }
+        '/sample': {
+            'get': {
+                'summary': 'Sample Endpoint Get',
+                'description': 'Sample function',
+                'operationId': 'sample_endpoint_get',
+                'parameters': (
+                    {
+                        'in': 'path',
+                        'name': 'field',
+                        'required': True,
+                        'schema': {'type': 'string'},
                     },
-                }
+                ),
+                'responses': {
+                    'default': {
+                        'content': {'application/json': {'schema': {'type': 'string'}}},
+                        'description': 'Success',
+                    }
+                },
             }
-        },
+        }
     }
 
     assert result == expected

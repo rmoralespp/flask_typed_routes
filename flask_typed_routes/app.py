@@ -1,4 +1,3 @@
-import dataclasses
 import functools
 
 import flask
@@ -14,15 +13,6 @@ class Mode:
 
     auto = "auto"
     manual = "manual"
-
-
-@dataclasses.dataclass(frozen=True)
-class Route:
-    view_func: callable
-    rule_url: str
-    rule_args: tuple[str]
-    view_name: str
-    methods: tuple[str]
 
 
 def typed_route(status_code=None, **openapi):
@@ -87,8 +77,8 @@ class FlaskTypedRoutes:
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
         self.validation_error_status_code = validation_error_status_code
-        self.openapi_obj = ftr_openapi.OpenApi(self.validation_error_status_code, **openapi)
-        self.routes = []
+        self.openapi_manager = ftr_openapi.OpenApi(**openapi)
+        self.routes = []  # registered routes
         if app:
             self.init_app(app)
             self.init_doc(app)
@@ -102,6 +92,22 @@ class FlaskTypedRoutes:
         # Replace the "add_url_rule" method with a wrapper that adds the "route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
+    def init_doc(self, app, /):
+        """Initialize the OpenAPI documentation route if the URL and prefix are defined."""
+
+        @functools.lru_cache
+        def openapi_json_view():
+            data = self.openapi_manager.get_schema(self.routes, self.validation_error_status_code)
+            return flask.jsonify(data)
+
+        url_json = self.openapi_manager.openapi_url_json
+        url_pref = self.openapi_manager.openapi_url_prefix
+
+        if url_json and url_pref:
+            openapi_bp = flask.Blueprint("openapi", __name__, url_prefix=url_pref)
+            openapi_bp.add_url_rule(url_json, view_func=openapi_json_view)
+            app.register_blueprint(openapi_bp)
+
     def add_url_rule(self, func, /):
         """
         Decorator for the "add_url_rule" method of the Flask application.
@@ -113,7 +119,8 @@ class FlaskTypedRoutes:
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
             path_args = ftr_utils.extract_rule_params(rule)
-            is_apidoc = self.openapi_obj.openapi_url_prefix and rule.startswith(self.openapi_obj.openapi_url_prefix)
+            urlapidoc = self.openapi_manager.openapi_url_prefix
+            is_apidoc = urlapidoc and rule.startswith(urlapidoc)
             if view_func and not is_apidoc:
                 # name of the view function or view class if not endpoint is provided
                 view_name = endpoint or view_func.__name__
@@ -152,15 +159,7 @@ class FlaskTypedRoutes:
 
     def register_route(self, func, rule, func_name, kwargs, path_args, /):
         methods = kwargs.get("methods") or ("GET",)
-        self.routes.append(Route(func, rule, path_args, func_name, methods))
-
-    def init_doc(self, app, /):
-
-        @functools.lru_cache()
-        def openapi_json_view():
-            return flask.jsonify(self.openapi_obj.openapi_json_view(self.routes))
-
-        if url_json := self.openapi_obj.openapi_url_json:
-            openapi_bp = flask.Blueprint("openapi", __name__, url_prefix=self.openapi_obj.openapi_url_prefix)
-            openapi_bp.add_url_rule(url_json, view_func=openapi_json_view)
-            app.register_blueprint(openapi_bp)
+        route = ftr_utils.Route(
+            view_func=func, rule_url=rule, rule_args=path_args, view_name=func_name, methods=methods
+        )
+        self.routes.append(route)

@@ -77,7 +77,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
     Get OpenAPI operation parameters.
 
     :param Iterable[flask_typed_routes.Field] fields: Field definitions
-    :param model_properties:
+    :param model_properties: View function model properties
     :param model_components:
     :param model_required_fields:
 
@@ -213,7 +213,7 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_operations(func, rule, func_name, methods, path_args, validation_error_status_code, /):
+def get_operations(func, rule, func_name, methods, path_args, validation_error_status_code, request_model_schema, /):
     """
     Get OpenAPI operations for a flask view function.
 
@@ -223,10 +223,10 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     :param Iterable[str] methods: HTTP methods
     :param path_args: Parameters of the route rule
     :param int validation_error_status_code: Status code for validation errors response.
+    :param request_model_schema: Request model schema for the view function
     :rtype dict:
     """
 
-    request_model_schema = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEl_SCHEMA, None)
     param_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
     status_code = getattr(func, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
     override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
@@ -236,7 +236,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     path = ftr_utils.format_openapi_path(rule)
     status_code = status_code or "default"
 
-    if request_model_schema and param_fields:
+    if param_fields:
         required_fields = frozenset(request_model_schema.get("required", ()))
         properties = request_model_schema.get("properties", dict())
 
@@ -324,13 +324,12 @@ class OpenApi:
 
     def __init__(
         self,
-        validation_error_status_code,
         *,
         title: str = "API doc",
         version: str = "0.0.0",
         openapi_version: str = "3.1.0",
-        openapi_url_prefix: str = "/openapi",
-        openapi_url_json: str = "swagger.json",
+        openapi_url_prefix: str = "",
+        openapi_url_json: str = "/openapi.json",
         summary: str = None,
         description: str = None,
         terms_of_service: str = None,
@@ -345,83 +344,121 @@ class OpenApi:
     ):
         """Get specification of OpenAPI document according to the given parameters."""
 
-        info = {"title": title, "version": version}
-        if summary:
-            info["summary"] = summary
-        if description:
-            info["description"] = description
-        if terms_of_service:
-            info["termsOfService"] = terms_of_service
-        if contact_info:
-            info["contact"] = contact_info
-        if license_info:
-            info["license"] = license_info
-
-        self.schema = {
-            "openapi": openapi_version,
-            "info": info,
-            "paths": collections.defaultdict(dict),
-            "components": {
-                "schemas": {
-                    VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
-                    HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
-                },
-            },
-        }
-        if servers:
-            self.schema["servers"] = servers
-        if webhooks:
-            self.schema["webhooks"] = webhooks
-        if components:
-            self.schema["components"].update(components)
-        if security:
-            self.schema["security"] = security
-        if tags:
-            self.schema["tags"] = tags
-        if external_docs:
-            self.schema["externalDocs"] = external_docs
-
-        self.schema_generator = pydantic.json_schema.GenerateJsonSchema(by_alias=True, ref_template=REF_PREFIX + "{model}")
+        self.title = title
+        self.version = version
+        self.openapi_version = openapi_version
         self.openapi_url_prefix = openapi_url_prefix
         self.openapi_url_json = openapi_url_json
-        self.models = []
-        self.validation_error_status_code = validation_error_status_code
+        self.summary = summary
+        self.description = description
+        self.terms_of_service = terms_of_service
+        self.contact_info = contact_info
+        self.license_info = license_info
+        self.servers = servers
+        self.webhooks = webhooks
+        self.components = components
+        self.security = security
+        self.tags = tags
+        self.external_docs = external_docs
+        # Calculated attributes
+        self.paths = collections.defaultdict(dict)
 
-    def register_route(self, func, rule, func_name, methods, /):
-        path_args = ftr_utils.extract_rule_params(rule)
-        paths = get_operations(func, rule, func_name, methods, path_args, self.validation_error_status_code)
-        self.register_openapi_paths(paths)
+    def register_route(self, route, validation_error_status_code, model_schema, /):
+        """
+        Register a route in the OpenAPI schema document.
 
-    def register_openapi_paths(self, paths, /):
-        current = self.schema["paths"]
+        :param flask_typed_routes.utils.Route route: Route to register.
+        :param int validation_error_status_code: Status code for validation errors response.
+        :param model_schema: Request model schema for the view function.
+        """
+
+        paths = get_operations(
+            route.view_func,
+            route.rule_url,
+            route.view_name,
+            route.methods,
+            route.rule_args,
+            validation_error_status_code,
+            model_schema,
+        )
         for path, spec in paths.items():
-            current[path].update(spec)
+            self.paths[path].update(spec)
 
-    def openapi_json_view(self, routes):
+    def get_routes_models(self, routes):
         models = dict()
         for route in routes:
             if not route.rule_url.startswith(self.openapi_url_prefix):
-                view_func = route.view_func
-                view_model = getattr(view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
-                if view_model:
-                    models[view_model] = route
+                model = getattr(route.view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
+                if model:
+                    models[model] = route
 
+        return models
+
+    @staticmethod
+    def models_json_schema(models):
+        validation_models = zip(models, itertools.repeat("validation"))
+        validation_models = tuple(validation_models)
+        ref_template = REF_PREFIX + "{model}"
+        return pydantic.json_schema.models_json_schema(validation_models, ref_template=ref_template)
+
+    def get_schema(self, routes, validation_error_status_code):
+        """
+        Get the OpenAPI schema document based on the registered routes.
+
+        :param Iterable[flask_typed_routes.utils.Route] routes:
+        :param int validation_error_status_code: Status code for validation errors response.
+        :rtype: dict
+        """
+
+        info = {"title": self.title, "version": self.version}
+        if self.summary:
+            info["summary"] = self.summary
+        if self.description:
+            info["description"] = self.description
+        if self.terms_of_service:
+            info["termsOfService"] = self.terms_of_service
+        if self.contact_info:
+            info["contact"] = self.contact_info
+        if self.license_info:
+            info["license"] = self.license_info
+
+        schemas = {
+            VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
+            HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
+        }
+        result = {
+            "openapi": self.openapi_version,
+            "info": info,
+            "paths": self.paths,
+            "components": {"schemas": schemas},
+        }
+        if self.servers:
+            result["servers"] = self.servers
+        if self.webhooks:
+            result["webhooks"] = self.webhooks
+        if self.components:
+            result["components"].update(self.components)
+        if self.security:
+            result["security"] = self.security
+        if self.tags:
+            result["tags"] = self.tags
+        if self.external_docs:
+            result["externalDocs"] = self.external_docs
+
+        models = self.get_routes_models(routes)
         if models:
-            validation_models = zip(models, itertools.repeat("validation"))
-            validation_models = tuple(validation_models)
-            schemas_map, schemas = pydantic.json_schema.models_json_schema(
-                validation_models,
-                ref_template=REF_PREFIX + "{model}"
-            )
-            definitions = schemas["$defs"]
+            schemas_map, schemas_dict = self.models_json_schema(models)
+            definitions = schemas_dict["$defs"]
 
             for model, mode in schemas_map:
-                model_schema_ref = schemas_map[(model, mode)]["$ref"].split("/")[-1]
+                model_schema_ref = schemas_map[(model, mode)]["$ref"]
+                model_schema_ref = model_schema_ref.split("/")[-1]  # basename
+                # Remove the view function model schema from the definitions
                 model_schema = definitions.pop(model_schema_ref)
                 route = models[model]
-                setattr(route.view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEl_SCHEMA, model_schema)
-                self.register_route(route.view_func, route.rule_url, route.view_name, route.methods)
+                self.register_route(route, validation_error_status_code, model_schema)
 
-            self.schema["components"]["schemas"].update(definitions)
+            # Finally, update the definitions with the model schemas
+            schemas.update(definitions)
 
-        return self.schema
+        return result
