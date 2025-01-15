@@ -27,11 +27,6 @@ logger = logging.getLogger("flask_typed_routes")
 logger.addHandler(logging.NullHandler())
 
 
-class Mode:
-    """Validation mode for typed routes."""
-
-    auto = "auto"
-    manual = "manual"
 
 
 class Route(t.NamedTuple):
