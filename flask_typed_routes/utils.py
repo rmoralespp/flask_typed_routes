@@ -19,6 +19,8 @@ format_openapi_path = functools.partial(rule_regex.sub, r"{\1}")
 TYPED_ROUTE_MARK = "__flask_typed_routes__{field}"
 TYPED_ROUTE_ENABLED = TYPED_ROUTE_MARK.format(field="enabled")
 TYPED_ROUTE_REQUEST_MODEL = TYPED_ROUTE_MARK.format(field="request_model")
+TYPED_ROUTE_REQUEST_MODEl_SCHEMA = TYPED_ROUTE_MARK.format(field="request_model_schema")
+TYPED_ROUTE_HTTP_METHODS = TYPED_ROUTE_MARK.format(field="http_method")
 TYPED_ROUTE_PARAM_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
 TYPED_ROUTE_OPENAPI = TYPED_ROUTE_MARK.format(field="openapi")
 TYPED_ROUTE_STATUS_CODE = TYPED_ROUTE_MARK.format(field="status_code")

@@ -1,4 +1,5 @@
 import collections
+import itertools
 
 import pydantic
 
@@ -225,7 +226,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     :rtype dict:
     """
 
-    request_model = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
+    request_model_schema = getattr(func, ftr_utils.TYPED_ROUTE_REQUEST_MODEl_SCHEMA, None)
     param_fields = getattr(func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
     status_code = getattr(func, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
     override_spec = getattr(func, ftr_utils.TYPED_ROUTE_OPENAPI, None)
@@ -235,14 +236,9 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
     path = ftr_utils.format_openapi_path(rule)
     status_code = status_code or "default"
 
-    if request_model and param_fields:
-        ref_template = f"{REF_PREFIX}{func_name}.{{model}}"
-        model_schema = request_model.model_json_schema(ref_template=ref_template)
-        required_fields = frozenset(model_schema.get("required", ()))
-        properties = model_schema.get("properties", dict())
-        components = model_schema.get("$defs", dict())
-        # Include endpoint in the schema name to avoid conflicts with other models with the same name
-        schemas = {f"{func_name}.{name}": schema for name, schema in components.items()}
+    if request_model_schema and param_fields:
+        required_fields = frozenset(request_model_schema.get("required", ()))
+        properties = request_model_schema.get("properties", dict())
 
         parameters = get_parameters(param_fields, properties, schemas, required_fields)
         request_body = get_request_body(param_fields, properties, required_fields)
@@ -276,10 +272,7 @@ def get_operations(func, rule, func_name, methods, path_args, validation_error_s
         operation = {**spec, "operationId": method_id, "summary": method_summary}
         paths[path][method] = operation
 
-    return {
-        "paths": paths,
-        "components": {"schemas": schemas},
-    }
+    return paths
 
 
 def get_operation(
@@ -327,58 +320,108 @@ def get_operation(
     return result
 
 
-def get_openapi(
-    *,
-    title: str = "API doc",
-    version: str = "0.0.0",
-    openapi_version: str = "3.1.0",
-    summary: str = None,
-    description: str = None,
-    terms_of_service: str = None,
-    contact_info: dict = None,
-    license_info: dict = None,
-    servers: list[dict] = None,
-    webhooks: dict[str, dict] = None,
-    components: dict = None,
-    security=None,
-    tags: list[dict] = None,
-    external_docs: dict = None,
-):
-    """Get specification of OpenAPI document according to the given parameters."""
+class OpenApi:
 
-    info = {"title": title, "version": version}
-    if summary:
-        info["summary"] = summary
-    if description:
-        info["description"] = description
-    if terms_of_service:
-        info["termsOfService"] = terms_of_service
-    if contact_info:
-        info["contact"] = contact_info
-    if license_info:
-        info["license"] = license_info
+    def __init__(
+        self,
+        validation_error_status_code,
+        *,
+        title: str = "API doc",
+        version: str = "0.0.0",
+        openapi_version: str = "3.1.0",
+        openapi_url_prefix: str = "/openapi",
+        openapi_url_json: str = "swagger.json",
+        summary: str = None,
+        description: str = None,
+        terms_of_service: str = None,
+        contact_info: dict = None,
+        license_info: dict = None,
+        servers: list[dict] = None,
+        webhooks: dict[str, dict] = None,
+        components: dict = None,
+        security=None,
+        tags: list[dict] = None,
+        external_docs: dict = None,
+    ):
+        """Get specification of OpenAPI document according to the given parameters."""
 
-    result = {
-        "openapi": openapi_version,
-        "info": info,
-        "paths": collections.defaultdict(dict),
-        "components": {
-            "schemas": {
-                VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
-                HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
+        info = {"title": title, "version": version}
+        if summary:
+            info["summary"] = summary
+        if description:
+            info["description"] = description
+        if terms_of_service:
+            info["termsOfService"] = terms_of_service
+        if contact_info:
+            info["contact"] = contact_info
+        if license_info:
+            info["license"] = license_info
+
+        self.schema = {
+            "openapi": openapi_version,
+            "info": info,
+            "paths": collections.defaultdict(dict),
+            "components": {
+                "schemas": {
+                    VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
+                    HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
+                },
             },
-        },
-    }
-    if servers:
-        result["servers"] = servers
-    if webhooks:
-        result["webhooks"] = webhooks
-    if components:
-        result["components"].update(components)
-    if security:
-        result["security"] = security
-    if tags:
-        result["tags"] = tags
-    if external_docs:
-        result["externalDocs"] = external_docs
-    return result
+        }
+        if servers:
+            self.schema["servers"] = servers
+        if webhooks:
+            self.schema["webhooks"] = webhooks
+        if components:
+            self.schema["components"].update(components)
+        if security:
+            self.schema["security"] = security
+        if tags:
+            self.schema["tags"] = tags
+        if external_docs:
+            self.schema["externalDocs"] = external_docs
+
+        self.schema_generator = pydantic.json_schema.GenerateJsonSchema(by_alias=True, ref_template=REF_PREFIX + "{model}")
+        self.openapi_url_prefix = openapi_url_prefix
+        self.openapi_url_json = openapi_url_json
+        self.models = []
+        self.validation_error_status_code = validation_error_status_code
+
+    def register_route(self, func, rule, func_name, methods, /):
+        path_args = ftr_utils.extract_rule_params(rule)
+        paths = get_operations(func, rule, func_name, methods, path_args, self.validation_error_status_code)
+        self.register_openapi_paths(paths)
+
+    def register_openapi_paths(self, paths, /):
+        current = self.schema["paths"]
+        for path, spec in paths.items():
+            current[path].update(spec)
+
+    def openapi_json_view(self, routes):
+        models = dict()
+        for route in routes:
+            if not route.rule_url.startswith(self.openapi_url_prefix):
+                view_func = route.view_func
+                view_model = getattr(view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
+                if view_model:
+                    models[view_model] = route
+
+        if models:
+            validation_models = zip(models, itertools.repeat("validation"))
+            validation_models = tuple(validation_models)
+            schemas_map, schemas = pydantic.json_schema.models_json_schema(
+                validation_models,
+                ref_template=REF_PREFIX + "{model}"
+            )
+            definitions = schemas["$defs"]
+
+            for model, mode in schemas_map:
+                model_schema_ref = schemas_map[(model, mode)]["$ref"].split("/")[-1]
+                model_schema = definitions.pop(model_schema_ref)
+                route = models[model]
+                setattr(route.view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEl_SCHEMA, model_schema)
+                self.register_route(route.view_func, route.rule_url, route.view_name, route.methods)
+
+            self.schema["components"]["schemas"].update(definitions)
+
+        return self.schema
