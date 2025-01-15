@@ -209,8 +209,12 @@ import swagger_ui
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app, exclude_doc_url_prefix='/api/doc', title="Items API", openapi_version='3.1.1')
-swagger_ui.api_doc(app, config=app_ftr.openapi_schema, url_prefix='/api/doc')
+app_ftr = ftr.FlaskTypedRoutes(app, title="Items API")
+swagger_ui.api_doc(
+    app,
+    config_rel_url=app_ftr.openapi_url_json,
+    url_prefix=app_ftr.openapi_url_prefix,
+)
 
 
 class Item(pydantic.BaseModel):

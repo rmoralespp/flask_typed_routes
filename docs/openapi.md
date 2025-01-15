@@ -35,15 +35,24 @@ import swagger_ui
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app, exclude_doc_url_prefix='/api/doc')
-swagger_ui.api_doc(app, config=app_ftr.openapi_schema, url_prefix='/api/doc')
+app_ftr = ftr.FlaskTypedRoutes(app)
+swagger_ui.api_doc(
+    app,
+    config_rel_url=app_ftr.openapi_url_json,
+    url_prefix=app_ftr.openapi_url_prefix,
+)
+
+
+class Tax(pydantic.BaseModel):
+    name: str
+    rate: float
 
 
 class Item(pydantic.BaseModel):
     name: str
     price: float
     description: str = None
-    tax: float = None
+    taxes: list[Tax] = None
 
 
 @app.get('/items/')
@@ -82,8 +91,12 @@ import swagger_ui
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app, exclude_doc_url_prefix='/api/doc')
-swagger_ui.api_doc(app, config=app_ftr.openapi_schema, url_prefix='/api/doc')
+app_ftr = ftr.FlaskTypedRoutes(app)
+swagger_ui.api_doc(
+    app,
+    config_rel_url=app_ftr.openapi_url_json,
+    url_prefix=app_ftr.openapi_url_prefix,
+)
 
 
 @app.get('/items/<item_id>/')

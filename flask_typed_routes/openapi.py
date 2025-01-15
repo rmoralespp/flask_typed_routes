@@ -1,6 +1,5 @@
 import collections
 import itertools
-import urllib.parse
 
 import pydantic
 
@@ -329,8 +328,6 @@ class OpenApi:
         title: str = "API doc",
         version: str = "0.0.0",
         openapi_version: str = "3.1.0",
-        openapi_url_prefix: str = "/api/doc",
-        openapi_url_json: str = "/openapi.json",
         summary: str = None,
         description: str = None,
         terms_of_service: str = None,
@@ -348,8 +345,6 @@ class OpenApi:
         self.title = title
         self.version = version
         self.openapi_version = openapi_version
-        self.openapi_url_prefix = openapi_url_prefix.rstrip('/')
-        self.openapi_url_json = openapi_url_json
         self.summary = summary
         self.description = description
         self.terms_of_service = terms_of_service
