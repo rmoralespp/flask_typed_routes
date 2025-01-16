@@ -3,6 +3,7 @@ import unittest.mock
 import pydantic
 
 import flask_typed_routes.openapi as ftr_openapi
+import flask_typed_routes.utils as ftr_utils
 
 
 def test_get_summary():
@@ -235,3 +236,140 @@ def test_openapi_models_json_schema():
     )
 
     assert result == expected
+
+
+def test_openapi_routes_json_schema():
+    def my_func1(arg1: str):
+        pass
+
+    def my_func2(arg1: str):
+        pass
+
+    class Model(pydantic.BaseModel):
+        field: str
+
+    setattr(my_func1, ftr_utils.ROUTE_REQUEST_MODEL, Model)
+    routes = [
+        ftr_utils.RouteInfo(my_func1, "/path1", ("arg1",), "my_func1", ("GET",)),
+        ftr_utils.RouteInfo(my_func2, "/path2", ("arg1",), "my_func2", ("POST",)),
+    ]
+
+    expected = (
+        {(Model, 'validation'): {'$ref': '#/components/schemas/Model'}},
+        {
+            'HTTPValidationError': ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
+            'Model': {
+                'properties': {'field': {'title': 'Field', 'type': 'string'}},
+                'required': ['field'],
+                'title': 'Model',
+                'type': 'object',
+            },
+            'ValidationError': ftr_openapi.VALIDATION_ERROR_DEF,
+        },
+        [
+            (
+                routes[0],
+                Model,
+            ),
+            (routes[1], None),
+        ],
+    )
+    result = ftr_openapi.OpenApi.routes_json_schema(routes)
+    assert result == expected
+
+
+def test_get_schema_empty_routes():
+    result = ftr_openapi.OpenApi().get_schema([], 422)
+    expected = {
+        'components': {},
+        'info': {'title': 'API doc', 'version': '0.0.0'},
+        'openapi': '3.1.0',
+        'paths': {},
+    }
+    assert result == expected
+
+
+def test_get_schema():
+    def my_func1():
+        pass
+
+    def my_func2(arg1: str):
+        pass
+
+    class Model(pydantic.BaseModel):
+        field: int
+
+    setattr(my_func1, ftr_utils.ROUTE_REQUEST_MODEL, Model)
+    setattr(my_func1, ftr_utils.ROUTE_PARAM_FIELDS, [unittest.mock.Mock(locator="field", kind="query", annotation=int)])
+    routes = [
+        ftr_utils.RouteInfo(my_func1, "/path1", ("arg1",), "my_func1", ("GET",)),
+        ftr_utils.RouteInfo(my_func2, "/path2", ("arg1",), "my_func2", ("POST",)),
+    ]
+    expected = {
+        'components': {
+            'schemas': {
+                'HTTPValidationError': ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
+                'ValidationError': ftr_openapi.VALIDATION_ERROR_DEF,
+            }
+        },
+        'info': {'title': 'API doc', 'version': '0.0.0'},
+        'openapi': '3.1.0',
+        'paths': {
+            '/path1': {
+                'get': {
+                    'description': '',
+                    'operationId': 'my_func1_get',
+                    'parameters': (
+                        {'in': 'query', 'name': 'field', 'required': True, 'schema': {'type': 'integer'}},
+                    ),
+                    'responses': {
+                        'default': {
+                            'content': {'application/json': {'schema': {'type': 'string'}}},
+                            'description': 'Success',
+                        },
+                        '422': {
+                            'content': {
+                                'application/json': {'schema': {'$ref': '#/components/schemas/HTTPValidationError'}}
+                            },
+                            'description': 'Validation Error',
+                        },
+                    },
+                    'summary': 'My Func1 Get',
+                }
+            },
+            '/path2': {
+                'post': {
+                    'description': '',
+                    'operationId': 'my_func2_post',
+                    'parameters': (
+                        {'in': 'path', 'name': 'arg1', 'required': True, 'schema': {'type': 'string'}},
+                    ),
+                    'responses': {
+                        'default': {
+                            'content': {'application/json': {'schema': {'type': 'string'}}},
+                            'description': 'Success',
+                        }
+                    },
+                    'summary': 'My Func2 Post',
+                }
+            },
+        },
+    }
+    result = ftr_openapi.OpenApi().get_schema(routes, 422)
+    assert result == expected
+
+
+def test_register_route():
+    ini_paths = {"/path1": {"get": 'var'}, "/path2": {}}
+    new_paths = {"/path1": {"post": 'foo'}, "/path2": {"get": 'foo'}}
+    route = unittest.mock.Mock()
+    error_status_code = unittest.mock.Mock()
+    model_schema = unittest.mock.Mock()
+    definitions = unittest.mock.Mock()
+    openapi = ftr_openapi.OpenApi()
+    openapi.get_route_operations = unittest.mock.Mock(return_value=new_paths)
+    openapi.paths = ini_paths
+    openapi.register_route(route, error_status_code, model_schema, definitions)
+    expected = {'/path1': {'get': 'var', 'post': 'foo'}, '/path2': {'get': 'foo'}}
+    assert openapi.paths == expected
+    openapi.get_route_operations.assert_called_once_with(route, error_status_code, model_schema, definitions)

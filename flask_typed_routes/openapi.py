@@ -351,7 +351,8 @@ class OpenApi:
         ref_template = REF_PREFIX + "{model}"
         return pydantic.json_schema.models_json_schema(validation_models, ref_template=ref_template)
 
-    def routes_json_schema(self, routes):
+    @classmethod
+    def routes_json_schema(cls, routes):
         models_by_route = []
         models = []
         for route in routes:
@@ -361,7 +362,7 @@ class OpenApi:
                 models.append(model)
 
         if models:
-            schemas_map, schemas_defs = self.models_json_schema(models)
+            schemas_map, schemas_defs = cls.models_json_schema(models)
             definitions = schemas_defs["$defs"]
             # Add the validation error schemas to the definitions
             definitions.update(
