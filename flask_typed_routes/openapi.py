@@ -74,12 +74,12 @@ def get_summary(operation_id, /):
 def merge_parameters(a, b, /):
     """Merge two OpenAPI operation parameters."""
 
-    def get_key(param):
-        return param["name"] + param["in"]
-
-    existing = {get_key(param): param for param in a}
-    for param in b:
-        yield existing.get(get_key(param), param)
+    bag = set()
+    for param in itertools.chain(a, b):
+        key = param["name"] + param["in"]
+        if key not in bag:
+            bag.add(key)
+            yield param
 
 
 def get_parameters(fields, model_properties, model_required_fields, definitions, /):

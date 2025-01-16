@@ -32,9 +32,9 @@ class RouteInfo(t.NamedTuple):
 
     func: callable
     rule: str
-    args: tuple[str]
+    args: tuple[str, ...]
     name: str
-    methods: tuple[str]
+    methods: tuple[str, ...]
 
 
 def validate_field_annotation(func_path, default, name, tp, /):
