@@ -36,9 +36,9 @@ def typed_route(status_code=None, **openapi):
     """
 
     def worker(view_func, /):
-        setattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, True)
-        setattr(view_func, ftr_utils.TYPED_ROUTE_OPENAPI, ftr_openapi.get_operation(**openapi))
-        setattr(view_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, status_code)
+        setattr(view_func, ftr_utils.ROUTE_ENABLED, True)
+        setattr(view_func, ftr_utils.ROUTE_OPENAPI, openapi)
+        setattr(view_func, ftr_utils.ROUTE_STATUS_CODE, status_code)
         return view_func
 
     return worker
@@ -56,7 +56,8 @@ class FlaskTypedRoutes:
     :param int validation_error_status_code: Status code for the validation error response.
     :param Tuple[str] ignore_verbs: HTTP verbs to ignore.
     :param str mode: Mode of operation, 'auto' or 'manual'. Default is 'auto'.
-    :param str exclude_doc_url_prefix: Exclude the OpenAPI documentation URL prefix.
+    :param str openapi_url_prefix: URL prefix for the OpenAPI documentation.
+    :param str openapi_url_json: Relative URL for the OpenAPI JSON schema.
     :param dict openapi: OpenAPI schema definition for the application.
     """
 
@@ -100,14 +101,15 @@ class FlaskTypedRoutes:
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
 
     def init_doc(self, app, /):
-        """Initialize the OpenAPI documentation route if the URL and prefix are defined."""
+        """Initialize the OpenAPI documentation route."""
 
         @functools.lru_cache
         def openapi_json_view():
             data = self.openapi_manager.get_schema(self.routes, self.validation_error_status_code)
             return flask.jsonify(data)
 
-        openapi_bp = flask.Blueprint("openapi", __name__, url_prefix=self.openapi_url_prefix)
+        bp_name = 'flask_typed_routes_openapi{}'.format(self.openapi_url_prefix.replace('/', '_'))
+        openapi_bp = flask.Blueprint(bp_name, __name__, url_prefix=self.openapi_url_prefix)
         openapi_bp.add_url_rule(self.openapi_url_json, view_func=openapi_json_view)
         app.register_blueprint(openapi_bp)
 
@@ -123,6 +125,7 @@ class FlaskTypedRoutes:
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
             path_args = ftr_utils.extract_rule_params(rule)
             is_apidoc = rule.startswith(self.openapi_url_prefix)
+            methods = kwargs.get("methods") or ("GET",)
             if view_func and not is_apidoc:
                 # name of the view function or view class if not endpoint is provided
                 view_name = endpoint or view_func.__name__
@@ -137,35 +140,33 @@ class FlaskTypedRoutes:
                             method = getattr(view_class, verb.lower())
                             if self.is_typed(method):
                                 new_method = ftr_core.route(method, path_args)
-                                new_kwargs = {**kwargs, "methods": [verb]}
-                                self.register_route(new_method, rule, view_name, new_kwargs, path_args)
+                                self.register_route(new_method, rule, view_name, (verb,), path_args)
                                 setattr(view_class, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view_class.dispatch_request):
                         new_method = ftr_core.route(view_class.dispatch_request, path_args)
-                        self.register_route(new_method, rule, view_name, kwargs, path_args)
+                        self.register_route(new_method, rule, view_name, methods, path_args)
                         view_class.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
                     view_func = ftr_core.route(view_func, path_args)
-                    self.register_route(view_func, rule, view_name, kwargs, path_args)
+                    self.register_route(view_func, rule, view_name, methods, path_args)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
         return wrapper
 
     def is_typed(self, view_func, /):
-        enabled = getattr(view_func, ftr_utils.TYPED_ROUTE_ENABLED, False)
+        enabled = getattr(view_func, ftr_utils.ROUTE_ENABLED, False)
         return self.mode == Mode.auto or enabled
 
-    def register_route(self, func, rule, func_name, kwargs, path_args, /):
-        methods = kwargs.get("methods") or ("GET",)
-        route = ftr_utils.Route(
-            view_func=func,
-            rule_url=rule,
-            rule_args=path_args,
-            view_name=func_name,
+    def register_route(self, view_func, rule, name, methods, rule_args, /):
+        route = ftr_utils.RouteInfo(
+            func=view_func,
+            rule=rule,
+            args=rule_args,
+            name=name,
             methods=methods,
         )
         self.routes.append(route)

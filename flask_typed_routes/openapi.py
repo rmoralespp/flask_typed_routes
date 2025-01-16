@@ -3,7 +3,6 @@ import itertools
 
 import pydantic
 
-import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.utils as ftr_utils
 
@@ -58,12 +57,12 @@ HTTP_SUCCESS_RESPONSE = {
 
 
 def duplicate_request_field(field, /):
-    msg = f"Duplicate request parameter: [name={field.locator}, in={field.kind}]"
-    return ftr_errors.InvalidParameterTypeError(msg)
+    msg = "Duplicate request parameter: [name=%s, in=%s]"
+    ftr_utils.logger.warning(msg, field.locator, field.kind)
 
 
 def duplicate_request_body():
-    return ftr_errors.InvalidParameterTypeError("Duplicate request body")
+    ftr_utils.logger.warning("Duplicate request body")
 
 
 def get_summary(operation_id, /):
@@ -72,15 +71,25 @@ def get_summary(operation_id, /):
     return " ".join(word.capitalize() for word in operation_id.split("_") if word)
 
 
-def get_parameters(fields, model_properties, model_components, model_required_fields, /):
+def merge_parameters(a, b, /):
+    """Merge two OpenAPI operation parameters."""
+
+    def get_key(param):
+        return param["name"] + param["in"]
+
+    existing = {get_key(param): param for param in a}
+    for param in b:
+        yield existing.get(get_key(param), param)
+
+
+def get_parameters(fields, model_properties, model_required_fields, definitions, /):
     """
-    Get OpenAPI operation parameters.
+    Get OpenAPI operation parameters for given fields.
 
-    :param Iterable[flask_typed_routes.Field] fields: Field definitions
-    :param dict model_properties: View function model properties
-    :param dict[str, dict] model_components: OpenAPI definitions.
-    :param model_required_fields:
-
+    :param Iterable[flask_typed_routes.Field] fields: Field definitions.
+    :param dict[str, dict] model_properties: Schema properties.
+    :param Sequence[str] model_required_fields: Schema required fields.
+    :param dict[str, dict] definitions: Models definitions.
     :rtype: Iterable[dict]
     """
 
@@ -91,7 +100,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
         if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
             ref_properties = model_properties[field.locator]
             ref_name = ref_properties["$ref"].split("/")[-1]
-            ref_schema = model_components[ref_name]
+            ref_schema = definitions[ref_name]
             properties_slot = ref_schema.get("properties", dict())
             required_slot = frozenset(ref_schema.get("required", ()))
             names = (info.alias or name for name, info in field.annotation.model_fields.items())
@@ -102,7 +111,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
 
         for name in names:
             if name in slot:
-                raise duplicate_request_field(field)
+                duplicate_request_field(field)
             else:
                 schema = properties_slot[name]
                 _ = schema.pop("title", None)  # title is dont used
@@ -130,7 +139,7 @@ def get_parameters(fields, model_properties, model_components, model_required_fi
 
 def get_unvalidated_parameters(path_args):
     """
-    Get OpenAPI operation parameters for unvalidated fields.
+    Get OpenAPI operation parameters for unvalidated route.
 
     :param Iterable[str] path_args: Parameters of the route rule
     :rtype: Iterable[dict]
@@ -149,8 +158,8 @@ def get_request_body(fields, model_properties, model_required_fields, /):
     """
     Get OpenAPI operation Request body.
 
-    :param model_properties: View function model properties
-    :param model_required_fields: Model required fields
+    :param dict[str, dict] model_properties: Schema properties.
+    :param Sequence[str] model_required_fields: Schema required fields.
 
     :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
     :rtype: Iterable[dict]
@@ -166,21 +175,21 @@ def get_request_body(fields, model_properties, model_required_fields, /):
     for field in body_fields:
         name = field.locator
         if schema_ref:
-            raise duplicate_request_body()
+            duplicate_request_body()
         elif issubclass(field.annotation, pydantic.BaseModel):
             if field.embed and name in schema_obj:
-                raise duplicate_request_field(field)
+                duplicate_request_field(field)
             elif field.embed:
                 schema_obj[name] = model_properties[name]
                 if name in model_required_fields:
                     required_fields.append(name)
             elif schema_obj:
-                raise duplicate_request_body()
+                duplicate_request_body()
             else:
                 schema_ref = model_properties[name]
                 required = field.is_required
         elif name in schema_obj:
-            raise duplicate_request_field(field)
+            duplicate_request_field(field)
         else:
             schema_obj[name] = model_properties[name]
             if name in model_required_fields:
@@ -213,113 +222,6 @@ def get_request_body(fields, model_properties, model_required_fields, /):
         return None
 
 
-def get_operations(fn, rule, fn_name, methods, path_args, error_status_code, model_schema, definitions, /):
-    """
-    Get OpenAPI operations for a flask view function.
-
-    :param fn: Flask view function
-    :param str rule: URL rule
-    :param str fn_name: Safe function name
-    :param Iterable[str] methods: HTTP methods
-    :param path_args: Parameters of the route rule
-    :param int error_status_code: Status code for validation errors response.
-    :param dict model_schema: JSON Model schema for the view function
-    :param dict[str, dict] definitions: OpenAPI definitions.
-    :rtype dict:
-    """
-
-    param_fields = getattr(fn, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, None)
-    status_code = getattr(fn, ftr_utils.TYPED_ROUTE_STATUS_CODE, None)
-    override_spec = getattr(fn, ftr_utils.TYPED_ROUTE_OPENAPI, None)
-
-    paths = collections.defaultdict(dict)
-    path = ftr_utils.format_openapi_path(rule)
-    status_code = status_code or "default"
-
-    if param_fields:
-        required_fields = frozenset(model_schema.get("required", ()))
-        properties = model_schema.get("properties", dict())
-
-        parameters = get_parameters(param_fields, properties, definitions, required_fields)
-        request_body = get_request_body(param_fields, properties, required_fields)
-        spec = {
-            "parameters": tuple(parameters),
-            "description": ftr_utils.cleandoc(fn),
-            "responses": {
-                str(error_status_code): HTTP_VALIDATION_ERROR_REF,
-                str(status_code): HTTP_SUCCESS_RESPONSE,
-            },
-        }
-        if request_body:
-            spec["requestBody"] = request_body
-    else:
-        spec = {
-            "parameters": tuple(get_unvalidated_parameters(path_args)),
-            "description": ftr_utils.cleandoc(fn),
-            "responses": {status_code: HTTP_SUCCESS_RESPONSE},
-        }
-
-    if override_spec:
-        spec.update(override_spec)
-
-    operation_id = spec.get("operationId")
-    summary = spec.get("summary")
-    for method in methods:
-        method = method.lower()
-        # Include the method in the operation ID to avoid conflicts with other operations
-        method_id = operation_id or f"{fn_name}_{method}"
-        method_summary = summary or get_summary(method_id)
-        operation = {**spec, "operationId": method_id, "summary": method_summary}
-        paths[path][method] = operation
-
-    return paths
-
-
-def get_operation(
-    *,
-    tags: list[str] = None,
-    summary: str = None,
-    description: str = None,
-    externalDocs: dict = None,
-    operationId: str = None,
-    parameters: list[dict] = None,
-    requestBody: dict = None,
-    responses: dict[str, dict] = None,
-    callbacks: dict[str, dict] = None,
-    deprecated: bool = None,
-    security: list[dict[str, list[str]]] = None,
-    servers: list[dict] = None,
-):
-    """Get specification of OpenAPI operation according to the given parameters."""
-
-    result = dict()
-    if tags:
-        result["tags"] = tags
-    if summary:
-        result["summary"] = summary
-    if description:
-        result["description"] = description
-    if externalDocs:
-        result["externalDocs"] = externalDocs
-    if operationId:
-        result["operationId"] = operationId
-    if parameters:
-        result["parameters"] = parameters
-    if requestBody:
-        result["requestBody"] = requestBody
-    if responses:
-        result["responses"] = responses
-    if callbacks:
-        result["callbacks"] = callbacks
-    if deprecated:
-        result["deprecated"] = deprecated
-    if security:
-        result["security"] = security
-    if servers:
-        result["servers"] = servers
-    return result
-
-
 class OpenApi:
 
     def __init__(
@@ -340,7 +242,7 @@ class OpenApi:
         tags: list[dict] = None,
         external_docs: dict = None,
     ):
-        """Get specification of OpenAPI document according to the given parameters."""
+        """OpenAPI generator for Flask Typed Routes views."""
 
         self.title = title
         self.version = version
@@ -359,37 +261,88 @@ class OpenApi:
         # Calculated attributes
         self.paths = collections.defaultdict(dict)
 
-    def register_route(self, route, validation_error_status_code, model_schema, definitions, /):
+    @staticmethod
+    def get_route_operations(route, error_status_code, model_schema, definitions, /):
+        """
+        Get OpenAPI operations for a route.
+
+        :param flask_typed_routes.utils.RouteInfo route: Route to get operations.
+        :param int error_status_code: Status code for validation errors response.
+        :param Optional[dict] model_schema: Route Model schema.
+        :param dict[str, dict] definitions: Models definitions.
+        :rtype dict:
+        """
+
+        param_fields = getattr(route.func, ftr_utils.ROUTE_PARAM_FIELDS, None)
+        status_code = getattr(route.func, ftr_utils.ROUTE_STATUS_CODE, None)
+
+        spec = getattr(route.func, ftr_utils.ROUTE_OPENAPI, dict())
+
+        parameters = spec.pop("parameters", ())
+        responses = spec.pop("responses", dict())
+        description = spec.pop("description", ftr_utils.cleandoc(route.func))
+        request_body = spec.pop("requestBody", None)
+        operation_id = spec.pop("operationId", None)
+        summary = spec.pop("summary", None)
+
+        result = collections.defaultdict(dict)
+        path = ftr_utils.format_openapi_path(route.rule)
+        status_code = status_code or "default"
+
+        if model_schema and param_fields:
+            required_fields = frozenset(model_schema.get("required", ()))
+            properties = model_schema.get("properties", dict())
+            model_parameters = get_parameters(param_fields, properties, required_fields, definitions)
+            parameters = tuple(merge_parameters(parameters, model_parameters))
+            request_body = request_body or get_request_body(param_fields, properties, required_fields)
+            responses = {
+                str(error_status_code): HTTP_VALIDATION_ERROR_REF,
+                str(status_code): HTTP_SUCCESS_RESPONSE,
+                **responses,
+            }
+        else:
+            # Unvalidated parameters for the route.
+            unvalidated_parameters = tuple(get_unvalidated_parameters(route.args))
+            parameters = tuple(merge_parameters(parameters, unvalidated_parameters))
+            responses = {str(status_code): HTTP_SUCCESS_RESPONSE, **responses}
+
+        for method in route.methods:
+            method = method.lower()
+            # Include the method in the operation ID to avoid conflicts with other operations
+            method_id = operation_id or f"{route.name}_{method}"
+            method_summary = summary or get_summary(method_id)
+            operation = {
+                **spec,
+                "operationId": method_id,
+                "summary": method_summary,
+                "description": description,
+                "parameters": parameters,
+                "responses": responses,
+            }
+            if request_body:
+                operation["requestBody"] = request_body
+            result[path][method] = operation
+
+        return result
+
+    def register_route(self, route, error_status_code, model_schema, definitions, /):
         """
         Register a route in the OpenAPI schema document.
 
-        :param flask_typed_routes.utils.Route route: Route to register.
-        :param int validation_error_status_code: Status code for validation errors response.
-        :param dict model_schema: JSON Model schema for the view function
-        :param dict[str, dict] definitions: OpenAPI definitions.
+        :param flask_typed_routes.utils.RouteInfo route: Route to register.
+        :param int error_status_code: Status code for validation errors response.
+        :param Optional[dict] model_schema: Route Model schema.
+        :param dict[str, dict] definitions: Models definitions.
         """
 
-        paths = get_operations(
-            route.view_func,
-            route.rule_url,
-            route.view_name,
-            route.methods,
-            route.rule_args,
-            validation_error_status_code,
+        paths = self.get_route_operations(
+            route,
+            error_status_code,
             model_schema,
             definitions,
         )
         for path, spec in paths.items():
             self.paths[path].update(spec)
-
-    @staticmethod
-    def get_routes_models(routes):
-        models = dict()
-        for route in routes:
-            model = getattr(route.view_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, None)
-            if model:
-                models[model] = route
-        return models
 
     @staticmethod
     def models_json_schema(models):
@@ -398,12 +351,36 @@ class OpenApi:
         ref_template = REF_PREFIX + "{model}"
         return pydantic.json_schema.models_json_schema(validation_models, ref_template=ref_template)
 
-    def get_schema(self, routes, validation_error_status_code):
+    def routes_json_schema(self, routes):
+        models_by_route = []
+        models = []
+        for route in routes:
+            model = getattr(route.func, ftr_utils.ROUTE_REQUEST_MODEL, None)
+            models_by_route.append((route, model))
+            if model:
+                models.append(model)
+
+        if models:
+            schemas_map, schemas_defs = self.models_json_schema(models)
+            definitions = schemas_defs["$defs"]
+            # Add the validation error schemas to the definitions
+            definitions.update(
+                {
+                    VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
+                    HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
+                }
+            )
+        else:
+            schemas_map = dict()
+            definitions = dict()
+        return (schemas_map, definitions, models_by_route)
+
+    def get_schema(self, routes, error_status_code):
         """
         Get the OpenAPI schema document based on the registered routes.
 
-        :param Iterable[flask_typed_routes.utils.Route] routes:
-        :param int validation_error_status_code: Status code for validation errors response.
+        :param Iterable[flask_typed_routes.utils.RouteInfo] routes: Registered routes.
+        :param int error_status_code: Status code for validation errors response.
         :rtype: dict
         """
 
@@ -419,21 +396,21 @@ class OpenApi:
         if self.license_info:
             info["license"] = self.license_info
 
-        schemas = {
-            VALIDATION_ERROR_KEY: VALIDATION_ERROR_DEF,
-            HTTP_VALIDATION_ERROR_KEY: HTTP_VALIDATION_ERROR_DEF,
-        }
         result = {
             "openapi": self.openapi_version,
             "info": info,
             "paths": self.paths,
-            "components": {"schemas": schemas},
+            "components": dict(),
         }
+        schemas = dict()
         if self.servers:
             result["servers"] = self.servers
         if self.webhooks:
             result["webhooks"] = self.webhooks
         if self.components:
+            # Extract the schemas of the provided components to merge them later.
+            # These schemas take precedence over the schemas of the models
+            schemas = self.components.pop("schemas", dict())
             result["components"].update(self.components)
         if self.security:
             result["security"] = self.security
@@ -442,20 +419,21 @@ class OpenApi:
         if self.external_docs:
             result["externalDocs"] = self.external_docs
 
-        models = self.get_routes_models(routes)
-        if models:
-            schemas_map, schemas_dict = self.models_json_schema(models)
-            definitions = schemas_dict["$defs"]
-
-            for model, mode in schemas_map:
-                model_schema_ref = schemas_map[(model, mode)]["$ref"]
+        # Register the routes inspects the view functions and extracts the model schemas.
+        schemas_map, definitions, models_by_route = self.routes_json_schema(routes)
+        for route, model in models_by_route:
+            if model:
+                # Get the function model schema from the definitions and remove it.
+                model_schema_ref = schemas_map[(model, "validation")]["$ref"]
                 model_schema_ref = model_schema_ref.split("/")[-1]  # basename
-                # Remove the view function model schema from the definitions
                 model_schema = definitions.pop(model_schema_ref)
-                route = models[model]
-                self.register_route(route, validation_error_status_code, model_schema, definitions)
+            else:
+                model_schema = None
+            self.register_route(route, error_status_code, model_schema, definitions)
 
-            # Finally, update the definitions with the model schemas
-            schemas.update(definitions)
-
+        # Update the definitions with the given schemas, given schemas have higher priority
+        # Finally, add merged schemas to the OpenApi components.
+        schemas = {**definitions, **schemas}
+        if schemas:
+            result["components"]["schemas"] = schemas
         return result

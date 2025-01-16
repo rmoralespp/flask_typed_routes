@@ -15,27 +15,25 @@ import flask_typed_routes.fields as ftr_fields
 rule_regex = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
 # Function to replace the parameters with the OpenAPI format.
 format_openapi_path = functools.partial(rule_regex.sub, r"{\1}")
-# Constants for marking typed routes.
-TYPED_ROUTE_MARK = "__flask_typed_routes__{field}"
-TYPED_ROUTE_ENABLED = TYPED_ROUTE_MARK.format(field="enabled")
-TYPED_ROUTE_REQUEST_MODEL = TYPED_ROUTE_MARK.format(field="request_model")
-TYPED_ROUTE_PARAM_FIELDS = TYPED_ROUTE_MARK.format(field="fields")
-TYPED_ROUTE_OPENAPI = TYPED_ROUTE_MARK.format(field="openapi")
-TYPED_ROUTE_STATUS_CODE = TYPED_ROUTE_MARK.format(field="status_code")
+# Constants for marking routes.
+ROUTE_MARK = "__flask_typed_routes__{field}"
+ROUTE_ENABLED = ROUTE_MARK.format(field="enabled")
+ROUTE_REQUEST_MODEL = ROUTE_MARK.format(field="request_model")
+ROUTE_PARAM_FIELDS = ROUTE_MARK.format(field="fields")
+ROUTE_OPENAPI = ROUTE_MARK.format(field="openapi")
+ROUTE_STATUS_CODE = ROUTE_MARK.format(field="status_code")
 
 logger = logging.getLogger("flask_typed_routes")
 logger.addHandler(logging.NullHandler())
 
 
-
-
-class Route(t.NamedTuple):
+class RouteInfo(t.NamedTuple):
     """Named tuple for storing route information."""
 
-    view_func: callable
-    rule_url: str
-    rule_args: tuple[str]
-    view_name: str
+    func: callable
+    rule: str
+    args: tuple[str]
+    name: str
     methods: tuple[str]
 
 
