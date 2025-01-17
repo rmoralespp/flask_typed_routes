@@ -48,17 +48,6 @@ class FlaskTypedRoutes:
     """
     Flask extension for automatically validating Requests with Pydantic
     by decorating route functions.
-
-    :param app: Flask application instance.
-    :param Callable validation_error_handler:
-        Custom error handler for the "ValidationError" exception,
-        by default it uses the default error handler provided by the library.
-    :param int validation_error_status_code: Status code for the validation error response.
-    :param Tuple[str] ignore_verbs: HTTP verbs to ignore.
-    :param str mode: Mode of operation, 'auto' or 'manual'. Default is 'auto'.
-    :param str openapi_url_prefix: URL prefix for the OpenAPI documentation.
-    :param str openapi_url_json: Relative URL for the OpenAPI JSON schema.
-    :param dict openapi: OpenAPI schema definition for the application.
     """
 
     IGNORE_VERBS = ("HEAD", "OPTIONS")
@@ -70,10 +59,24 @@ class FlaskTypedRoutes:
         validation_error_status_code=400,
         ignore_verbs=None,
         mode=Mode.auto,
-        openapi_url_prefix: str = "/api/doc",
+        openapi_url_prefix: str = "/docs",
         openapi_url_json: str = "/openapi.json",
         **openapi,
     ):
+        """
+        :param app: Flask application instance.
+        :param Callable validation_error_handler:
+            Custom error handler for the "ValidationError" exception,
+            by default it uses the default error handler provided by the library.
+        :param int validation_error_status_code: Status code for the validation error response.
+        :param Tuple[str] ignore_verbs: HTTP verbs to ignore.
+        :param str mode: Mode of operation, 'auto' or 'manual'. Default is 'auto'.
+        :param str openapi_url_prefix: URL prefix for the interactive API documentation.
+        :param str openapi_url_json: Relative URL for the OpenAPI JSON schema.
+
+        :param dict openapi: OpenAPI schema definition for the application.
+        """
+
         self.error_handler = validation_error_handler
         self.validation_error_status_code = validation_error_status_code
         self.ignore_verbs = ignore_verbs or self.IGNORE_VERBS
@@ -139,18 +142,18 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view_class, verb.lower())
                             if self.is_typed(method):
-                                new_method = ftr_core.route(method, path_args)
+                                new_method = ftr_core.route(method, path_args, view_name)
                                 self.register_route(new_method, rule, view_name, (verb,), path_args)
                                 setattr(view_class, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view_class.dispatch_request):
-                        new_method = ftr_core.route(view_class.dispatch_request, path_args)
+                        new_method = ftr_core.route(view_class.dispatch_request, path_args, view_name)
                         self.register_route(new_method, rule, view_name, methods, path_args)
                         view_class.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
-                    view_func = ftr_core.route(view_func, path_args)
+                    view_func = ftr_core.route(view_func, path_args, view_name)
                     self.register_route(view_func, rule, view_name, methods, path_args)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)

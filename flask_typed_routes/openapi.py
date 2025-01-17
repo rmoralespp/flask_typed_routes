@@ -228,7 +228,7 @@ class OpenApi:
         self,
         *,
         title: str = "API doc",
-        version: str = "0.0.0",
+        version: str = "0.0.1",  # This is the version of your application
         openapi_version: str = "3.1.0",
         summary: str = None,
         description: str = None,
