@@ -57,7 +57,7 @@ Skip = pydantic.NonNegativeInt # custom Pydantic type
 Limit = t.Annotated[int, at.Ge(1), at.Le(100)] # custom Annotated type
 
 @app.get('/items/<user>/')
-def get_items(user: str, skip: Skip = 0, limit: Limit = 10):
+def read_items(user: str, skip: Skip = 0, limit: Limit = 10):
     # Parameters not included in the "path" are automatically treated as "query" parameters.
     data = {
         'user': user,
@@ -150,7 +150,7 @@ blp = flask.Blueprint('items', __name__, url_prefix='/v2')
 
 
 @blp.get('/items/')
-def get_items_v2(skip: int = 0, limit: int = 10, country: str = 'US'):
+def read_items(skip: int = 0, limit: int = 10, country: str = 'US'):
     data = {'skip': skip, 'limit': limit, 'country': country}
     return flask.jsonify(data)
 
@@ -181,14 +181,14 @@ class UserProducts(flask.views.View):
 
 
 class UserOrders(flask.views.MethodView):
-    
+
     def get(self, user: str, skip: int = 0, limit: int = 10):
         data = {'user': user, 'skip': skip, 'limit': limit}
         return flask.jsonify(data)
 
- 
-app.add_url_rule('/products/<user>/all/', view_func=UserProducts.as_view('user_products'))
-app.add_url_rule('/orders/<user>/all/', view_func=UserOrders.as_view('user_orders'))
+
+app.add_url_rule('/products/<user>/', view_func=UserProducts.as_view('user_products'))
+app.add_url_rule('/orders/<user>/', view_func=UserOrders.as_view('user_orders'))
 ```
 
 ### Interactive API docs
@@ -201,49 +201,55 @@ pip install swagger-ui-py  # ignore if already installed
 ```
 
 ```python
-import typing
-
 import flask
 import pydantic
 import swagger_ui
+
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app, title="Items API")
-swagger_ui.api_doc(
-    app,
-    config_rel_url=app_ftr.openapi_url_json,
-    url_prefix=app_ftr.openapi_url_prefix,
-)
+app_ftr = ftr.FlaskTypedRoutes(app)
+swagger_ui.api_doc(app, config_rel_url=app_ftr.openapi_url_json, url_prefix=app_ftr.openapi_url_prefix)
 
 
 class Item(pydantic.BaseModel):
     name: str
+    description: str = None
     price: float
-    status: typing.Literal['reserved', 'available']
 
 
-@app.get("/items/<user_id>/")
-def read_items(user_id: int, status: typing.Literal['reserved', 'available'] = 'available'):
-    result = {"user_id": user_id, "status": status}
-    return flask.jsonify(result)
+@app.get('/items/<user>/')
+def read_items(user: str, skip: int = 0, limit: int = 10):
+    data = {'user': user, 'skip': skip, 'limit': limit}
+    return flask.jsonify(data)
 
 
-@app.put("/items/<user_id>")
+@app.post('/items/')
+def create_item(item: Item):
+    return flask.jsonify(item.model_dump())
+
+
+@app.put('/items/<item_id>/')
 def update_item(item_id: int, item: Item):
-    result = {"item_id": item_id, "item_name": item.name, "item_price": item.price}
-    return flask.jsonify(result)
+    return flask.jsonify({'item_id': item_id, **item.model_dump()})
+
+
+@app.delete('/items/<item_id>/')
+def remove_item(item_id: int):
+    return flask.jsonify({'item_id': item_id})
 ```
 
-Open your browser and go to `http://127.0.0.1:5000/api/doc/`
+Open your browser and go to `http://127.0.0.1:5000/docs/`
+
+![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/images/openapi1.png)
+
+**Create item** endpoint:
+
+![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/images/openapi2.png)
 
 **Read Items** endpoint:
 
-![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/openapi_example0.png)
-
-**Update Item** endpoint:
-
-![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/openapi_example01.png)
+![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/images/openapi3.png)
 
 ## Documentation
 

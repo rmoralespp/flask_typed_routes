@@ -238,7 +238,6 @@ class OpenApi:
         servers: list[dict] = None,
         webhooks: dict[str, dict] = None,
         components: dict = None,
-        security=None,
         tags: list[dict] = None,
         external_docs: dict = None,
     ):
@@ -255,7 +254,6 @@ class OpenApi:
         self.servers = servers
         self.webhooks = webhooks
         self.components = components
-        self.security = security
         self.tags = tags
         self.external_docs = external_docs
         # Calculated attributes
@@ -413,8 +411,6 @@ class OpenApi:
             # These schemas take precedence over the schemas of the models
             schemas = self.components.pop("schemas", dict())
             result["components"].update(self.components)
-        if self.security:
-            result["security"] = self.security
         if self.tags:
             result["tags"] = self.tags
         if self.external_docs:
