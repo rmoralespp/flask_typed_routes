@@ -1,5 +1,14 @@
 ## Releases
 
+### v0.2.0 (2025-01-17)
+
+- **Add**: The `FlaskTypedRoutes` class now receives the `openapi_url_prefix` and `openapi_url_json` parameters in 
+   the constructor to define the OpenAPI schema URL and Api interactive documentation
+- **Breaking-Change**: `FlaskTypedRoutes` can't receive the `exclude_doc_url_prefix` parameter in the constructor anymore.
+- **Breaking-Change**: `FlaskTypedRoutes` now hasn't the `openapi_schema ` attribute. The OpenAPI schema is served in the 
+   URL defined by `openapi_url_json`.
+- **Improvement**: Avoid redundant OpenApi components in the schema.
+
 ### v0.1.3 (2025-01-13)
 
 - **Fix**: Exclude validation errors "ctx" because can't be serialized to JSON.
