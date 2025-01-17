@@ -167,7 +167,7 @@ def test_openapi_init_default():
         'tags': None,
         'terms_of_service': None,
         'title': 'API doc',
-        'version': '0.0.0',
+        'version': '0.0.1',
         'webhooks': None,
     }
     assert ftr_openapi.OpenApi().__dict__ == expected
@@ -282,7 +282,7 @@ def test_get_schema_empty_routes():
     result = ftr_openapi.OpenApi().get_schema([], 422)
     expected = {
         'components': {},
-        'info': {'title': 'API doc', 'version': '0.0.0'},
+        'info': {'title': 'API doc', 'version': '0.0.1'},
         'openapi': '3.1.0',
         'paths': {},
     }
@@ -312,7 +312,7 @@ def test_get_schema():
                 'ValidationError': ftr_openapi.VALIDATION_ERROR_DEF,
             }
         },
-        'info': {'title': 'API doc', 'version': '0.0.0'},
+        'info': {'title': 'API doc', 'version': '0.0.1'},
         'openapi': '3.1.0',
         'paths': {
             '/path1': {
