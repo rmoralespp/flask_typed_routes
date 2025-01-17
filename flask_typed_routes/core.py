@@ -67,40 +67,41 @@ def parse_field(name, tp, default_field_class, default_value, /):
     return field
 
 
-def parse_route(view_func, view_func_path, view_path_args, /):
+def parse_route(view_func, view_name, view_args, /):
     """
     Return field definitions for the view function annotations.
 
     :param view_func: Flask view function
-    :param view_func_path: Path to the view function
-    :param view_path_args: Parameters of the route rule
+    :param view_name: Name to the view function
+    :param view_args: Parameters of the route rule
     :rtype: Generator[flask_tpr_fields.Field]
     """
 
     sig = inspect.signature(view_func)
-    annotations = ftr_utils.get_annotations(view_func, view_func_path)
+    annotations = ftr_utils.get_annotations(view_func, view_name)
     for name, annotation in annotations.items():
         if name == "return":
             continue  # Skip the return annotation
 
         param = sig.parameters[name]
-        ftr_utils.validate_field_annotation(view_func_path, param.default, name, annotation)
+        ftr_utils.validate_field_annotation(view_name, param.default, name, annotation)
 
         if ftr_utils.is_subclass(annotation, pydantic.BaseModel):  # Request body
             field_class = ftr_fields.Body
-        elif name in view_path_args:  # Path parameter
+        elif name in view_args:  # Path parameter
             field_class = ftr_fields.Path
         else:  # Query parameter by default
             field_class = ftr_fields.Query
         yield parse_field(name, annotation, field_class, param.default)
 
 
-def route(view_func, rule_params, /):
+def route(view_func, view_args, view_name, /):
     """
     A decorator that validates the request parameters using Pydantic models.
 
     :param view_func: Flask view function
-    :param Sequence[str] rule_params: Parameters of the route rule
+    :param Sequence[str] view_args: Parameters of the route rule
+    :param str view_name: Unique Name of the view function
     :return: Decorated function
     """
 
@@ -118,17 +119,14 @@ def route(view_func, rule_params, /):
             return view_func(*args, **kwargs)
 
     # Check the types of the function annotations before returning the decorator.
-    view_func_path = ftr_utils.get_func_path(view_func)
-    fields = tuple(parse_route(view_func, view_func_path, rule_params))
+    fields = tuple(parse_route(view_func, view_name, view_args))
     # Create a Pydantic model from the field definitions.
     definitions = {field.name: (field.annotation, field.field_info) for field in fields}
     if definitions:
-        model_name = f"{view_func_path}.request_model"
-        model_name = model_name.replace(".", "__")
-        model = pydantic.create_model(model_name, **definitions)
+        model = pydantic.create_model(view_name, **definitions)
 
-        setattr(decorator, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, model)
-        setattr(decorator, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, fields)
+        setattr(decorator, ftr_utils.ROUTE_REQUEST_MODEL, model)
+        setattr(decorator, ftr_utils.ROUTE_PARAM_FIELDS, fields)
         return decorator
     else:
         return view_func

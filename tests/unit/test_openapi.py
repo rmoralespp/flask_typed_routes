@@ -1,183 +1,346 @@
-import collections
+import unittest.mock
 
 import pydantic
 
-import flask_typed_routes.core as ftr_core
-import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.openapi as ftr_openapi
 import flask_typed_routes.utils as ftr_utils
 
 
 def test_get_summary():
-    result = ftr_openapi.get_summary("sample_func_name")
+    result = ftr_openapi.get_summary("__sample__func__name__")
     assert result == "Sample Func Name"
 
 
-def test_get_operation_includes_all_fields():
-    result = ftr_openapi.get_operation(
-        tags=["tag1"],
-        summary="Summary",
-        description="Description",
-        externalDocs={"url": "http://example.com"},
-        operationId="operationId",
-        parameters=[{"name": "param1"}],
-        requestBody={"content": {"application/json": {"schema": {"type": "object"}}}},
-        responses={"200": {"description": "Success"}},
-        callbacks={"callback1": {"$ref": "#/components/callbacks/Callback"}},
-        deprecated=True,
-        security=[{"apiKey": []}],
-        servers=[{"url": "http://example.com"}],
+@unittest.mock.patch("flask_typed_routes.utils.logger")
+def test_duplicate_request_field(logger):
+    field = unittest.mock.Mock(locator="locator", kind="kind")
+    ftr_openapi.duplicate_request_field(field)
+    logger.warning.assert_called_once_with('Duplicate request parameter: [name=%s, in=%s]', 'locator', 'kind')
+
+
+@unittest.mock.patch("flask_typed_routes.utils.logger")
+def test_duplicate_request_body(logger):
+    ftr_openapi.duplicate_request_body()
+    logger.warning.assert_called_once_with("Duplicate request body")
+
+
+def test_merge_parameters():
+    a = ({"name": "1", "in": "query"}, {"name": "1", "in": "query"})
+    b = a + ({"name": "2", "in": "query"},)
+    expected = (
+        {'in': 'query', 'name': '1'},
+        {'in': 'query', 'name': '2'},
     )
-    expected = {
-        "tags": ["tag1"],
-        "summary": "Summary",
-        "description": "Description",
-        "externalDocs": {"url": "http://example.com"},
-        "operationId": "operationId",
-        "parameters": [{"name": "param1"}],
-        "requestBody": {"content": {"application/json": {"schema": {"type": "object"}}}},
-        "responses": {"200": {"description": "Success"}},
-        "callbacks": {"callback1": {"$ref": "#/components/callbacks/Callback"}},
+    result = tuple(ftr_openapi.merge_parameters(a, b))
+    assert result == expected
+
+
+def test_get_parameters():
+    class Model(pydantic.BaseModel):
+        model_field1: str
+        model_field2: str
+
+    schema = {
+        "type": "string",
+        "title": "Field title",
+        "description": "Field description",
         "deprecated": True,
-        "security": [{"apiKey": []}],
-        "servers": [{"url": "http://example.com"}],
     }
-    assert result == expected
-
-
-def test_get_operation_handles_empty_fields():
-    result = ftr_openapi.get_operation()
-    assert result == dict()
-
-
-def test_get_openapi_includes_all_fields():
-    result = ftr_openapi.get_openapi(
-        title="API Title",
-        version="1.0.0",
-        openapi_version="3.0.0",
-        summary="API Summary",
-        description="API Description",
-        terms_of_service="http://example.com/terms/",
-        contact_info={"name": "API Support", "url": "http://example.com/support"},
-        license_info={"name": "MIT", "url": "http://example.com/license"},
-        servers=[{"url": "http://example.com"}],
-        webhooks={"newWebhook": {"post": {"description": "New webhook"}}},
-        components={"schemas": {"NewSchema": {"type": "object"}}},
-        security=[{"apiKey": []}],
-        tags=[{"name": "tag1"}],
-        external_docs={"url": "http://example.com/docs"},
+    expected_common = {
+        'schema': {'type': 'string'},
+        'deprecated': True,
+        'description': 'Field description',
+    }
+    expected = (
+        {**expected_common, 'in': 'path', 'name': 'field', 'required': True},
+        {**expected_common, 'in': 'query', 'name': 'query_string', 'required': False, 'schema': {'type': 'string'}},
+        {**expected_common, 'in': 'query', 'name': 'model_field1', 'required': True, 'schema': {'type': 'string'}},
+        {**expected_common, 'in': 'query', 'name': 'model_field2', 'required': False, 'schema': {'type': 'string'}},
     )
-    expected = {
-        "openapi": "3.0.0",
-        "info": {
-            "title": "API Title",
-            "version": "1.0.0",
-            "summary": "API Summary",
-            "description": "API Description",
-            "termsOfService": "http://example.com/terms/",
-            "contact": {"name": "API Support", "url": "http://example.com/support"},
-            "license": {"name": "MIT", "url": "http://example.com/license"},
-        },
-        "paths": collections.defaultdict(dict),
-        "components": {'schemas': {'NewSchema': {'type': 'object'}}},
-        "servers": [{"url": "http://example.com"}],
-        "webhooks": {"newWebhook": {"post": {"description": "New webhook"}}},
-        "security": [{"apiKey": []}],
-        "tags": [{"name": "tag1"}],
-        "externalDocs": {"url": "http://example.com/docs"},
+    fields = [
+        unittest.mock.Mock(locator="field", kind="path", annotation=str),  # required
+        unittest.mock.Mock(locator="body", kind="body", annotation=Model),  # ignored
+        unittest.mock.Mock(locator="query_string", kind="query", annotation=str),  # optional
+        unittest.mock.Mock(locator="query_nested", kind="query", annotation=Model),  # nested
+    ]
+    model_properties = {
+        "field": {**schema},
+        "body": {"$ref": "#/components/schemas/Model"},
+        "query_string": {**schema},
+        "query_nested": {"$ref": "#/components/schemas/Model"},
     }
+    model_required_fields = ["field"]
+    definitions = {
+        "Model": {
+            "type": "object",
+            "properties": {
+                "model_field1": {**schema},
+                "model_field2": {**schema},
+            },
+            "required": ["model_field1"],
+        }
+    }
+
+    result = ftr_openapi.get_parameters(fields, model_properties, model_required_fields, definitions)
+    result = tuple(result)
     assert result == expected
 
 
-def test_get_openapi_handles_empty_fields():
-    result = ftr_openapi.get_openapi()
+def test_get_unvalidated_parameters():
+    result = ftr_openapi.get_unvalidated_parameters(("a", "b"))
+    expected = (
+        {'in': 'path', 'name': 'a', 'required': True, 'schema': {'type': 'string'}},
+        {'in': 'path', 'name': 'b', 'required': True, 'schema': {'type': 'string'}},
+    )
+    assert tuple(result) == expected
+
+
+def test_get_request_body_ref():
+    class Model(pydantic.BaseModel):
+        pass
+
+    fields = [unittest.mock.Mock(locator="body", kind="body", annotation=Model)]
+    model_properties = {"body": {"$ref": "#/components/schemas/Model"}}
+    model_required_fields = ["field"]
+    result = ftr_openapi.get_request_body(fields, model_properties, model_required_fields)
     expected = {
-        "openapi": "3.1.0",
-        "info": {"title": "API doc", "version": "0.0.0"},
-        "paths": collections.defaultdict(dict),
-        "components": {
-            "schemas": {
-                "ValidationError": ftr_openapi.VALIDATION_ERROR_DEF,
-                "HTTPValidationError": ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
+        'content': {
+            'application/json': {
+                'schema': {
+                    'properties': {'body': {'$ref': '#/components/schemas/Model'}},
+                    'required': [],
+                    'type': 'object',
+                }
             },
         },
+        'required': False,
     }
     assert result == expected
 
 
-def test_get_operations_includes_all_fields():
-    def sample_func():
-        """Sample function"""
-
-    field = ftr_core.parse_field("sample_field", str, ftr_fields.Query, None)
-    model = pydantic.create_model("SampleModel", sample_field=(str, None))
-
-    setattr(sample_func, ftr_utils.TYPED_ROUTE_REQUEST_MODEL, model)
-    setattr(sample_func, ftr_utils.TYPED_ROUTE_PARAM_FIELDS, [field])
-    setattr(sample_func, ftr_utils.TYPED_ROUTE_STATUS_CODE, 200)
-    setattr(sample_func, ftr_utils.TYPED_ROUTE_OPENAPI, {"summary": "Sample summary"})
-
-    result = ftr_openapi.get_operations(
-        sample_func, "/sample", "sample_endpoint", ["GET"], [], 400)
-    result = dict(result)
+def test_get_request_body_obj():
+    fields = [
+        unittest.mock.Mock(locator="foo", kind="body", annotation=str),  # required
+        unittest.mock.Mock(locator="var", kind="body", annotation=str),  # optional
+    ]
+    model_properties = {
+        "foo": {"type": "string"},
+        "var": {"type": "string"},
+    }
+    model_required_fields = ["foo"]
+    result = ftr_openapi.get_request_body(fields, model_properties, model_required_fields)
     expected = {
-        'components': {'schemas': {}},
+        'content': {
+            'application/json': {
+                'schema': {
+                    'properties': {
+                        'foo': {'type': 'string'},
+                        'var': {'type': 'string'},
+                    },
+                    'required': ['foo'],
+                    'type': 'object',
+                },
+            },
+        },
+        'required': True,
+    }
+    assert result == expected
+
+
+def test_get_request_body_no_fields():
+    result = ftr_openapi.get_request_body([], {}, [])
+    assert result is None
+
+
+def test_openapi_init_default():
+    expected = {
+        'components': None,
+        'contact_info': None,
+        'description': None,
+        'external_docs': None,
+        'license_info': None,
+        'openapi_version': '3.1.0',
+        'paths': {},
+        'servers': None,
+        'summary': None,
+        'tags': None,
+        'terms_of_service': None,
+        'title': 'API doc',
+        'version': '0.0.1',
+        'webhooks': None,
+    }
+    assert ftr_openapi.OpenApi().__dict__ == expected
+
+
+def test_openapi_init_filled():
+    params = {
+        'components': object(),
+        'contact_info': object(),
+        'description': object(),
+        'external_docs': object(),
+        'license_info': object(),
+        'openapi_version': '3.1.0',
+        'servers': object(),
+        'summary': object(),
+        'tags': object(),
+        'terms_of_service': object(),
+        'title': object(),
+        'version': object(),
+        'webhooks': object(),
+    }
+    expected = {**params, 'paths': {}}
+    assert ftr_openapi.OpenApi(**params).__dict__ == expected
+
+
+def test_openapi_models_json_schema():
+    class Model1(pydantic.BaseModel):
+        field1: str
+        field2: str
+
+    class Model2(pydantic.BaseModel):
+        field3: str
+        field4: str
+        embed: list[Model1]
+
+    result = ftr_openapi.OpenApi.models_json_schema([Model1, Model2])
+    expected = (
+        {
+            (Model1, 'validation'): {'$ref': '#/components/schemas/Model1'},
+            (Model2, 'validation'): {'$ref': '#/components/schemas/Model2'},
+        },
+        {
+            '$defs': {
+                'Model1': {
+                    'properties': {
+                        'field1': {'title': 'Field1', 'type': 'string'},
+                        'field2': {'title': 'Field2', 'type': 'string'},
+                    },
+                    'required': ['field1', 'field2'],
+                    'title': 'Model1',
+                    'type': 'object',
+                },
+                'Model2': {
+                    'properties': {
+                        'embed': {'items': {'$ref': '#/components/schemas/Model1'}, 'title': 'Embed', 'type': 'array'},
+                        'field3': {'title': 'Field3', 'type': 'string'},
+                        'field4': {'title': 'Field4', 'type': 'string'},
+                    },
+                    'required': ['field3', 'field4', 'embed'],
+                    'title': 'Model2',
+                    'type': 'object',
+                },
+            }
+        },
+    )
+
+    assert result == expected
+
+
+def test_openapi_routes_json_schema():
+    def my_func1(arg1: str):
+        pass
+
+    def my_func2(arg1: str):
+        pass
+
+    class Model(pydantic.BaseModel):
+        field: str
+
+    setattr(my_func1, ftr_utils.ROUTE_REQUEST_MODEL, Model)
+    routes = [
+        ftr_utils.RouteInfo(my_func1, "/path1", ("arg1",), "my_func1", ("GET",)),
+        ftr_utils.RouteInfo(my_func2, "/path2", ("arg1",), "my_func2", ("POST",)),
+    ]
+
+    expected = (
+        {(Model, 'validation'): {'$ref': '#/components/schemas/Model'}},
+        {
+            'HTTPValidationError': ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
+            'Model': {
+                'properties': {'field': {'title': 'Field', 'type': 'string'}},
+                'required': ['field'],
+                'title': 'Model',
+                'type': 'object',
+            },
+            'ValidationError': ftr_openapi.VALIDATION_ERROR_DEF,
+        },
+        [
+            (
+                routes[0],
+                Model,
+            ),
+            (routes[1], None),
+        ],
+    )
+    result = ftr_openapi.OpenApi.routes_json_schema(routes)
+    assert result == expected
+
+
+def test_get_schema_empty_routes():
+    result = ftr_openapi.OpenApi().get_schema([], 422)
+    expected = {
+        'components': {},
+        'info': {'title': 'API doc', 'version': '0.0.1'},
+        'openapi': '3.1.0',
+        'paths': {},
+    }
+    assert result == expected
+
+
+def test_get_schema():
+    def my_func1():
+        pass
+
+    def my_func2(arg1: str):
+        pass
+
+    class Model(pydantic.BaseModel):
+        field: int
+
+    setattr(my_func1, ftr_utils.ROUTE_REQUEST_MODEL, Model)
+    setattr(my_func1, ftr_utils.ROUTE_PARAM_FIELDS, [unittest.mock.Mock(locator="field", kind="query", annotation=int)])
+    routes = [
+        ftr_utils.RouteInfo(my_func1, "/path1", ("arg1",), "my_func1", ("GET",)),
+        ftr_utils.RouteInfo(my_func2, "/path2", ("arg1",), "my_func2", ("POST",)),
+    ]
+    expected = {
+        'components': {
+            'schemas': {
+                'HTTPValidationError': ftr_openapi.HTTP_VALIDATION_ERROR_DEF,
+                'ValidationError': ftr_openapi.VALIDATION_ERROR_DEF,
+            }
+        },
+        'info': {'title': 'API doc', 'version': '0.0.1'},
+        'openapi': '3.1.0',
         'paths': {
-            '/sample': {
+            '/path1': {
                 'get': {
-                    'description': 'Sample function',
-                    'operationId': 'sample_endpoint_get',
+                    'description': '',
+                    'operationId': 'my_func1_get',
                     'parameters': (
-                        {
-                            'in': 'query',
-                            'name': 'sample_field',
-                            'required': False,
-                            'schema': {'default': None, 'type': 'string'},
-                        },
+                        {'in': 'query', 'name': 'field', 'required': True, 'schema': {'type': 'integer'}},
                     ),
                     'responses': {
-                        '200': {
-                            'content': {
-                                'application/json': {'schema': {'type': 'string'}},
-                            },
+                        'default': {
+                            'content': {'application/json': {'schema': {'type': 'string'}}},
                             'description': 'Success',
                         },
-                        '400': {
+                        '422': {
                             'content': {
                                 'application/json': {'schema': {'$ref': '#/components/schemas/HTTPValidationError'}}
                             },
                             'description': 'Validation Error',
                         },
                     },
-                    'summary': 'Sample summary',
+                    'summary': 'My Func1 Get',
                 }
-            }
-        },
-    }
-    assert result == expected
-
-
-def test_get_operations_handles_empty_fields():
-    def sample_func():
-        """Sample function"""
-
-    result = ftr_openapi.get_operations(
-        sample_func, "/sample", "sample_endpoint", ["GET"], ["field"], 400)
-    expected = {
-        'components': {'schemas': {}},
-        'paths': {
-            '/sample': {
-                'get': {
-                    'summary': 'Sample Endpoint Get',
-                    'description': 'Sample function',
-                    'operationId': 'sample_endpoint_get',
+            },
+            '/path2': {
+                'post': {
+                    'description': '',
+                    'operationId': 'my_func2_post',
                     'parameters': (
-                        {
-                            'in': 'path',
-                            'name': 'field',
-                            'required': True,
-                            'schema': {'type': 'string'},
-                        },
+                        {'in': 'path', 'name': 'arg1', 'required': True, 'schema': {'type': 'string'}},
                     ),
                     'responses': {
                         'default': {
@@ -185,22 +348,26 @@ def test_get_operations_handles_empty_fields():
                             'description': 'Success',
                         }
                     },
+                    'summary': 'My Func2 Post',
                 }
-            }
+            },
         },
     }
-
+    result = ftr_openapi.OpenApi().get_schema(routes, 422)
     assert result == expected
 
 
-def test_get_unvalidated_parameters():
-    result = ftr_openapi.get_unvalidated_parameters(["sample_field"])
-    expected = [
-        {
-            'in': 'path',
-            'name': 'sample_field',
-            'required': True,
-            'schema': {'type': 'string'},
-        }
-    ]
-    assert list(result) == expected
+def test_register_route():
+    ini_paths = {"/path1": {"get": 'var'}, "/path2": {}}
+    new_paths = {"/path1": {"post": 'foo'}, "/path2": {"get": 'foo'}}
+    route = unittest.mock.Mock()
+    error_status_code = unittest.mock.Mock()
+    model_schema = unittest.mock.Mock()
+    definitions = unittest.mock.Mock()
+    openapi = ftr_openapi.OpenApi()
+    openapi.get_route_operations = unittest.mock.Mock(return_value=new_paths)
+    openapi.paths = ini_paths
+    openapi.register_route(route, error_status_code, model_schema, definitions)
+    expected = {'/path1': {'get': 'var', 'post': 'foo'}, '/path2': {'get': 'foo'}}
+    assert openapi.paths == expected
+    openapi.get_route_operations.assert_called_once_with(route, error_status_code, model_schema, definitions)
