@@ -1,8 +1,11 @@
 ## Releases
 
+### v0.2.1 (2025-01-29)
+
 - **Breaking-Change**: `FlaskTypedRoutes` fields can't receive the `multi` parameter in the constructor anymore. Now, 
    the fields check if the parameter is a multiple value based on the type annotation (list, set, tuple).
 - **Fix**: The `typed_route` decorator can now receive OpenApi reference `parameters` ($ref).
+- **Add**: Using `json_schema_extra` param of Pydantic field to add properties extra to the OpenAPI parameter schema.
 
 ### v0.2.0 (2025-01-17)
 
