@@ -105,6 +105,54 @@ def get_item(item_id: int):
 
 ![OpenApi Example](./images/openapi4.png)
 
+## Using Pydantic `json_schema_extra` to add parameter properties extra.
+
+Can be used `json_schema_extra` to add the following properties to the OpenAPI parameter schema:
+
+- `style`: The style of the parameter.
+- `explode`: Determines the serialization method used.
+- `allowReserved`: Determines whether the parameter value allows reserved characters.
+
+In the following example, the `tags` query parameter is managed as a list of strings in the Pydantic model.
+
+The `json_schema_extra` parameter is used to add **explode** attribute to the OpenAPI parameter schema, 
+specifying how the parameter should be serialized in Swagger-UI.
+
+When `explode` is set to False, the parameter is serialized as `tags=tag1,tag2,tag3`.
+The field_validator `split_tags` handles splitting the `tags` parameter by commas to extract individual values.
+
+```python
+import typing as t
+
+import flask
+import pydantic
+import swagger_ui
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+app_ftr = ftr.FlaskTypedRoutes(app)
+swagger_ui.api_doc(app, config_rel_url=app_ftr.openapi_url_json, url_prefix=app_ftr.openapi_url_prefix)
+
+
+class MyParams(pydantic.BaseModel):
+    tags: t.Annotated[
+        list[str],
+        pydantic.Field(json_schema_extra={'explode': False}, default_factory=list)
+    ]
+
+    @pydantic.field_validator('tags', mode='after')
+    def split_tags(cls, v):
+        return v[0].split(',') if v else v
+
+
+@app.get('/items/')
+def read_items(query_params: t.Annotated[MyParams, ftr.Query()]):
+    return flask.jsonify(query_params.model_dump())
+```
+
+![OpenApi Example](./images/openapi6.png)
+
 ## Customizing OpenAPI schema
 
 For more advanced customization, you can pass additional parameters to the `FlaskTypedRoutes` class.

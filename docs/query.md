@@ -29,7 +29,6 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 - `skip`: **Optional** and must be an integer. If not included, it defaults to 0.
 - `limit`: **Optional** and must be an integer. If not included, it defaults to 100.
 
-
 **Example request:** `GET http://127.0.0.1:5000/items/?needy=passed&skip=20`
 
 ```json
@@ -59,10 +58,11 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 }
 ```
 
-## Additional validations
+## Custom validations
 
 You can leverage Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) or define your own custom
-data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types) to apply additional validation to your query parameters.
+data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types) to apply custom validation to your query
+parameters.
 
 ```python
 import typing as t
@@ -80,6 +80,7 @@ ftr.FlaskTypedRoutes(app)
 Needy = t.Annotated[str, at.MinLen(3), at.MaxLen(10)]
 Limit = t.Annotated[int, at.Ge(1), at.Le(100), pydantic.Field(alias="size")]
 
+
 @app.route('/items/')
 def get_items(needy: Needy, skip: int = 0, limit: Limit = 100):
     data = {
@@ -90,12 +91,13 @@ def get_items(needy: Needy, skip: int = 0, limit: Limit = 100):
     return flask.jsonify(data)
 ```
 
-Alternatively, you can use the `Query` field. This field is an extension of Pydantic's [field](https://docs.pydantic.dev/latest/concepts/fields/), 
+Alternatively, you can use the `Query` field. This field is an extension of
+Pydantic's [field](https://docs.pydantic.dev/latest/concepts/fields/),
 offering powerful validation capabilities.
 This flexibility allows you to tailor query parameter validation to your application's specific needs.
 
 !!! tip
-    The `Query` field is supported aliasing. You can use the `alias` argument to define 
+    The `Query` field is supported aliasing. You can use the `alias` argument to define
     the query parameter name in the request.
 
 ```python
@@ -109,6 +111,7 @@ ftr.FlaskTypedRoutes(app)
 
 Needy = t.Annotated[str, ftr.Query(min_length=3, max_length=10)]
 Limit = t.Annotated[int, ftr.Query(ge=1, le=100, alias="size")]
+
 
 @app.route('/items/')
 def get_items(needy: Needy, skip: int = 0, limit: Limit = 100):
@@ -192,19 +195,20 @@ def get_orders(
 
 ## Multiple values
 
-If you want to allow a query parameter to have multiple values, you can use the `multi=True` argument in the `Query`
-field.
+If you want to allow a query parameter to have multiple values, you can use `set`, `tuple`, or `list` annotations.
 
 ```python
 import typing as t
 
 import flask
 import flask_typed_routes as ftr
+import pydantic
 
 app = flask.Flask(__name__)
 ftr.FlaskTypedRoutes(app)
 
-Tags = t.Annotated[list[str], ftr.Query(alias="tag", multi=True)]
+Tags = t.Annotated[list[str], pydantic.Field(alias="tag")]
+
 
 @app.get('/users/<user_id>/')
 def get_users(user_id: int, tags: Tags = ()):
@@ -213,6 +217,51 @@ def get_users(user_id: int, tags: Tags = ()):
 ```
 
 **Example request:** `GET http://127.0.0.1:5000/users/123/?tag=hello&tag=world`
+
+```json
+{
+  "tags": [
+    "hello",
+    "world"
+  ],
+  "user_id": 123
+}
+```
+
+It is important to highlight that the previous URL contains multiple query parameters called **tag**.
+
+If the URL includes a single **tag** parameter with multiple values separated by commas, the resulting list will
+contain a single element with the entire string.
+
+To get each value separately, you will need to manually split the string using the comma as a separator.
+
+**Below is an example of how to do it:**
+
+```python
+import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+Tags = t.Annotated[
+    list[str],
+    pydantic.AfterValidator(lambda x: x[0].split(",")),
+    pydantic.Field(alias="tag"),
+]
+
+
+@app.get('/users/<user_id>/')
+def get_users(user_id: int, tags: Tags = ()):
+    data = {'user_id': user_id, "tags": tags}
+    return flask.jsonify(data)
+```
+
+**Example request:** `http://127.0.0.1:5000/users/123/?tag=hello,world`
 
 ```json
 {

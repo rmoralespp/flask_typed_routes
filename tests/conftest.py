@@ -75,7 +75,7 @@ def flask_app_auto():
         status2: str = 'active',  # Testing default value for query parameter
         skip: int = 0,
         limit: pydantic.NonNegativeInt = 10,
-        tags: t.Annotated[list[str], ftr.Query(alias="tag", multi=True)] = None,
+        tags: t.Annotated[list[str], ftr.Query(alias="tag")] = None,
     ):
         return flask.jsonify(
             {
@@ -92,13 +92,13 @@ def flask_app_auto():
 
     def func_header(
         auth: t.Annotated[str, ftr.Header(alias="Authorization", pattern=r"Bearer \w+")] = None,
-        tags: t.Annotated[list[str], ftr.Header(alias="X-Tag", multi=True)] = None,
+        tags: t.Annotated[list[str], ftr.Header(alias="X-Tag")] = None,
     ):
         return flask.jsonify({"auth": auth, "tags": tags})
 
     def func_cookie(
         session_id: t.Annotated[str, ftr.Cookie(alias="session-id", max_length=4)] = None,
-        tags: t.Annotated[list[str], ftr.Cookie(alias="tag", multi=True)] = None,
+        tags: t.Annotated[list[str], ftr.Cookie(alias="tag")] = None,
     ):
         return flask.jsonify({"session_id": session_id, "tags": tags})
 

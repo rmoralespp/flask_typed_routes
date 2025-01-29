@@ -76,7 +76,7 @@ def merge_parameters(a, b, /):
 
     bag = set()
     for param in itertools.chain(a, b):
-        key = param["name"] + param["in"]
+        key = param["$ref"] if "$ref" in param else (param["name"] + param["in"])
         if key not in bag:
             bag.add(key)
             yield param
@@ -131,6 +131,14 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
                     param_spec["deprecated"] = deprecated
                 if examples:
                     param_spec["examples"] = examples
+
+                # Get the extra JSON schema properties
+                if "style" in schema:
+                    param_spec["style"] = schema.pop("style")
+                if "explode" in schema:
+                    param_spec["explode"] = schema.pop("explode")
+                if "allowReserved" in schema:
+                    param_spec["allowReserved"] = schema.pop("allowReserved")
                 slot[name] = param_spec
 
     for value in params.values():

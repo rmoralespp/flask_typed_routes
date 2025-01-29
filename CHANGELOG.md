@@ -1,5 +1,9 @@
 ## Releases
 
+- **Breaking-Change**: `FlaskTypedRoutes` fields can't receive the `multi` parameter in the constructor anymore. Now, 
+   the fields check if the parameter is a multiple value based on the type annotation (list, set, tuple).
+- **Fix**: The `typed_route` decorator can now receive OpenApi reference `parameters` ($ref).
+
 ### v0.2.0 (2025-01-17)
 
 - **Add**: The `FlaskTypedRoutes` class now receives the `openapi_url_prefix` and `openapi_url_json` parameters in 

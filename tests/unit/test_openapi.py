@@ -25,11 +25,13 @@ def test_duplicate_request_body(logger):
 
 
 def test_merge_parameters():
-    a = ({"name": "1", "in": "query"}, {"name": "1", "in": "query"})
-    b = a + ({"name": "2", "in": "query"},)
+    a = ({"name": "1", "in": "query"}, {"name": "1", "in": "query"}, {"$ref": "#/foo"})
+    b = a + ({"name": "2", "in": "query"}, {"$ref": "#/foo"}, {"$ref": "#/var"})
     expected = (
         {'in': 'query', 'name': '1'},
+        {'$ref': '#/foo'},
         {'in': 'query', 'name': '2'},
+        {'$ref': '#/var'},
     )
     result = tuple(ftr_openapi.merge_parameters(a, b))
     assert result == expected
