@@ -75,7 +75,7 @@ class Field(abc.ABC):
 
     @property
     def is_required(self):
-        return self.default == inspect.Parameter.empty
+        return self.default is Undef
 
     @classmethod
     def is_multi_field(cls, annotation):
