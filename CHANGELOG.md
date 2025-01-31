@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.2.2 (2025-01-31)
+
 - **Breaking-Change**: The `typed_route` decorator can now receive `status_code` parameter as a keyword argument.
 - **Add**: The Field class now accepts the `explode` an `style` parameters to define the serialization 
   behavior according to the OpenAPI specification. Supported styles are `simple`, `form`, `spaceDelimited`, `pipeDelimited`,
