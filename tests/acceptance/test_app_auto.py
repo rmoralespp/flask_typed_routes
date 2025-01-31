@@ -119,7 +119,7 @@ def test_query_bad(client_auto, url_prefix):
 
 def test_header(client_auto, url_prefix):
     url = f"{url_prefix}products/header/"
-    expected = {'auth': 'Bearer token', 'tags': ['foo, bar']}
+    expected = {'auth': 'Bearer token', 'tags': ['foo', 'bar']}
     headers = [
         ("Authorization", "Bearer token"),
         ("X-Tag", "foo"),

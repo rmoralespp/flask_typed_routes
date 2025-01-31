@@ -11,7 +11,7 @@ def test_typed_route():
         "deprecated": False,
     }
     view_func = unittest.mock.Mock()
-    typed_view_func = ftr_app.typed_route(200, **openapi)(view_func)
+    typed_view_func = ftr_app.typed_route(status_code=200, **openapi)(view_func)
     assert getattr(typed_view_func, ftr_utils.ROUTE_ENABLED)
     assert getattr(view_func, ftr_utils.ROUTE_OPENAPI, openapi) == openapi
     assert getattr(view_func, ftr_utils.ROUTE_STATUS_CODE) == 200

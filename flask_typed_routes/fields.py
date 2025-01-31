@@ -4,7 +4,6 @@ input fields of the API.
 """
 
 import abc
-import collections
 import inspect
 import typing as t
 
@@ -16,6 +15,35 @@ import flask_typed_routes.utils as ftr_utils
 
 Unset = object()
 Undef = pydantic.fields.PydanticUndefined
+
+
+def split_by(value, sep, /):
+    return list(filter(None, map(str.strip, value.split(sep))))
+
+
+def get_locator(alias, name, /):
+    return alias or name
+
+
+class NonExplodedArrayStyles:
+    form = "form"  # comma-separated values
+    simple = "simple"  # comma-separated values
+    space_delimited = "spaceDelimited"  # space-separated
+    pipe_delimited = "pipeDelimited"  # pipeline-separated
+
+    @classmethod
+    def choices(cls):
+        return [cls.form, cls.simple, cls.space_delimited, cls.pipe_delimited]
+
+    @classmethod
+    def get_sep(cls, style):
+        mapper = {
+            cls.form: ",",
+            cls.simple: ",",
+            cls.space_delimited: " ",
+            cls.pipe_delimited: "|",
+        }
+        return mapper[style]
 
 
 class FieldTypes:
@@ -33,13 +61,33 @@ class Field(abc.ABC):
     """
 
     kind = None
-    multi_types = (list, t.List, tuple, t.Tuple, set, t.Set, frozenset, t.FrozenSet) # noqa UP006
+    default_explode = None
+    default_style = None
+    supported_styles = ()
+    array_types = (list, t.List, tuple, t.Tuple, set, t.Set, frozenset, t.FrozenSet)  # noqa UP006
 
-    __slots__ = ("embed", "field_info", "annotation", "name")
+    __slots__ = ("embed", "style", "explode", "field_info", "annotation", "name")
 
-    def __init__(self, *args, embed=False, **kwargs):
+    def __init__(self, *args, embed=False, style=None, explode=None, **kwargs):
+        """
+        Initialize the field with the given parameters.
+
+        :param args:  Positional arguments for the Pydantic field.
+        :param bool embed:  Embed the field in the parent model.
+        :param Optional[str]:  OpenApi Serialization style for the field.
+        :param Optional[bool] explode:  OpenApi Serialization explodes for the field.
+        :param kwargs:  Keyword arguments for the Pydantic field.
+        """
+
         if embed and self.kind != FieldTypes.body:
             raise ftr_errors.InvalidParameterTypeError("Only 'Body' fields can be embedded.")
+
+        # Set the style/explode serialization parameters for the field.
+        if style and style not in self.supported_styles:
+            raise ftr_errors.InvalidParameterTypeError(f"Unsupported style '{style}' for '{self.kind}' fields.")
+        else:
+            self.style = self.default_style if style is None else style
+        self.explode = self.default_explode if explode is None else explode
 
         self.embed = embed  # `Body` fields can be embedded
         self.field_info = pydantic.fields.Field(*args, **kwargs)
@@ -49,7 +97,7 @@ class Field(abc.ABC):
 
     @property
     def locator(self):
-        return self.alias or self.name
+        return get_locator(self.alias, self.name)
 
     @property
     @abc.abstractmethod
@@ -70,87 +118,124 @@ class Field(abc.ABC):
 
     @default.setter
     def default(self, default):
+        # Only set the field's default value if the default function parameter is not empty.
         if default != inspect.Parameter.empty:
             self.field_info.default = default
 
     @property
     def is_required(self):
-        return self.default is Undef
+        return self.default != Undef
+
+    def get_value(self, obj, /):
+        """Get values from the request according to the field annotation."""
+
+        if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
+            result = self.get_model_value(obj)
+        else:
+            result = self.get_alias_value(self.alias, obj, self.is_multi(self.annotation))
+        return result
+
+    def get_alias_value(self, alias, obj, is_multi, /):
+        """Get request values when the annotation is a standard type according to the field alias."""
+
+        raise NotImplementedError
+
+    def get_model_value(self, obj, /):
+        """Get request values when the annotation is a Pydantic model."""
+
+        result = dict()
+        for name, info in self.annotation.model_fields.items():
+            alias = get_locator(info.alias, name)
+            if alias in obj:
+                result[alias] = self.get_alias_value(alias, obj, self.is_multi(info.annotation))
+        return result
 
     @classmethod
-    def is_multi_field(cls, annotation):
-        """Check if the annotation is a multi-value type."""
+    def is_multi(cls, annotation, /):
+        """
+        Check if the annotation is a data estructure (like an array)
+        containing multiple values.
+        """
 
         if annotation:
             tp = t.get_args(annotation)[0] if ftr_utils.is_annotated(annotation) else annotation
-            return tp in cls.multi_types or t.get_origin(tp) in cls.multi_types
+            return tp in cls.array_types or t.get_origin(tp) in cls.array_types
         else:
             return False
-
-    def fetch_single_value(self, data):
-        return data.get(self.alias, Unset) if self.alias else data
-
-    def fetch_model_value(self, obj):
-        data = dict()
-        for name, info in self.annotation.model_fields.items():
-            alias = info.alias or name
-            if alias in obj:
-                if self.is_multi_field(info.annotation):
-                    data[alias] = obj.getlist(alias)
-                else:
-                    data[alias] = obj.get(alias)
-        return data
 
 
 class Path(Field):
     kind = FieldTypes.path
+    default_explode = False
+    default_style = NonExplodedArrayStyles.simple
+    supported_styles = (default_style,)
 
     @property
     def value(self):
-        return self.fetch_single_value(flask.request.view_args)
+        return self.get_alias_value(self.alias, flask.request.view_args, self.is_multi(self.annotation))
+
+    def get_alias_value(self, alias, obj, is_multi, /):
+        if alias not in obj:
+            return Unset
+        elif is_multi:
+            return split_by(obj.get(alias), ",")
+        else:
+            return obj.get(alias)
 
 
 class Query(Field):
     kind = FieldTypes.query
+    default_explode = True
+    default_style = NonExplodedArrayStyles.form
+    supported_styles = (
+        default_style,
+        NonExplodedArrayStyles.space_delimited,
+        NonExplodedArrayStyles.pipe_delimited,
+    )
 
     @property
     def value(self):
-        if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
-            return self.fetch_model_value(flask.request.args)
+        return self.get_value(flask.request.args)
+
+    def get_alias_value(self, alias, obj, is_multi, /):
+        if alias not in obj:
+            return Unset
+        if is_multi and self.explode:
+            return obj.getlist(alias)
+        elif is_multi:
+            return split_by(obj.get(alias), NonExplodedArrayStyles.get_sep(self.style))
         else:
-            flat = not self.is_multi_field(self.annotation)
-            return self.fetch_single_value(flask.request.args.to_dict(flat=flat))
+            return obj.get(alias)
 
 
-class Cookie(Field):
+class Cookie(Query):
     kind = FieldTypes.cookie
+    default_explode = True
+    default_style = NonExplodedArrayStyles.form
+    supported_styles = (default_style,)
 
     @property
     def value(self):
-        if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
-            return self.fetch_model_value(flask.request.cookies)
-        else:
-            flat = not self.is_multi_field(self.annotation)
-            return self.fetch_single_value(flask.request.cookies.to_dict(flat=flat))
+        return self.get_value(flask.request.cookies)
 
 
 class Header(Field):
     kind = FieldTypes.header
+    default_explode = False
+    default_style = NonExplodedArrayStyles.simple
+    supported_styles = (default_style,)
 
     @property
     def value(self):
-        if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
-            return self.fetch_model_value(flask.request.headers)
+        return self.get_value(flask.request.headers)
+
+    def get_alias_value(self, alias, obj, is_multi, /):
+        if alias not in obj:
+            return Unset
+        elif is_multi:
+            return split_by(obj.get(alias), NonExplodedArrayStyles.get_sep(self.style))
         else:
-            items = flask.request.headers.items()
-            multi = self.is_multi_field(self.annotation)
-            if multi:
-                data = collections.defaultdict(list)
-                for k, v in items:
-                    data[k].append(v)
-            else:
-                data = dict(items)
-            return self.fetch_single_value(data)
+            return obj.get(alias)
 
 
 class Body(Field):
@@ -158,4 +243,5 @@ class Body(Field):
 
     @property
     def value(self):
-        return self.fetch_single_value(flask.request.json or dict())
+        data = flask.request.json or dict()
+        return data.get(self.alias, Unset) if self.alias else data
