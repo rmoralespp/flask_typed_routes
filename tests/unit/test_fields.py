@@ -11,10 +11,6 @@ import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 
 
-class MyListFieldModel(pydantic.BaseModel):
-    list_field: typing.Annotated[list[str], pydantic.Field(alias='list-field')]
-
-
 @pytest.mark.parametrize(
     'view_args, annotation, expected',
     [
