@@ -241,15 +241,15 @@ def remove_item(item_id: int):
 
 Open your browser and go to `http://127.0.0.1:5000/docs/`
 
-![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/images/openapi1.png)
+![OpenApi Example](https://raw.githubusercontent.com/rmoralespp/flask_typed_routes/main/docs/images/openapi1.png)
 
 **Create item** endpoint:
 
-![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/images/openapi2.png)
+![OpenApi Example](https://raw.githubusercontent.com/rmoralespp/flask_typed_routes/main/docs/images/openapi2.png)
 
 **Read Items** endpoint:
 
-![OpenApi Example](https://github.com/rmoralespp/flask_typed_routes/blob/main/docs/images/openapi3.png)
+![OpenApi Example](https://raw.githubusercontent.com/rmoralespp/flask_typed_routes/main/docs/images/openapi3.png)
 
 ## Documentation
 
