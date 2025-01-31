@@ -65,8 +65,6 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#using-typed_route-decorator">Using typed_route decorator</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#using-pydantic-json_schema_extra-to-add-parameter-properties-extra">Using Pydantic json_schema_extra to add parameter properties extra.</a>
-    </li>
     <li class="toctree-l2"><a class="reference internal" href="#customizing-openapi-schema">Customizing OpenAPI schema</a>
     </li>
     </ul>
@@ -188,47 +186,6 @@ def get_item(item_id: int):
     return flask.jsonify({'item_id': item_id})
 </code></pre>
 <p><img alt="OpenApi Example" src="../images/openapi4.png" /></p>
-<h2 id="using-pydantic-json_schema_extra-to-add-parameter-properties-extra">Using Pydantic <code>json_schema_extra</code> to add parameter properties extra.</h2>
-<p>Can be used <code>json_schema_extra</code> to add the following properties to the OpenAPI parameter schema:</p>
-<ul>
-<li><code>style</code>: The style of the parameter.</li>
-<li><code>explode</code>: Determines the serialization method used.</li>
-<li><code>allowReserved</code>: Determines whether the parameter value allows reserved characters.</li>
-</ul>
-<p>In the following example, the <code>tags</code> query parameter is managed as a list of strings in the Pydantic model.</p>
-<p>The <code>json_schema_extra</code> parameter is used to add <strong>explode</strong> attribute to the OpenAPI parameter schema, 
-specifying how the parameter should be serialized in Swagger-UI.</p>
-<p>When <code>explode</code> is set to False, the parameter is serialized as <code>tags=tag1,tag2,tag3</code>.
-The field_validator <code>split_tags</code> handles splitting the <code>tags</code> parameter by commas to extract individual values.</p>
-<pre><code class="language-python">import typing as t
-
-import flask
-import pydantic
-import swagger_ui
-
-import flask_typed_routes as ftr
-
-app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app)
-swagger_ui.api_doc(app, config_rel_url=app_ftr.openapi_url_json, url_prefix=app_ftr.openapi_url_prefix)
-
-
-class MyParams(pydantic.BaseModel):
-    tags: t.Annotated[
-        list[str],
-        pydantic.Field(json_schema_extra={'explode': False}, default_factory=list)
-    ]
-
-    @pydantic.field_validator('tags', mode='after')
-    def split_tags(cls, v):
-        return v[0].split(',') if v else v
-
-
-@app.get('/items/')
-def read_items(query_params: t.Annotated[MyParams, ftr.Query()]):
-    return flask.jsonify(query_params.model_dump())
-</code></pre>
-<p><img alt="OpenApi Example" src="../images/openapi6.png" /></p>
 <h2 id="customizing-openapi-schema">Customizing OpenAPI schema</h2>
 <p>For more advanced customization, you can pass additional parameters to the <code>FlaskTypedRoutes</code> class.</p>
 <pre><code class="language-python">import flask.views
@@ -306,7 +263,7 @@ swagger_ui.api_doc(
 
 @app.get('/items/&lt;item_id&gt;/')
 @ftr.typed_route(
-    200,
+    status_code=200,
     tags=['items'],
     summary='Get an item',
     description='Get an item by ID',
@@ -318,7 +275,7 @@ def read_item(item_id: int):
 
 @app.put('/items/&lt;item_id&gt;/')
 @ftr.typed_route(
-    202,
+    status_code=202,
     tags=['items'],
     summary='Update an item',
     description='Update an item by ID',

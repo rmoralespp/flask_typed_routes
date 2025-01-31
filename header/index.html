@@ -108,6 +108,11 @@ def get_items(auth: t.Annotated[str, ftr.Header(alias=&quot;Authorization&quot;)
     }
     return flask.jsonify(data)
 </code></pre>
+<h2 id="multiple-header-parameters">Multiple Header Parameters</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>Header</code> fields always use the <code>simple</code> style, that is, <strong>comma-separated</strong> values.</p>
+</div>
               
             </div>
           </div><footer>

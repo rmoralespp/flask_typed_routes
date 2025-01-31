@@ -47,9 +47,11 @@
               <ul class="current">
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Path parameters</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#additional-validations">Additional validations</a>
+    <li class="toctree-l2"><a class="reference internal" href="#custom-validations">Custom validations</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#aliasing">Aliasing</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#multiple-values-in-a-single-path-parameter">Multiple values in a single path parameter</a>
     </li>
     </ul>
                   </li>
@@ -145,7 +147,7 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
   ]
 }
 </code></pre>
-<h2 id="additional-validations">Additional validations</h2>
+<h2 id="custom-validations">Custom validations</h2>
 <p>You can leverage Pydantic's custom <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> or define your own custom
 data <a href="https://docs.pydantic.dev/latest/concepts/types/#custom-types">types</a> to apply additional validation to your path parameters.</p>
 <pre><code class="language-python">import typing as t
@@ -189,6 +191,29 @@ def read_items(category_id: t.Annotated[int, ftr.Path(ge=1, le=100)]):
 <p class="admonition-title">Warning</p>
 <p>Aliases defined in Path type hints will be ignored to maintain consistency with the names specified in the Flask route.</p>
 </div>
+<h2 id="multiple-values-in-a-single-path-parameter">Multiple values in a single path parameter</h2>
+<p>If you want to allow a query parameter to have multiple values, you can use <code>set</code>, <code>tuple</code>, or <code>list</code> annotations.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Path fields support the <code>simple</code> <strong>OpenAPI</strong> style, meaning they can handle multiple values separated by commas. </p>
+</div>
+<pre><code class="language-python">import flask
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+@app.get('/users/&lt;user_ids&gt;/')
+def get_users(user_ids: list[int]):
+    return flask.jsonify({'user_ids': user_ids})
+</code></pre>
+<p><strong>Example request:</strong> <code>GET http://127.0.0.1:5000/users/1,2,3/</code></p>
+<pre><code class="language-json">{
+  &quot;user_ids&quot;: [&quot;1&quot;, &quot;2&quot;, &quot;3&quot;]
+}
+</code></pre>
               
             </div>
           </div><footer>
