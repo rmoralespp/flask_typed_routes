@@ -52,6 +52,8 @@ def test_get_parameters():
         'schema': {'type': 'string'},
         'deprecated': True,
         'description': 'Field description',
+        'style': 'foo',
+        'explode': 'explode',
     }
     expected = (
         {**expected_common, 'in': 'path', 'name': 'field', 'required': True},
@@ -60,10 +62,10 @@ def test_get_parameters():
         {**expected_common, 'in': 'query', 'name': 'model_field2', 'required': False, 'schema': {'type': 'string'}},
     )
     fields = [
-        unittest.mock.Mock(locator="field", kind="path", annotation=str),  # required
-        unittest.mock.Mock(locator="body", kind="body", annotation=Model),  # ignored
-        unittest.mock.Mock(locator="query_string", kind="query", annotation=str),  # optional
-        unittest.mock.Mock(locator="query_nested", kind="query", annotation=Model),  # nested
+        unittest.mock.Mock(locator="field", kind="path", annotation=str, explode='explode', style='foo'),
+        unittest.mock.Mock(locator="body", kind="body", annotation=Model, explode='explode', style='foo'),
+        unittest.mock.Mock(locator="query_string", kind="query", annotation=str, explode='explode', style='foo'),
+        unittest.mock.Mock(locator="query_nested", kind="query", annotation=Model, explode='explode', style='foo'),
     ]
     model_properties = {
         "field": {**schema},
@@ -300,7 +302,8 @@ def test_get_schema():
         field: int
 
     setattr(my_func1, ftr_utils.ROUTE_REQUEST_MODEL, Model)
-    setattr(my_func1, ftr_utils.ROUTE_PARAM_FIELDS, [unittest.mock.Mock(locator="field", kind="query", annotation=int)])
+    setattr(my_func1, ftr_utils.ROUTE_PARAM_FIELDS, [
+        unittest.mock.Mock(locator="field", kind="query", annotation=int, explode='explode', style='style')])
     routes = [
         ftr_utils.RouteInfo(my_func1, "/path1", ("arg1",), "my_func1", ("GET",)),
         ftr_utils.RouteInfo(my_func2, "/path2", ("arg1",), "my_func2", ("POST",)),
@@ -320,7 +323,14 @@ def test_get_schema():
                     'description': '',
                     'operationId': 'my_func1_get',
                     'parameters': (
-                        {'in': 'query', 'name': 'field', 'required': True, 'schema': {'type': 'integer'}},
+                        {
+                            'in': 'query',
+                            'name': 'field',
+                            'required': True,
+                            'schema': {'type': 'integer'},
+                            'style': 'style',
+                            'explode': 'explode',
+                        },
                     ),
                     'responses': {
                         'default': {

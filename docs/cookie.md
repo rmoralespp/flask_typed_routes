@@ -22,3 +22,8 @@ def get_items(session_id: SessionId = None):
     }
     return flask.jsonify(data)
 ```
+
+## Multiple Cookie Parameters
+
+!!! note
+    `Cookie` fields always use the form style. An optional `explode` keyword controls the array and object serialization.

@@ -132,13 +132,10 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
                 if examples:
                     param_spec["examples"] = examples
 
-                # Get the extra JSON schema properties
-                if "style" in schema:
-                    param_spec["style"] = schema.pop("style")
-                if "explode" in schema:
-                    param_spec["explode"] = schema.pop("explode")
-                if "allowReserved" in schema:
-                    param_spec["allowReserved"] = schema.pop("allowReserved")
+                if field.style != field.default_style:
+                    param_spec["style"] = field.style
+                if field.explode != field.default_explode:
+                    param_spec["explode"] = field.explode
                 slot[name] = param_spec
 
     for value in params.values():

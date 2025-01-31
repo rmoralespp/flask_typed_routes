@@ -74,7 +74,7 @@ class FlaskTypedRoutes:
         :param str openapi_url_prefix: URL prefix for the interactive API documentation.
         :param str openapi_url_json: Relative URL for the OpenAPI JSON schema.
 
-        :param dict openapi: OpenAPI schema definition for the application.
+        :param Unpack[dict[str, Any]] openapi: OpenAPI schema definition for the application.
         """
 
         self.error_handler = validation_error_handler

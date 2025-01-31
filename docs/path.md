@@ -59,7 +59,7 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
 }
 ```
 
-## Additional validations
+## Custom validations
 
 You can leverage Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) or define your own custom
 data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types) to apply additional validation to your path parameters.
@@ -109,3 +109,34 @@ def read_items(category_id: t.Annotated[int, ftr.Path(ge=1, le=100)]):
 
 !!! warning
     Aliases defined in Path type hints will be ignored to maintain consistency with the names specified in the Flask route.
+
+
+## Multiple values in a single path parameter
+
+If you want to allow a query parameter to have multiple values, you can use `set`, `tuple`, or `list` annotations.
+
+!!! note
+    Path fields support the `simple` **OpenAPI** style, meaning they can handle multiple values separated by commas. 
+
+```python
+import flask
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+@app.get('/users/<user_ids>/')
+def get_users(user_ids: list[int]):
+    return flask.jsonify({'user_ids': user_ids})
+```
+
+**Example request:** `GET http://127.0.0.1:5000/users/1,2,3/`
+
+```json
+{
+  "user_ids": ["1", "2", "3"]
+}
+```
+

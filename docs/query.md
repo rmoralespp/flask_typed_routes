@@ -228,14 +228,17 @@ def get_users(user_id: int, tags: Tags = ()):
 }
 ```
 
-It is important to highlight that the previous URL contains multiple query parameters called **tag**.
+!!! note
+    It is important to highlight that the previous URL contains multiple query parameters named `tag`.
 
-If the URL includes a single **tag** parameter with multiple values separated by commas, the resulting list will
-contain a single element with the entire string.
+!!! tip
+    If the URL includes a **query parameter** with multiple values separated by commas, pipes(`|`), or spaces, 
+    the resulting list will contain a single element with the entire string.
 
-To get each value separately, you will need to manually split the string using the comma as a separator.
+    To retrieve each value separately, you need to set the `explode`
+    parameter in the `Query` field and specify the `style` parameter to define the serialization format.
 
-**Below is an example of how to do it:**
+**Here’s an example of how to do it:**
 
 ```python
 import typing as t
@@ -248,27 +251,39 @@ import flask_typed_routes as ftr
 app = flask.Flask(__name__)
 ftr.FlaskTypedRoutes(app)
 
-Tags = t.Annotated[
-    list[str],
-    pydantic.AfterValidator(lambda x: x[0].split(",")),
-    pydantic.Field(alias="tag"),
-]
+# By default, the 'style' is 'form', which means that the values are separated by commas.
+TagsByComma = t.Annotated[list[str], pydantic.Field(explode=False)]
+
+# You can also use 'pipeDelimited' or 'spaceDelimited' as the 'style' to indicate another serialization style delimiter.
+TagsBySpace = t.Annotated[list[str], pydantic.Field(explode=False, style="spaceDelimited")]
+TagsByPipe = t.Annotated[list[str], pydantic.Field(explode=False, style="pipeDelimited")]
 
 
-@app.get('/users/<user_id>/')
-def get_users(user_id: int, tags: Tags = ()):
-    data = {'user_id': user_id, "tags": tags}
-    return flask.jsonify(data)
+@app.get('/tags/comma/')
+def get_tags_by_comma(tags: TagsByComma = ()):
+    return flask.jsonify({"tags": tags})
+
+
+@app.get('/tags/space/')
+def get_tags_by_space(tags: TagsBySpace = ()):
+    return flask.jsonify({"tags": tags})
+
+
+@app.get('/tags/pipe/')
+def get_tags_by_pipe(tags: TagsByPipe = ()):
+    return flask.jsonify({"tags": tags})
 ```
 
-**Example request:** `http://127.0.0.1:5000/users/123/?tag=hello,world`
+**Example requests:**
+
+* By commas: `http://localhost:5000/tags/comma/?tags=hello,world`
+* By spaces: `http://localhost:5000/tags/space/?tags=hello world`
+* By pipes: `http://localhost:5000/tags/pipe/?tags=hello|world`
+
+You will see the JSON response as:
 
 ```json
-{
-  "tags": [
-    "hello",
-    "world"
-  ],
-  "user_id": 123
-}
+{"tags": ["hello", "world"]}
 ```
+
+

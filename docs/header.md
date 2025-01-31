@@ -20,3 +20,8 @@ def get_items(auth: t.Annotated[str, ftr.Header(alias="Authorization")] = None):
     }
     return flask.jsonify(data)
 ```
+
+## Multiple Header Parameters
+
+!!! note
+    `Header` fields always use the `simple` style, that is, **comma-separated** values.
