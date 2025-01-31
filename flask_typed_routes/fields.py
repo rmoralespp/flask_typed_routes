@@ -85,9 +85,9 @@ class Field(abc.ABC):
         # Set the style/explode serialization parameters for the field.
         if style and style not in self.supported_styles:
             raise ftr_errors.InvalidParameterTypeError(f"Unsupported style '{style}' for '{self.kind}' fields.")
-        else:
-            self.style = self.default_style if style is None else style
-        self.explode = self.default_explode if explode is None else explode
+
+        self.style = style or self.default_style
+        self.explode = self.default_explode if explode is None else explode  # check explicit None
 
         self.embed = embed  # `Body` fields can be embedded
         self.field_info = pydantic.fields.Field(*args, **kwargs)
@@ -178,9 +178,9 @@ class Path(Field):
         if alias not in obj:
             return Unset
         elif is_multi:
-            return split_by(obj.get(alias), ",")
+            return split_by(obj[alias], NonExplodedArrayStyles.get_sep(self.style))
         else:
-            return obj.get(alias)
+            return obj[alias]
 
 
 class Query(Field):
@@ -203,9 +203,9 @@ class Query(Field):
         if is_multi and self.explode:
             return obj.getlist(alias)
         elif is_multi:
-            return split_by(obj.get(alias), NonExplodedArrayStyles.get_sep(self.style))
+            return split_by(obj[alias], NonExplodedArrayStyles.get_sep(self.style))
         else:
-            return obj.get(alias)
+            return obj[alias]
 
 
 class Cookie(Query):
@@ -233,9 +233,9 @@ class Header(Field):
         if alias not in obj:
             return Unset
         elif is_multi:
-            return split_by(obj.get(alias), NonExplodedArrayStyles.get_sep(self.style))
+            return split_by(obj[alias], NonExplodedArrayStyles.get_sep(self.style))
         else:
-            return obj.get(alias)
+            return obj[alias]
 
 
 class Body(Field):
