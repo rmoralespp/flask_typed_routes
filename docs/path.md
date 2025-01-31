@@ -136,7 +136,7 @@ def get_users(user_ids: list[int]):
 
 ```json
 {
-  "user_ids": ["1", "2", "3"]
+  "user_ids": [1, 2, 3]
 }
 ```
 
