@@ -15,13 +15,13 @@ class Mode:
     manual = "manual"
 
 
-def typed_route(status_code=None, **openapi):
+def typed_route(*, status_code=None, **openapi):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
 
     :param int status_code: Status code for the success response.
-    :param dict openapi: Describe the OpenAPI operation fields in the route.
+    :param Unpack[dict[str, Any]] openapi: Describe the OpenAPI operation fields in the route.
 
     Example:
         openapi = {
