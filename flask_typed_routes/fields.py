@@ -4,6 +4,7 @@ input fields of the API.
 """
 
 import abc
+import enum
 import inspect
 import typing as t
 
@@ -16,16 +17,65 @@ import flask_typed_routes.utils as ftr_utils
 Unset = object()
 Undef = pydantic.fields.PydanticUndefined
 
+array_types = (list, t.List, tuple, t.Tuple, set, t.Set, frozenset, t.FrozenSet)  # noqa UP006
+dict_types = (dict, t.Dict)  # noqa UP006
 
-def split_by(value, sep, /):
-    return list(filter(None, map(str.strip, value.split(sep))))
+
+def split_by(value, sep, /, maxsplit=-1):
+    return list(filter(None, map(str.strip, value.split(sep, maxsplit=maxsplit))))
+
+
+def split_by_pairs(value, main_sep, pair_sep, /, default=""):
+    if main_sep == pair_sep:
+        data = split_by(value, main_sep)
+        if len(data) % 2 != 0:
+            # If the data is not even, add a default value
+            data.append(default)
+        return dict(zip(data[::2], data[1::2]))
+    else:
+        data = dict()
+        for pair_string in split_by(value, main_sep):
+            pair = split_by(pair_string, pair_sep, maxsplit=1)
+            if len(pair) == 2:
+                data[pair[0]] = pair[1]
+            elif len(pair) == 1:
+                data[pair[0]] = default
+        return data
 
 
 def get_locator(alias, name, /):
     return alias or name
 
 
-class NonExplodedArrayStyles:
+class ValueType(enum.Enum):
+    string = "string"
+    object = "object"
+    array = "array"
+
+    @classmethod
+    def belong_to(cls, annotation, types, /):
+        """
+        Check if the annotation is a data estructure (like an array)
+        containing multiple values.
+        """
+
+        if annotation:
+            tp = t.get_args(annotation)[0] if ftr_utils.is_annotated(annotation) else annotation
+            return tp in types or t.get_origin(tp) in types
+        else:
+            return False
+
+    @classmethod
+    def typeof(cls, annotation, /):
+        if cls.belong_to(annotation, dict_types) or ftr_utils.is_subclass(annotation, pydantic.BaseModel):
+            return cls.object
+        elif cls.belong_to(annotation, array_types):
+            return cls.array
+        else:
+            return cls.string
+
+
+class NonExplodedStyles:
     form = "form"  # comma-separated values
     simple = "simple"  # comma-separated values
     space_delimited = "spaceDelimited"  # space-separated
@@ -64,7 +114,6 @@ class Field(abc.ABC):
     default_explode = None
     default_style = None
     supported_styles = ()
-    array_types = (list, t.List, tuple, t.Tuple, set, t.Set, frozenset, t.FrozenSet)  # noqa UP006
 
     __slots__ = ("embed", "style", "explode", "field_info", "annotation", "name")
 
@@ -132,10 +181,10 @@ class Field(abc.ABC):
         if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
             result = self.get_model_value(obj)
         else:
-            result = self.get_alias_value(self.alias, obj, self.is_multi(self.annotation))
+            result = self.get_alias_value(self.alias, obj, ValueType.typeof(self.annotation))
         return result
 
-    def get_alias_value(self, alias, obj, is_multi, /):
+    def get_alias_value(self, alias, obj, value_type, /):
         """Get request values when the annotation is a standard type according to the field alias."""
 
         raise NotImplementedError
@@ -147,38 +196,30 @@ class Field(abc.ABC):
         for name, info in self.annotation.model_fields.items():
             alias = get_locator(info.alias, name)
             if alias in obj:
-                result[alias] = self.get_alias_value(alias, obj, self.is_multi(info.annotation))
+                result[alias] = self.get_alias_value(alias, obj, ValueType.typeof(info.annotation))
         return result
-
-    @classmethod
-    def is_multi(cls, annotation, /):
-        """
-        Check if the annotation is a data estructure (like an array)
-        containing multiple values.
-        """
-
-        if annotation:
-            tp = t.get_args(annotation)[0] if ftr_utils.is_annotated(annotation) else annotation
-            return tp in cls.array_types or t.get_origin(tp) in cls.array_types
-        else:
-            return False
 
 
 class Path(Field):
     kind = FieldTypes.path
     default_explode = False
-    default_style = NonExplodedArrayStyles.simple
+    default_style = NonExplodedStyles.simple
     supported_styles = (default_style,)
 
     @property
     def value(self):
-        return self.get_alias_value(self.alias, flask.request.view_args, self.is_multi(self.annotation))
+        return self.get_alias_value(self.alias, flask.request.view_args, ValueType.typeof(self.annotation))
 
-    def get_alias_value(self, alias, obj, is_multi, /):
+    def get_alias_value(self, alias, obj, value_type, /):
+        main_sep = NonExplodedStyles.get_sep(self.style)
         if alias not in obj:
             return Unset
-        elif is_multi:
-            return split_by(obj[alias], NonExplodedArrayStyles.get_sep(self.style))
+        elif value_type == ValueType.array:
+            return split_by(obj[alias], main_sep)
+        elif value_type == ValueType.object:
+            raw = obj[alias]
+            pair_sep = "=" if self.explode else main_sep
+            return split_by_pairs(raw, main_sep, pair_sep, default="")
         else:
             return obj[alias]
 
@@ -186,24 +227,31 @@ class Path(Field):
 class Query(Field):
     kind = FieldTypes.query
     default_explode = True
-    default_style = NonExplodedArrayStyles.form
+    default_style = NonExplodedStyles.form
     supported_styles = (
         default_style,
-        NonExplodedArrayStyles.space_delimited,
-        NonExplodedArrayStyles.pipe_delimited,
+        NonExplodedStyles.space_delimited,
+        NonExplodedStyles.pipe_delimited,
     )
 
     @property
     def value(self):
         return self.get_value(flask.request.args)
 
-    def get_alias_value(self, alias, obj, is_multi, /):
+    def get_alias_value(self, alias, obj, value_type, /):
+        sep = NonExplodedStyles.get_sep(self.style)
         if alias not in obj:
             return Unset
-        if is_multi and self.explode:
-            return obj.getlist(alias)
-        elif is_multi:
-            return split_by(obj[alias], NonExplodedArrayStyles.get_sep(self.style))
+        if value_type == ValueType.array:
+            if self.explode:
+                return obj.getlist(alias)
+            else:
+                return split_by(obj[alias], sep)
+        elif value_type == ValueType.object:
+            if self.style == NonExplodedStyles.form and not self.explode:
+                return split_by_pairs(obj[alias], sep, sep, default="")
+            else:
+                return dict()
         else:
             return obj[alias]
 
@@ -211,7 +259,7 @@ class Query(Field):
 class Cookie(Query):
     kind = FieldTypes.cookie
     default_explode = True
-    default_style = NonExplodedArrayStyles.form
+    default_style = NonExplodedStyles.form
     supported_styles = (default_style,)
 
     @property
@@ -222,18 +270,20 @@ class Cookie(Query):
 class Header(Field):
     kind = FieldTypes.header
     default_explode = False
-    default_style = NonExplodedArrayStyles.simple
+    default_style = NonExplodedStyles.simple
     supported_styles = (default_style,)
 
     @property
     def value(self):
         return self.get_value(flask.request.headers)
 
-    def get_alias_value(self, alias, obj, is_multi, /):
+    def get_alias_value(self, alias, obj, value_type, /):
         if alias not in obj:
             return Unset
-        elif is_multi:
-            return split_by(obj[alias], NonExplodedArrayStyles.get_sep(self.style))
+        elif value_type == ValueType.array:
+            return split_by(obj[alias], NonExplodedStyles.get_sep(self.style))
+        elif value_type == ValueType.object:
+            raise NotImplementedError
         else:
             return obj[alias]
 

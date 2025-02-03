@@ -12,18 +12,37 @@ import flask_typed_routes.fields as ftr_fields
 
 
 @pytest.mark.parametrize(
-    'view_args, annotation, expected',
+    'view_args, annotation, explode, expected',
     [
-        ({'id': '5'}, str, '5'),
-        ({'id': '5'}, list[str], ['5']),
-        ({'id': '3,4,5'}, list[str], ['3', '4', '5']),
-        ({'id': ''}, str, ''),
-        ({}, str, ftr_fields.Unset),
+        ({}, str, True, ftr_fields.Unset),
+        ({}, str, False, ftr_fields.Unset),
+        ({'id': ''}, str, True, ''),
+        ({'id': ''}, str, False, ''),
+        ({'id': '5'}, str, True, '5'),
+        ({'id': '5'}, str, False, '5'),
+        ({'id': '5'}, list[str], True, ['5']),
+        ({'id': '5'}, list[str], False, ['5']),
+        ({'id': '3,4,5'}, list[str], True, ['3', '4', '5']),
+        ({'id': ' 3 , 4 , 5 '}, list[str], True, ['3', '4', '5']),  # with spaces
+        ({'id': '3,4,5'}, list[str], False, ['3', '4', '5']),
+        ({'id': 'a,1,b,2'}, dict, False, {'a': '1', 'b': '2'}),
+        ({'id': ' a , 1 , b , 2 '}, dict, False, {'a': '1', 'b': '2'}),  # with spaces
+        ({'id': 'a,1,b,2,c'}, dict, False, {'a': '1', 'b': '2', 'c': ''}),  # odd number of elements
+        ({'id': 'a,1,a,2'}, dict, False, {'a': '2'}),  # duplicate keys
+        ({'id': 'a,'}, dict, False, {'a': ''}),
+        ({'id': 'a'}, dict, False, {'a': ''}),
+        ({'id': 'a=1,b=2'}, pydantic.create_model("Model"), True, {'a': '1', 'b': '2'}),
+        ({'id': 'a=1,b=2'}, dict, True, {'a': '1', 'b': '2'}),
+        ({'id': 'a=1,a=2'}, dict, True, {'a': '2'}),  # duplicate keys
+        ({'id': ' a = 1 , b = 2 '}, dict, True, {'a': '1', 'b': '2'}),  # with spaces
+        ({'id': 'a='}, dict, True, {'a': ''}),  # incomplete pair
+        ({'id': 'a==b'}, dict, True, {'a': '=b'}),
+        ({'id': '='}, dict, True, {}),  # incomplete pair
+        ({'id': '=='}, dict, True, {"=": ""}),  # bad pair
     ]
 )
 @pytest.mark.parametrize('style', [None, 'simple'])
-@pytest.mark.parametrize('explode', [None, True, False])
-def test_path_field(flask_app_auto, explode, style, view_args, annotation, expected):
+def test_path_field(flask_app_auto, style, view_args, annotation, explode, expected):
     with flask_app_auto.test_request_context('/'):
         flask.request.view_args = view_args
         obj = ftr_fields.Path(alias='id', explode=explode, style=style)
@@ -54,6 +73,7 @@ def test_path_field_bad_style(style):
         ('/?search=term1,term2', str, None, 'term1,term2'),
         ('/?search=', str, None, ''),
         ('/', str, None, ftr_fields.Unset),
+        ('/?search=role,admin,name,Alex', dict, None, dict()),  # because if exploded
     ]
 )
 @pytest.mark.parametrize('standalone', [True, False])
@@ -88,10 +108,16 @@ def test_query_field_explode(flask_app_auto, standalone, url, annotation, style,
         ('/?search=term1&search=term2', str, 'pipeDelimited', 'term1'),
         ('/?search=term1&search=term2', str, None, 'term1'),
         ('/?search=term1,term2', str, None, 'term1,term2'),
+        ('/?search=role,admin', dict, None, {'role': 'admin'}),
         ('/?search=term1|term2', str, "pipeDelimited", 'term1|term2'),
         ('/?search=term1 term2', str, "spaceDelimited", 'term1 term2'),
         ('/?search=', str, None, ''),
         ('/', str, None, ftr_fields.Unset),
+        ('/?search=role,admin,name,Alex', dict, None, {'role': 'admin', 'name': 'Alex'}),  # multiple pairs
+        ('/?search=role,admin,role,user', dict, None, {'role': 'user'}),  # duplicate keys
+        ('/?search=role,admin,name', dict, None, {'role': 'admin', 'name': ''}),  # odd number of elements
+        ('/?search=term1|term2', dict, "pipeDelimited", dict()),   # because if style is pipeDelimited
+        ('/?search=term1 term2', dict, "spaceDelimited", dict()),  # because if style is spaceDelimited
     ]
 )
 @pytest.mark.parametrize('standalone', [True, False])
@@ -119,26 +145,35 @@ def test_query_field_bad_style():
     [
         ('session_id=foo,var; session_id=baz', list[str], True, ['foo,var', 'baz']),
         ('session_id=foo,var; session_id=baz', list[str], False, ['foo', 'var']),
+        ('session_id=foo,var; session_id=baz', dict, True, dict()),
+        ('session_id=foo,var; session_id=baz', dict, False, {'foo': 'var'}),
         ('session_id=foo,var; session_id=baz', str, True, 'foo,var'),
         ('session_id=foo,var; session_id=baz', str, False, 'foo,var'),
         ('session_id=foo; session_id=var', list[str], True, ['foo', 'var']),
         ('session_id=foo; session_id=var', list[str], False, ['foo']),
+        ('session_id=foo; session_id=var', dict, True, dict()),
+        ('session_id=foo; session_id=var', dict, False, {'foo': ''}),
         ('session_id=foo; session_id=var', str, True, 'foo'),
         ('session_id=foo; session_id=var', str, False, 'foo'),
         ('session_id=foo,var', list[str], True, ['foo,var']),
+        ('session_id=foo,var', dict, True, dict()),
         ('session_id=foo,var', list[str], False, ['foo', 'var']),
+        ('session_id=foo,var', dict, False, {'foo': 'var'}),
         ('session_id=foo,var', str, True, 'foo,var'),
         ('session_id=foo,var', str, False, 'foo,var'),
         ('session_id=foo', list[str], True, ['foo']),
         ('session_id=foo', list[str], False, ['foo']),
+        ('session_id=foo', dict, False, {'foo': ''}),
         ('session_id=foo', str, True, 'foo'),
         ('session_id=foo', str, False, 'foo'),
         ('session_id=', list[str], True, ['']),
         ('session_id=', list[str], False, []),
+        ('session_id=', dict, False, dict()),
         ('session_id=', str, True, ''),
         ('session_id=', str, False, ''),
         ('', list[str], True, ftr_fields.Unset),
         ('', list[str], False, ftr_fields.Unset),
+        ('', dict, True, ftr_fields.Unset),
         ('', str, True, ftr_fields.Unset),
         ('', str, False, ftr_fields.Unset),
     ]
@@ -180,7 +215,7 @@ def test_cookie_field_bad_style(style):
 def test_header_standalone_field(flask_app_auto, explode, headers, annotation, expected):
     with flask_app_auto.test_request_context('/', headers=headers):
         obj = ftr_fields.Header(alias='Auth', explode=explode)
-        obj.annotation = list[str]
+        obj.annotation = annotation
         assert obj.value == expected
 
 
@@ -209,22 +244,26 @@ def test_bad_embed_field(field_class):
 
 
 @pytest.mark.parametrize('annotation, expected', [
-    (str, False),
-    (list, True),
-    (list[str], True),
-    (typing.List[str], True),  # noqa UP006
-    (set, True),
-    (set[str], True),
-    (typing.Set[str], True),  # noqa UP006
-    (frozenset, True),
-    (frozenset[str], True),
-    (typing.FrozenSet[str], True),  # noqa UP006
-    (tuple, True),
-    (tuple[str], True),
-    (typing.Tuple[str], True),  # noqa UP006
-    (typing.Annotated[str, pydantic.Field(alias='field')], False),
-    (typing.Annotated[list[str], pydantic.Field(alias='list-field')], True),
-    (typing.Annotated[typing.List[str], pydantic.Field(alias='list-field')], True),  # noqa UP006
+    (str, ftr_fields.ValueType.string),
+    (list, ftr_fields.ValueType.array),
+    (list[str], ftr_fields.ValueType.array),
+    (typing.List[str], ftr_fields.ValueType.array),  # noqa UP006
+    (set, ftr_fields.ValueType.array),
+    (set[str], ftr_fields.ValueType.array),
+    (typing.Set[str], ftr_fields.ValueType.array),  # noqa UP006
+    (frozenset, ftr_fields.ValueType.array),
+    (frozenset[str], ftr_fields.ValueType.array),
+    (typing.FrozenSet[str], ftr_fields.ValueType.array),  # noqa UP006
+    (tuple, ftr_fields.ValueType.array),
+    (tuple[str], ftr_fields.ValueType.array),
+    (typing.Tuple[str], ftr_fields.ValueType.array),  # noqa UP006
+    (dict, ftr_fields.ValueType.object),
+    (dict[str, str], ftr_fields.ValueType.object),
+    (typing.Dict[str, str], ftr_fields.ValueType.object),  # noqa UP006
+    (pydantic.create_model('Model'), ftr_fields.ValueType.object),
+    (typing.Annotated[str, pydantic.Field(alias='field')], ftr_fields.ValueType.string),
+    (typing.Annotated[list[str], pydantic.Field(alias='list-field')], ftr_fields.ValueType.array),
+    (typing.Annotated[typing.List[str], pydantic.Field(alias='list-field')], ftr_fields.ValueType.array),  # noqa UP006
 ])
-def test_field_is_multi(annotation, expected):
-    assert ftr_fields.Field.is_multi(annotation) == expected
+def test_value_type_typeof(annotation, expected):
+    assert ftr_fields.ValueType.typeof(annotation) == expected
