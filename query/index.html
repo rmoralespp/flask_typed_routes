@@ -53,7 +53,9 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pydantic-models">Pydantic models</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#multiple-values">Multiple values</a>
+    <li class="toctree-l2"><a class="reference internal" href="#arrays-in-query-parameters">Arrays in query parameters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#object-in-a-single-query-parameter">Object in a single query parameter</a>
     </li>
     </ul>
                   </li>
@@ -123,14 +125,14 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 <li><code>skip</code>: <strong>Optional</strong> and must be an integer. If not included, it defaults to 0.</li>
 <li><code>limit</code>: <strong>Optional</strong> and must be an integer. If not included, it defaults to 100.</li>
 </ul>
-<p><strong>Example request:</strong> <code>GET http://127.0.0.1:5000/items/?needy=passed&amp;skip=20</code></p>
+<p>✅ <strong>Valid request:</strong> <code>GET http://127.0.0.1:5000/items/?needy=passed&amp;skip=20</code></p>
 <pre><code class="language-json">{
   &quot;limit&quot;: 100,
   &quot;needy&quot;: &quot;passed&quot;,
   &quot;skip&quot;: 20
 }
 </code></pre>
-<p><strong>Bad request example:</strong> If <code>needy</code> is not included in the request <code>http://127.0.0.1:5000/items/</code></p>
+<p>❌ <strong>Bad request:</strong> If <code>needy</code> is not included in the request <code>http://127.0.0.1:5000/items/</code></p>
 <pre><code class="language-json">{
   &quot;errors&quot;: [
     {
@@ -147,9 +149,8 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 }
 </code></pre>
 <h2 id="custom-validations">Custom validations</h2>
-<p>You can leverage Pydantic's custom <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> or define your own custom
-data <a href="https://docs.pydantic.dev/latest/concepts/types/#custom-types">types</a> to apply custom validation to your query
-parameters.</p>
+<p>You can apply additional validation using Pydantic's custom <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> 
+with constraints, or define your own custom data <a href="https://docs.pydantic.dev/latest/concepts/types/#custom-types">types</a></p>
 <pre><code class="language-python">import typing as t
 
 import annotated_types as at
@@ -265,8 +266,12 @@ When using Pydantic models, you must use <strong>Pydantic's <a href="https://pyd
   &quot;user_id&quot;: 233
 }
 </code></pre>
-<h2 id="multiple-values">Multiple values</h2>
-<p>If you want to allow a query parameter to have multiple values, you can use <code>set</code>, <code>tuple</code>, or <code>list</code> annotations.</p>
+<h2 id="arrays-in-query-parameters">Arrays in query parameters</h2>
+<p>If you want to allow a query parameter to parse as an <strong>Array</strong>, you can use <code>set</code>, <code>tuple</code>, or <code>list</code> annotations.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can use the <code>set</code> type hint to validate that the values are unique.</p>
+</div>
 <pre><code class="language-python">import typing as t
 
 import flask
@@ -299,7 +304,7 @@ def get_users(user_id: int, tags: Tags = ()):
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>If the URL includes a <strong>query parameter</strong> with multiple values separated by commas, pipes(<code>|</code>), or spaces, 
+<p>If the URL includes a <strong>query parameter</strong> with multiple values separated by commas, pipes(<code>|</code>), or spaces,
 the resulting list will contain a single element with the entire string.</p>
 <p>To retrieve each value separately, you need to set the <code>explode</code>
 parameter in the <code>Query</code> field and specify the <code>style</code> parameter to define the serialization format.</p>
@@ -308,7 +313,6 @@ parameter in the <code>Query</code> field and specify the <code>style</code> par
 <pre><code class="language-python">import typing as t
 
 import flask
-import pydantic
 
 import flask_typed_routes as ftr
 
@@ -316,11 +320,11 @@ app = flask.Flask(__name__)
 ftr.FlaskTypedRoutes(app)
 
 # By default, the 'style' is 'form', which means that the values are separated by commas.
-TagsByComma = t.Annotated[list[str], pydantic.Field(explode=False)]
+TagsByComma = t.Annotated[list[str], ftr.Query(explode=False)]
 
 # You can also use 'pipeDelimited' or 'spaceDelimited' as the 'style' to indicate another serialization style delimiter.
-TagsBySpace = t.Annotated[list[str], pydantic.Field(explode=False, style=&quot;spaceDelimited&quot;)]
-TagsByPipe = t.Annotated[list[str], pydantic.Field(explode=False, style=&quot;pipeDelimited&quot;)]
+TagsBySpace = t.Annotated[list[str], ftr.Query(explode=False, style=&quot;spaceDelimited&quot;)]
+TagsByPipe = t.Annotated[list[str], ftr.Query(explode=False, style=&quot;pipeDelimited&quot;)]
 
 
 @app.get('/tags/comma/')
@@ -344,7 +348,109 @@ def get_tags_by_pipe(tags: TagsByPipe = ()):
 <li>By pipes: <code>http://localhost:5000/tags/pipe/?tags=hello|world</code></li>
 </ul>
 <p>You will see the JSON response as:</p>
-<pre><code class="language-json">{&quot;tags&quot;: [&quot;hello&quot;, &quot;world&quot;]}
+<pre><code class="language-json">{
+  &quot;tags&quot;: [
+    &quot;hello&quot;,
+    &quot;world&quot;
+  ]
+}
+</code></pre>
+<h2 id="object-in-a-single-query-parameter">Object in a single query parameter</h2>
+<p>Query parameters can be parsed as <strong>Objects</strong> using dictionaries or Pydantic models.
+The library follows the <code>form</code> style and of <strong>OpenAPI</strong> parameter serialization for objects.</p>
+<p>The default serialization method is:</p>
+<ul>
+<li><strong>Style:</strong> <code>form</code></li>
+<li><strong>Explode:</strong> <code>true</code></li>
+</ul>
+<p>The query parameter <code>info</code> is serialized as follows:</p>
+<table>
+<thead>
+<tr>
+<th>style</th>
+<th>explode</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>form</td>
+<td>false</td>
+<td>/users?info=role,admin,first_name,Alex</td>
+</tr>
+<tr>
+<td>pipeDelimited</td>
+<td>true/false</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td>pipeDelimited</td>
+<td>true/false</td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+<p>You can use <code>dict</code> or Pydantic models to parse object query parameters.</p>
+<p><strong>Using a dictionary</strong></p>
+<pre><code class="language-python">import typing as t
+
+import flask
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+@app.get('/users/')
+def get_users(info: t.Annotated[dict, ftr.Query(explode=False)]):
+    return flask.jsonify({'info': info})
+</code></pre>
+<p><strong>Example request:</strong> <code>GET http://127.0.0.1:5000/users/?info=role,admin,first_name,Alex</code></p>
+<pre><code class="language-json">{
+  &quot;info&quot;: {
+    &quot;first_name&quot;: &quot;Alex&quot;,
+    &quot;role&quot;: &quot;admin&quot;
+  }
+}
+</code></pre>
+<p><strong>Using Pydantic models</strong>:</p>
+<p>In this example, we use a Pydantic model to parse the query parameters and an embedded model to interpret the 
+<code>info</code> query parameter as an object using <code>explode=False</code> with <code>form=style</code>.</p>
+<p>The <code>explode</code> is set to <code>false</code> to parse the query parameter as an object, while the <code>style</code> defaults 
+to <code>form</code>. The supported styles are <code>form</code>, <code>spaceDelimited</code>, and <code>pipeDelimited</code>, but only <code>form</code> is supported
+for objects.</p>
+<pre><code class="language-python">import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+class UserInfo(pydantic.BaseModel):
+    role: str
+    first_name: str
+
+
+class QueryParams(pydantic.BaseModel):
+    info: UserInfo
+
+
+@app.get('/users/')
+def get_users(info: t.Annotated[QueryParams, ftr.Query(explode=False)]):
+    return flask.jsonify({'info': info.model_dump()})
+</code></pre>
+<p><strong>Example request:</strong> <code>GET http://127.0.0.1:5000/users/?info=role,admin,first_name,Alex</code></p>
+<pre><code class="language-json">{
+  &quot;info&quot;: {
+    &quot;first_name&quot;: &quot;Alex&quot;,
+    &quot;role&quot;: &quot;admin&quot;
+  }
+}
 </code></pre>
               
             </div>
