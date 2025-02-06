@@ -1,5 +1,7 @@
 ## Releases
 
+- **Add**: Support serialization of request parameters of a type object.
+
 ### v0.2.2 (2025-01-31)
 
 - **Breaking-Change**: The `typed_route` decorator can now receive `status_code` parameter as a keyword argument.
