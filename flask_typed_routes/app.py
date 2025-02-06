@@ -118,18 +118,18 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view_class, verb.lower())
                             if self.is_typed(method):
-                                new_method = ftr_core.route(method, path_args, view_name)
+                                new_method = ftr_core.validate(method, path_args, view_name)
                                 self.register_route(new_method, rule, view_name, (verb,), path_args)
                                 setattr(view_class, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view_class.dispatch_request):
-                        new_method = ftr_core.route(view_class.dispatch_request, path_args, view_name)
+                        new_method = ftr_core.validate(view_class.dispatch_request, path_args, view_name)
                         self.register_route(new_method, rule, view_name, methods, path_args)
                         view_class.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
-                    view_func = ftr_core.route(view_func, path_args, view_name)
+                    view_func = ftr_core.validate(view_func, path_args, view_name)
                     self.register_route(view_func, rule, view_name, methods, path_args)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)

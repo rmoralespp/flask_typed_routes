@@ -25,6 +25,37 @@ def get_request_values(fields, /):
     return result
 
 
+def merge_field_info(tp, default_field_class, /):
+    original_tp = tp
+    tp, *metalist = t.get_args(original_tp)
+    field = next((m for m in metalist if isinstance(m, ftr_fields.Field)), default_field_class())
+    field_info = pydantic.fields.FieldInfo.from_annotation(original_tp)
+    # Later `FieldInfo` instances override earlier ones.
+    # Prioritize the `Field` above any other metadata
+    field.field_info = pydantic.fields.FieldInfo.merge_field_infos(field_info, field.field_info)
+    return (field, tp)
+
+
+def set_field_alias(field, /):
+    if isinstance(field, ftr_fields.Path):
+        # Respect the name of the path parameter offered by `Flask` routing.
+        field.alias = field.name
+    elif ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
+        # When the parameter is a Pydantic model, use alias if `embed` is True.
+        field.alias = field.locator if field.embed else None
+    else:
+        # Otherwise, use the alias if it is set, otherwise use the name.
+        field.alias = field.locator
+    return field
+
+
+def set_field_props(field, name, tp, default_value, /):
+    field.default = default_value
+    field.annotation = tp
+    field.name = name
+    return set_field_alias(field)
+
+
 def parse_field(name, tp, default_field_class, default_value, /):
     """
     Parse the field definition from the type annotation.
@@ -37,45 +68,17 @@ def parse_field(name, tp, default_field_class, default_value, /):
     """
 
     if ftr_utils.is_annotated(tp):
-        # When the type is annotated, get the field from the annotation.
-        original_tp = tp
-        tp, *metalist = t.get_args(original_tp)
-        field = next((m for m in metalist if isinstance(m, ftr_fields.Field)), default_field_class())
-        field_info = pydantic.fields.FieldInfo.from_annotation(original_tp)
-        # Later `FieldInfo` instances override earlier ones.
-        # Prioritize the `Field` above any other metadata
-        field.field_info = pydantic.fields.FieldInfo.merge_field_infos(field_info, field.field_info)
+        # When the type is annotated, get the field from the annotated annotation.
+        field, tp = merge_field_info(tp, default_field_class)
     else:
         # Otherwise, create a new field instance.
         field = default_field_class()
-
     # Set the field properties.
-    field.default = default_value
-    field.annotation = tp
-    field.name = name
-
-    # Set the alias property based on the field type.
-    if isinstance(field, ftr_fields.Path):
-        # Respect the name of the path parameter offered by `Flask` routing.
-        field.alias = name
-    elif ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
-        # When the parameter is a Pydantic model, use alias if `embed` is True.
-        field.alias = field.locator if field.embed else None
-    else:
-        # Otherwise, use the alias if it is set, otherwise use the name.
-        field.alias = field.locator
-    return field
+    return set_field_props(field, name, tp, default_value)
 
 
-def parse_route_fields(view_func, view_name, view_args, /):
-    """
-    Return field definitions for the view function annotations.
-
-    :param view_func: Flask view function
-    :param view_name: Name to the view function
-    :param view_args: Parameters of the route rule
-    :rtype: Generator[flask_tpr_fields.Field]
-    """
+def parse_params(view_func, view_name, view_args, /):
+    """Return field definitions for the view function parameters."""
 
     sig = inspect.signature(view_func)
     annotations = ftr_utils.get_annotations(view_func, view_name)
@@ -96,7 +99,9 @@ def parse_route_fields(view_func, view_name, view_args, /):
 
 
 def create_model(view_func, view_name, view_args, /):
-    fields = tuple(parse_route_fields(view_func, view_name, view_args))
+    """Create a Pydantic model from the view function annotations."""
+
+    fields = tuple(parse_params(view_func, view_name, view_args))
     definitions = {field.name: (field.annotation, field.field_info) for field in fields}
     if definitions:
         model = pydantic.create_model(view_name, **definitions)
@@ -105,9 +110,9 @@ def create_model(view_func, view_name, view_args, /):
         return (None, None)
 
 
-def route(view_func, view_args, view_name, /):
+def validate(view_func, view_args, view_name, /):
     """
-    A decorator that validates the request parameters using Pydantic models.
+    A decorator that validates the request parameters of the view function.
 
     :param view_func: Flask view function
     :param Sequence[str] view_args: Parameters of the route rule
