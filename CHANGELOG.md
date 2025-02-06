@@ -1,6 +1,8 @@
 ## Releases
 
 - **Add**: Support serialization of request parameters of a type object.
+- **Breaking-Change**: `FlaskTypedRoutes` class can't receive the `openapi_url_prefix` and `openapi_url_json` parameters in 
+   the constructor anymore. Now, the OpenAPI schema is offered by the `get_openapi_schema` method.
 
 ### v0.2.2 (2025-01-31)
 
