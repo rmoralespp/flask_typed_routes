@@ -29,7 +29,7 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 - `skip`: **Optional** and must be an integer. If not included, it defaults to 0.
 - `limit`: **Optional** and must be an integer. If not included, it defaults to 100.
 
-**Example request:** `GET http://127.0.0.1:5000/items/?needy=passed&skip=20`
+✅ **Valid request:** `GET http://127.0.0.1:5000/items/?needy=passed&skip=20`
 
 ```json
 {
@@ -39,7 +39,7 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 }
 ```
 
-**Bad request example:** If `needy` is not included in the request `http://127.0.0.1:5000/items/`
+❌ **Bad request:** If `needy` is not included in the request `http://127.0.0.1:5000/items/`
 
 ```json
 {
@@ -60,9 +60,8 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 
 ## Custom validations
 
-You can leverage Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) or define your own custom
-data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types) to apply custom validation to your query
-parameters.
+You can apply additional validation using Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) 
+with constraints, or define your own custom data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types)
 
 ```python
 import typing as t
@@ -193,9 +192,12 @@ def get_orders(
 }
 ```
 
-## Multiple values
+## Arrays in query parameters
 
-If you want to allow a query parameter to have multiple values, you can use `set`, `tuple`, or `list` annotations.
+If you want to allow a query parameter to parse as an **Array**, you can use `set`, `tuple`, or `list` annotations.
+
+!!! tip
+    You can use the `set` type hint to validate that the values are unique.
 
 ```python
 import typing as t
@@ -232,7 +234,7 @@ def get_users(user_id: int, tags: Tags = ()):
     It is important to highlight that the previous URL contains multiple query parameters named `tag`.
 
 !!! tip
-    If the URL includes a **query parameter** with multiple values separated by commas, pipes(`|`), or spaces, 
+    If the URL includes a **query parameter** with multiple values separated by commas, pipes(`|`), or spaces,
     the resulting list will contain a single element with the entire string.
 
     To retrieve each value separately, you need to set the `explode`
@@ -244,7 +246,6 @@ def get_users(user_id: int, tags: Tags = ()):
 import typing as t
 
 import flask
-import pydantic
 
 import flask_typed_routes as ftr
 
@@ -252,11 +253,11 @@ app = flask.Flask(__name__)
 ftr.FlaskTypedRoutes(app)
 
 # By default, the 'style' is 'form', which means that the values are separated by commas.
-TagsByComma = t.Annotated[list[str], pydantic.Field(explode=False)]
+TagsByComma = t.Annotated[list[str], ftr.Query(explode=False)]
 
 # You can also use 'pipeDelimited' or 'spaceDelimited' as the 'style' to indicate another serialization style delimiter.
-TagsBySpace = t.Annotated[list[str], pydantic.Field(explode=False, style="spaceDelimited")]
-TagsByPipe = t.Annotated[list[str], pydantic.Field(explode=False, style="pipeDelimited")]
+TagsBySpace = t.Annotated[list[str], ftr.Query(explode=False, style="spaceDelimited")]
+TagsByPipe = t.Annotated[list[str], ftr.Query(explode=False, style="pipeDelimited")]
 
 
 @app.get('/tags/comma/')
@@ -283,7 +284,105 @@ def get_tags_by_pipe(tags: TagsByPipe = ()):
 You will see the JSON response as:
 
 ```json
-{"tags": ["hello", "world"]}
+{
+  "tags": [
+    "hello",
+    "world"
+  ]
+}
 ```
 
+## Object in a single query parameter
 
+Query parameters can be parsed as **Objects** using dictionaries or Pydantic models.
+The library follows the `form` style and of **OpenAPI** parameter serialization for objects.
+
+The default serialization method is:
+
+- **Style:** `form`
+- **Explode:** `true`
+
+The query parameter `info` is serialized as follows:
+
+| style         | explode    | URL                                    |
+|---------------|------------|----------------------------------------|
+| form          | false      | /users?info=role,admin,first_name,Alex |
+| pipeDelimited | true/false | n/a                                    |
+| pipeDelimited | true/false | n/a                                    |
+
+You can use `dict` or Pydantic models to parse object query parameters.
+
+**Using a dictionary**
+
+```python
+import typing as t
+
+import flask
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+@app.get('/users/')
+def get_users(info: t.Annotated[dict, ftr.Query(explode=False)]):
+    return flask.jsonify({'info': info})
+```
+
+**Example request:** `GET http://127.0.0.1:5000/users/?info=role,admin,first_name,Alex`
+
+```json
+{
+  "info": {
+    "first_name": "Alex",
+    "role": "admin"
+  }
+}
+```
+
+**Using Pydantic models**:
+
+In this example, we use a Pydantic model to parse the query parameters and an embedded model to interpret the 
+`info` query parameter as an object using `explode=False` with `form=style`.
+
+The `explode` is set to `false` to parse the query parameter as an object, while the `style` defaults 
+to `form`. The supported styles are `form`, `spaceDelimited`, and `pipeDelimited`, but only `form` is supported
+for objects.
+
+```python
+import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+class UserInfo(pydantic.BaseModel):
+    role: str
+    first_name: str
+
+
+class QueryParams(pydantic.BaseModel):
+    info: UserInfo
+
+
+@app.get('/users/')
+def get_users(info: t.Annotated[QueryParams, ftr.Query(explode=False)]):
+    return flask.jsonify({'info': info.model_dump()})
+```
+
+**Example request:** `GET http://127.0.0.1:5000/users/?info=role,admin,first_name,Alex`
+
+```json
+{
+  "info": {
+    "first_name": "Alex",
+    "role": "admin"
+  }
+}
+```

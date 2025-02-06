@@ -107,12 +107,6 @@ def extract_rule_params(rule, /):
     return frozenset(rule_regex.findall(rule))
 
 
-def get_func_path(func, /):
-    """Get the full path of a function/method."""
-
-    return f"{func.__module__}.{func.__qualname__}"
-
-
 def cleandoc(func, /):
     docstring = func.__doc__
     return inspect.cleandoc(docstring) if docstring else ""
