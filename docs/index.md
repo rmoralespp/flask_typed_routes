@@ -41,6 +41,10 @@ Example of a simple Flask application using `flask_typed_routes`:
 
 Create a file `items.py` with:
 
+!!! note
+    The `FlaskTypedRoutes` class must be initialized before registering the **Flask** routes and blueprints 
+    to allow the extension to collect the routes and be able to validate the endpoints.
+
 ```python
 import typing as t
 
@@ -208,7 +212,6 @@ import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
 app_ftr = ftr.FlaskTypedRoutes(app)
-swagger_ui.api_doc(app, config_rel_url=app_ftr.openapi_url_json, url_prefix=app_ftr.openapi_url_prefix)
 
 
 class Item(pydantic.BaseModel):
@@ -236,6 +239,10 @@ def update_item(item_id: int, item: Item):
 @app.delete('/items/<item_id>/')
 def remove_item(item_id: int):
     return flask.jsonify({'item_id': item_id})
+
+# Get the OpenAPI schema from the `FlaskTypedRoutes` instance after registering the routes and blueprints,
+# as the extension first needs to collect the routes to generate the OpenAPI schema.
+swagger_ui.api_doc(app, config=app_ftr.get_openapi_schema(), url_prefix='/docs')
 ```
 
 Open your browser and go to `http://127.0.0.1:5000/docs/`

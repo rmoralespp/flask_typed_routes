@@ -1,7 +1,5 @@
 import functools
 
-import flask
-
 import flask_typed_routes.core as ftr_core
 import flask_typed_routes.errors as ftr_erros
 import flask_typed_routes.openapi as ftr_openapi
@@ -59,8 +57,6 @@ class FlaskTypedRoutes:
         validation_error_status_code=400,
         ignore_verbs=None,
         mode=Mode.auto,
-        openapi_url_prefix: str = "/docs",
-        openapi_url_json: str = "/openapi.json",
         **openapi,
     ):
         """
@@ -69,11 +65,8 @@ class FlaskTypedRoutes:
             Custom error handler for the "ValidationError" exception,
             by default it uses the default error handler provided by the library.
         :param int validation_error_status_code: Status code for the validation error response.
-        :param Tuple[str] ignore_verbs: HTTP verbs to ignore.
+        :param tuple[str, ...] ignore_verbs: HTTP verbs to ignore.
         :param str mode: Mode of operation, 'auto' or 'manual'. Default is 'auto'.
-        :param str openapi_url_prefix: URL prefix for the interactive API documentation.
-        :param str openapi_url_json: Relative URL for the OpenAPI JSON schema.
-
         :param Unpack[dict[str, Any]] openapi: OpenAPI schema definition for the application.
         """
 
@@ -85,14 +78,11 @@ class FlaskTypedRoutes:
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
 
-        self.openapi_url_prefix = openapi_url_prefix.rstrip('/')
-        self.openapi_url_json = openapi_url_json
         self.openapi_manager = ftr_openapi.OpenApi(**openapi)
 
         self.routes = []  # registered routes
         if app:
             self.init_app(app)
-            self.init_doc(app)
 
     def default_error_handler(self, error, /):
         return ftr_erros.handler(error, self.validation_error_status_code)
@@ -102,19 +92,6 @@ class FlaskTypedRoutes:
         app.register_error_handler(ftr_erros.ValidationError, self.error_handler or self.default_error_handler)
         # Replace the "add_url_rule" method with a wrapper that adds the "route" decorator
         app.add_url_rule = self.add_url_rule(app.add_url_rule)
-
-    def init_doc(self, app, /):
-        """Initialize the OpenAPI documentation route."""
-
-        @functools.lru_cache
-        def openapi_json_view():
-            data = self.openapi_manager.get_schema(self.routes, self.validation_error_status_code)
-            return flask.jsonify(data)
-
-        bp_name = 'flask_typed_routes_openapi{}'.format(self.openapi_url_prefix.replace('/', '_'))
-        openapi_bp = flask.Blueprint(bp_name, __name__, url_prefix=self.openapi_url_prefix)
-        openapi_bp.add_url_rule(self.openapi_url_json, view_func=openapi_json_view)
-        app.register_blueprint(openapi_bp)
 
     def add_url_rule(self, func, /):
         """
@@ -127,9 +104,8 @@ class FlaskTypedRoutes:
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
             path_args = ftr_utils.extract_rule_params(rule)
-            is_apidoc = rule.startswith(self.openapi_url_prefix)
             methods = kwargs.get("methods") or ("GET",)
-            if view_func and not is_apidoc:
+            if view_func:
                 # name of the view function or view class if not endpoint is provided
                 view_name = endpoint or view_func.__name__
                 view_class = ftr_utils.class_based_view(view_func)
@@ -173,3 +149,6 @@ class FlaskTypedRoutes:
             methods=methods,
         )
         self.routes.append(route)
+
+    def get_openapi_schema(self):
+        return self.openapi_manager.get_schema(self.routes, self.validation_error_status_code)

@@ -16,9 +16,12 @@ configuration fields. These can be used to fully customize the application's sch
 requirements.
 
 !!! note
-    The OpenAPI schema is generated automatically when the application is run.
-    You can customize the URL for serving the OpenAPI schema by configuring the `openapi_url_prefix`
-    and `openapi_url_json` params in the `FlaskTypedRoutes` class.
+    The OpenAPI schema is generated automatically when the application is initialized.
+    You can access the OpenAPI schema by calling the `get_openapi_schema` method of the `FlaskTypedRoutes` class.
+
+!!! warning 
+    Get the OpenAPI schema from the `FlaskTypedRoutes` instance after registering the routes and blueprints, 
+    as the extension first needs to collect the routes to generate the OpenAPI schema.
 
 
 ## Basic Usage
@@ -39,7 +42,6 @@ import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
 app_ftr = ftr.FlaskTypedRoutes(app)
-swagger_ui.api_doc(app, config_rel_url=app_ftr.openapi_url_json, url_prefix=app_ftr.openapi_url_prefix)
 
 
 class Item(pydantic.BaseModel):
@@ -67,6 +69,9 @@ def update_item(item_id: int, item: Item):
 @app.delete('/items/<item_id>/')
 def remove_item(item_id: int):
     return flask.jsonify({'item_id': item_id})
+
+
+swagger_ui.api_doc(app, config=app_ftr.get_openapi_schema(), url_prefix='/docs')
 ```
 
 In this example if you run the application and navigate to `http://127.0.0.1:5000/docs`, you will see the
@@ -86,11 +91,6 @@ import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
 app_ftr = ftr.FlaskTypedRoutes(app)
-swagger_ui.api_doc(
-    app,
-    config_rel_url=app_ftr.openapi_url_json,
-    url_prefix=app_ftr.openapi_url_prefix,
-)
 
 
 @app.get('/items/<item_id>/')
@@ -101,6 +101,8 @@ swagger_ui.api_doc(
 )
 def get_item(item_id: int):
     return flask.jsonify({'item_id': item_id})
+
+swagger_ui.api_doc(app, config=app_ftr.get_openapi_schema(), url_prefix='/docs')
 ```
 
 ![OpenApi Example](./images/openapi4.png)
@@ -177,11 +179,6 @@ app_ftr = ftr.FlaskTypedRoutes(
         "url": "http://swagger.io"
     },
 )
-swagger_ui.api_doc(
-    app,
-    config_rel_url=app_ftr.openapi_url_json,
-    url_prefix=app_ftr.openapi_url_prefix,
-)
 
 
 @app.get('/items/<item_id>/')
@@ -206,6 +203,13 @@ def read_item(item_id: int):
 )
 def update_item(item_id: int, item: Item):
     return flask.jsonify({'item_id': item_id, **item.model_dump()})
+
+
+swagger_ui.api_doc(
+    app,
+    config=app_ftr.get_openapi_schema(),
+    url_prefix='/docs'
+)
 ```
 
 ![OpenApi Example](./images/openapi5.png)
