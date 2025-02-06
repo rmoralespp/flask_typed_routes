@@ -51,6 +51,8 @@ import flask_typed_routes as ftr
 import pydantic
 
 app = flask.Flask(__name__)
+# The `FlaskTypedRoutes` class must be initialized before registering the **Flask** routes and blueprints 
+# to allow the extension to collect the routes and be able to validate the endpoints.
 ftr.FlaskTypedRoutes(app)
 
 Skip = pydantic.NonNegativeInt # custom Pydantic type
@@ -208,8 +210,6 @@ import swagger_ui
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-# The `FlaskTypedRoutes` class must be initialized before registering the **Flask** routes and blueprints 
-# to allow the extension to collect the routes and be able to validate the endpoints.
 app_ftr = ftr.FlaskTypedRoutes(app)
 
 
