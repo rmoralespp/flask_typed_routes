@@ -119,6 +119,11 @@
 including <strong>Path, Query, Body, Header, and Cookie</strong> parameters.</p>
 <p>Example of a simple Flask application using <code>flask_typed_routes</code>:</p>
 <p>Create a file <code>items.py</code> with:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>FlaskTypedRoutes</code> class must be initialized before registering the <strong>Flask</strong> routes and blueprints 
+to allow the extension to collect the routes and be able to validate the endpoints.</p>
+</div>
 <pre><code class="language-python">import typing as t
 
 import annotated_types as at
@@ -256,7 +261,6 @@ import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
 app_ftr = ftr.FlaskTypedRoutes(app)
-swagger_ui.api_doc(app, config_rel_url=app_ftr.openapi_url_json, url_prefix=app_ftr.openapi_url_prefix)
 
 
 class Item(pydantic.BaseModel):
@@ -284,6 +288,10 @@ def update_item(item_id: int, item: Item):
 @app.delete('/items/&lt;item_id&gt;/')
 def remove_item(item_id: int):
     return flask.jsonify({'item_id': item_id})
+
+# Get the OpenAPI schema from the `FlaskTypedRoutes` instance after registering the routes and blueprints,
+# as the extension first needs to collect the routes to generate the OpenAPI schema.
+swagger_ui.api_doc(app, config=app_ftr.get_openapi_schema(), url_prefix='/docs')
 </code></pre>
 <p>Open your browser and go to <code>http://127.0.0.1:5000/docs/</code></p>
 <p><img alt="OpenApi Example" src="images/openapi1.png" /></p>
@@ -343,5 +351,5 @@ def remove_item(item_id: int):
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-02-06 17:06:47.674597+00:00
+Build Date UTC : 2025-02-06 17:08:27.842943+00:00
 -->
