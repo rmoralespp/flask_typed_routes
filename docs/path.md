@@ -1,9 +1,12 @@
 # Path Parameters
 
-You can validate **Path parameters** in your route by adding standard type hints to the function signature.
+You can validate **Path parameters** in your route by adding standard type hints to the function signature. 
+`flask_typed_routes` ensures that parameters are correctly converted and validated based on their type annotations.
 
 !!! warning
     If no type hint is provided, the **Path parameters** are not validated.
+
+## Basic Usage
 
 ```python
 import typing as t
@@ -21,17 +24,12 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
     return flask.jsonify(data)
 ```
 
-**Conversion:** The library automatically converts path parameters to their specified types:
+**How It Works:**
 
-- `category_id` is converted to an integer, so your function receives it as an integer.
-- `lang` is treated as a string, so your function receives it as a string.
+- `category_id` is automatically converted to an integer.
+- `lang` is restricted to the values 'es' or 'en'.
 
-**Validation:**
-
-- `category_id` Must be an integer.
-- `lang` Must be either 'es' or 'en'.
-
-**Example request:** `GET http://127.0.0.1:5000/items/12/es`
+✅ **Valid request** `GET http://127.0.0.1:5000/items/12/es`
 
 ```json
 {
@@ -40,7 +38,7 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
 }
 ```
 
-**Bad request example:** If `category_id` is not an integer `GET http://127.0.0.1:5000/items/abc/es`
+❌ **Bad request:** (wrong type for `category_id`) `GET http://127.0.0.1:5000/items/abc/es`
 
 ```json
 {
@@ -59,10 +57,10 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
 }
 ```
 
-## Custom validations
+## Custom Validations
 
-You can leverage Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) or define your own custom
-data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types) to apply additional validation to your path parameters.
+You can apply additional validation using Pydantic's custom [types](https://docs.pydantic.dev/latest/concepts/types/) 
+with constraints, or define your own custom data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types)
 
 ```python
 import typing as t
@@ -101,22 +99,22 @@ def read_items(category_id: t.Annotated[int, ftr.Path(ge=1, le=100)]):
     return flask.jsonify(data)
 ```
 
-**Validation:**
+**Validation Rules:**
 
 - `category_id` must be an integer between 1 and 100.
 
 ## Aliasing
 
 !!! warning
-    Aliases defined in Path type hints will be ignored to maintain consistency with the names specified in the Flask route.
+    Aliases defined in Path type hints are ignored to maintain consistency with the Flask route parameter names.
 
+## Arrays in Path Parameters
 
-## Multiple values in a single path parameter
+Path parameters can be parsed as **Arrays** using `set`, `tuple`, or `list`.
+The library follows the `simple` style of **OpenAPI** parameter serialization for arrays, using commas as separators.
 
-If you want to allow a query parameter to have multiple values, you can use `set`, `tuple`, or `list` annotations.
-
-!!! note
-    Path fields support the `simple` **OpenAPI** style, meaning they can handle multiple values separated by commas. 
+!!! tip 
+    You can use the `set` type hint to validate that the values are unique.
 
 ```python
 import flask
@@ -140,3 +138,161 @@ def get_users(user_ids: list[int]):
 }
 ```
 
+## Objects in Path Parameters
+
+Path parameters can be parsed as **Objects** using dictionaries or Pydantic models.
+The library follows the `simple` style of **OpenAPI** parameter serialization for objects.
+
+**Using a Dictionary:**
+
+```python
+import flask
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+@app.get('/users/<user_info>/')
+def get_users(user_info: dict[str, str]):
+    return flask.jsonify({'user_info': user_info})
+```
+
+**Example request:** `GET http://127.0.0.1:5000/users/role,admin,first_name,Alex`
+
+```json
+{
+  "user_info": {
+    "role": "admin",
+    "first_name": "Alex"
+  }
+}
+```
+
+**Using a Pydantic model**:
+
+```python
+import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+
+class User(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(extra="forbid")  # Prevents extra fields
+    name: str
+    age: int = 100
+
+
+@app.get('/users/<user_info>/')
+def get_users(user_info: t.Annotated[User, ftr.Path()]):
+    return flask.jsonify({'user_info': user_info.model_dump()})
+```
+
+**Example request:** `GET http://127.0.0.1:5000/users/name,Alex,age,25/`
+
+```json
+{
+  "user_info": {
+    "age": 25,
+    "name": "Alex"
+  }
+}
+```
+
+**Handling Extra Fields**
+
+The `extra="forbid"` configuration prevents additional fields:
+
+`GET http://127.0.0.1:5000/users/name,Alex,age,25,role,Admin/`
+
+```json
+{
+  "errors": [
+    {
+      "input": "Admin",
+      "loc": [
+        "path",
+        "user_info",
+        "role"
+      ],
+      "msg": "Extra inputs are not permitted",
+      "type": "extra_forbidden",
+      "url": "https://errors.pydantic.dev/2.10/v/extra_forbidden"
+    }
+  ]
+}
+```
+
+**Handling incomplete key-value pairs**
+
+If the number of key-value pairs is not even, the library uses the last key as a key with an empty value,
+for example: `GET 127.0.0.1:5000/users/name,`
+
+```json
+{
+  "user_info": {
+    "age": 100,
+    "name": ""
+  }
+}
+```
+
+**Handling Exploded parameter**
+
+With `explode=True`, keys and values are separated by `=` in the URL.
+
+```python
+import typing as t
+
+import flask
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app)
+
+@app.get('/users/<user_info>/')
+def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):
+    return flask.jsonify({'user_info': user_info})
+```
+
+✅ **Example Request** `GET http://127.0.0.1:5000/users/name=Alex,age=25,role=Admin`
+
+```json
+{
+  "user_info": {
+    "name": "Alex",
+    "age": "25",
+    "role": "Admin"
+  }
+}
+```
+
+**Incorrect Parsing**
+
+If you omit explode parameter or pass `explode=True`, the library misinterprets this structure:
+
+❌ GET `http://127.0.0.1:5000/users/name,Alex,age,25,role,Admin/`
+
+The result is a dictionary with empty values because the library interprets the comma as a separator.
+
+
+```json
+{
+  "user_info": {
+    "25": "",
+    "Admin": "",
+    "Alex": "",
+    "age": "",
+    "name": "",
+    "role": ""
+  }
+}
+```

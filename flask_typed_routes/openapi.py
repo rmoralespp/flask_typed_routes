@@ -97,7 +97,7 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
     params_fields = (field for field in fields if field.kind in PARAMETER_TYPES)
     for field in params_fields:
         slot = params[field.kind]
-        if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
+        if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel) and field.kind != ftr_fields.FieldTypes.path:
             ref_properties = model_properties[field.locator]
             ref_name = ref_properties["$ref"].split("/")[-1]
             ref_schema = definitions[ref_name]
@@ -124,6 +124,8 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
                     "in": field.kind,
                     "required": name in required_slot,
                     "schema": schema,
+                    "style": field.style,
+                    "explode": field.explode,
                 }
                 if description:
                     param_spec["description"] = description
@@ -131,11 +133,6 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
                     param_spec["deprecated"] = deprecated
                 if examples:
                     param_spec["examples"] = examples
-
-                if field.style != field.default_style:
-                    param_spec["style"] = field.style
-                if field.explode != field.default_explode:
-                    param_spec["explode"] = field.explode
                 slot[name] = param_spec
 
     for value in params.values():

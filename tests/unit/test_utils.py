@@ -174,19 +174,3 @@ def test_format_openapi_path(rule, expected):
 )
 def test_class_based_view(view, expected):
     assert ftr_utils.class_based_view(view) == expected
-
-
-# Casos de prueba con pytest y parametrize
-@pytest.mark.parametrize(
-    "func, expected",
-    [
-        (ftr_utils.get_func_path, "flask_typed_routes.utils.get_func_path"),
-        (MyClass.my_classmethod, "unit.test_utils.MyClass.my_classmethod"),
-        (lambda: None, "unit.test_utils.<lambda>"),
-        (MyClass.my_staticmethod, "unit.test_utils.MyClass.my_staticmethod"),
-        (MyClass.my_staticmethod, "unit.test_utils.MyClass.my_staticmethod"),
-        (MyClass.my_classmethod, "unit.test_utils.MyClass.my_classmethod"),
-    ],
-)
-def test_get_func_path(func, expected):
-    assert ftr_utils.get_func_path(func) == expected

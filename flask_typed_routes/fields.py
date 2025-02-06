@@ -31,7 +31,7 @@ def split_by_pairs(value, main_sep, pair_sep, /, default=""):
         if len(data) % 2 != 0:
             # If the data is not even, add a default value
             data.append(default)
-        return dict(zip(data[::2], data[1::2]))
+        return dict(zip(data[::2], data[1::2], strict=False))
     else:
         data = dict()
         for pair_string in split_by(value, main_sep):
@@ -47,10 +47,10 @@ def get_locator(alias, name, /):
     return alias or name
 
 
-class ValueType(enum.Enum):
-    string = "string"
-    object = "object"
-    array = "array"
+class DataType(enum.Enum):
+    primitive = "primitive"  # "blue"
+    object = "object"  # ["blue", "black", "brown"]
+    array = "array"  # { "R": 100, "G": 200, "B": 150 }
 
     @classmethod
     def belong_to(cls, annotation, types, /):
@@ -72,7 +72,7 @@ class ValueType(enum.Enum):
         elif cls.belong_to(annotation, array_types):
             return cls.array
         else:
-            return cls.string
+            return cls.primitive
 
 
 class NonExplodedStyles:
@@ -181,10 +181,10 @@ class Field(abc.ABC):
         if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
             result = self.get_model_value(obj)
         else:
-            result = self.get_alias_value(self.alias, obj, ValueType.typeof(self.annotation))
+            result = self.get_alias_value(self.alias, obj, DataType.typeof(self.annotation))
         return result
 
-    def get_alias_value(self, alias, obj, value_type, /):
+    def get_alias_value(self, alias, obj, data_type, /):
         """Get request values when the annotation is a standard type according to the field alias."""
 
         raise NotImplementedError
@@ -196,8 +196,21 @@ class Field(abc.ABC):
         for name, info in self.annotation.model_fields.items():
             alias = get_locator(info.alias, name)
             if alias in obj:
-                result[alias] = self.get_alias_value(alias, obj, ValueType.typeof(info.annotation))
+                result[alias] = self.get_alias_value(alias, obj, DataType.typeof(info.annotation))
         return result
+
+    def get_simple_alias_value(self, alias, obj, data_type, /):
+        main_sep = NonExplodedStyles.get_sep(self.style)
+        if alias not in obj:
+            return Unset
+        elif data_type == DataType.array:
+            return split_by(obj[alias], main_sep)
+        elif data_type == DataType.object:
+            raw = obj[alias]
+            pair_sep = "=" if self.explode else main_sep
+            return split_by_pairs(raw, main_sep, pair_sep)
+        else:
+            return obj[alias]
 
 
 class Path(Field):
@@ -208,20 +221,10 @@ class Path(Field):
 
     @property
     def value(self):
-        return self.get_alias_value(self.alias, flask.request.view_args, ValueType.typeof(self.annotation))
+        return self.get_alias_value(self.alias, flask.request.view_args, DataType.typeof(self.annotation))
 
-    def get_alias_value(self, alias, obj, value_type, /):
-        main_sep = NonExplodedStyles.get_sep(self.style)
-        if alias not in obj:
-            return Unset
-        elif value_type == ValueType.array:
-            return split_by(obj[alias], main_sep)
-        elif value_type == ValueType.object:
-            raw = obj[alias]
-            pair_sep = "=" if self.explode else main_sep
-            return split_by_pairs(raw, main_sep, pair_sep, default="")
-        else:
-            return obj[alias]
+    def get_alias_value(self, alias, obj, data_type, /):
+        return self.get_simple_alias_value(alias, obj, data_type)
 
 
 class Query(Field):
@@ -238,18 +241,18 @@ class Query(Field):
     def value(self):
         return self.get_value(flask.request.args)
 
-    def get_alias_value(self, alias, obj, value_type, /):
+    def get_alias_value(self, alias, obj, data_type, /):
         sep = NonExplodedStyles.get_sep(self.style)
         if alias not in obj:
             return Unset
-        if value_type == ValueType.array:
+        if data_type == DataType.array:
             if self.explode:
                 return obj.getlist(alias)
             else:
                 return split_by(obj[alias], sep)
-        elif value_type == ValueType.object:
+        elif data_type == DataType.object:
             if self.style == NonExplodedStyles.form and not self.explode:
-                return split_by_pairs(obj[alias], sep, sep, default="")
+                return split_by_pairs(obj[alias], sep, sep)
             else:
                 return dict()
         else:
@@ -277,15 +280,8 @@ class Header(Field):
     def value(self):
         return self.get_value(flask.request.headers)
 
-    def get_alias_value(self, alias, obj, value_type, /):
-        if alias not in obj:
-            return Unset
-        elif value_type == ValueType.array:
-            return split_by(obj[alias], NonExplodedStyles.get_sep(self.style))
-        elif value_type == ValueType.object:
-            raise NotImplementedError
-        else:
-            return obj[alias]
+    def get_alias_value(self, alias, obj, data_type, /):
+        return self.get_simple_alias_value(alias, obj, data_type)
 
 
 class Body(Field):

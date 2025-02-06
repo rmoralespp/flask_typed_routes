@@ -244,26 +244,26 @@ def test_bad_embed_field(field_class):
 
 
 @pytest.mark.parametrize('annotation, expected', [
-    (str, ftr_fields.ValueType.string),
-    (list, ftr_fields.ValueType.array),
-    (list[str], ftr_fields.ValueType.array),
-    (typing.List[str], ftr_fields.ValueType.array),  # noqa UP006
-    (set, ftr_fields.ValueType.array),
-    (set[str], ftr_fields.ValueType.array),
-    (typing.Set[str], ftr_fields.ValueType.array),  # noqa UP006
-    (frozenset, ftr_fields.ValueType.array),
-    (frozenset[str], ftr_fields.ValueType.array),
-    (typing.FrozenSet[str], ftr_fields.ValueType.array),  # noqa UP006
-    (tuple, ftr_fields.ValueType.array),
-    (tuple[str], ftr_fields.ValueType.array),
-    (typing.Tuple[str], ftr_fields.ValueType.array),  # noqa UP006
-    (dict, ftr_fields.ValueType.object),
-    (dict[str, str], ftr_fields.ValueType.object),
-    (typing.Dict[str, str], ftr_fields.ValueType.object),  # noqa UP006
-    (pydantic.create_model('Model'), ftr_fields.ValueType.object),
-    (typing.Annotated[str, pydantic.Field(alias='field')], ftr_fields.ValueType.string),
-    (typing.Annotated[list[str], pydantic.Field(alias='list-field')], ftr_fields.ValueType.array),
-    (typing.Annotated[typing.List[str], pydantic.Field(alias='list-field')], ftr_fields.ValueType.array),  # noqa UP006
+    (str, ftr_fields.DataType.primitive),
+    (list, ftr_fields.DataType.array),
+    (list[str], ftr_fields.DataType.array),
+    (typing.List[str], ftr_fields.DataType.array),  # noqa UP006
+    (set, ftr_fields.DataType.array),
+    (set[str], ftr_fields.DataType.array),
+    (typing.Set[str], ftr_fields.DataType.array),  # noqa UP006
+    (frozenset, ftr_fields.DataType.array),
+    (frozenset[str], ftr_fields.DataType.array),
+    (typing.FrozenSet[str], ftr_fields.DataType.array),  # noqa UP006
+    (tuple, ftr_fields.DataType.array),
+    (tuple[str], ftr_fields.DataType.array),
+    (typing.Tuple[str], ftr_fields.DataType.array),  # noqa UP006
+    (dict, ftr_fields.DataType.object),
+    (dict[str, str], ftr_fields.DataType.object),
+    (typing.Dict[str, str], ftr_fields.DataType.object),  # noqa UP006
+    (pydantic.create_model('Model'), ftr_fields.DataType.object),
+    (typing.Annotated[str, pydantic.Field(alias='field')], ftr_fields.DataType.primitive),
+    (typing.Annotated[list[str], pydantic.Field(alias='list-field')], ftr_fields.DataType.array),
+    (typing.Annotated[typing.List[str], pydantic.Field(alias='list-field')], ftr_fields.DataType.array),  # noqa UP006
 ])
-def test_value_type_typeof(annotation, expected):
-    assert ftr_fields.ValueType.typeof(annotation) == expected
+def test_DataType_typeof(annotation, expected):
+    assert ftr_fields.DataType.typeof(annotation) == expected

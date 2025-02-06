@@ -26,4 +26,4 @@ def get_items(session_id: SessionId = None):
 ## Multiple Cookie Parameters
 
 !!! note
-    `Cookie` fields always use the form style. An optional `explode` keyword controls the array and object serialization.
+    `Cookie` fields always use the `form` style. An optional `explode` keyword controls the array and object serialization.
