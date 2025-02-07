@@ -75,7 +75,7 @@ def is_subclass(x, y, /):
 
 def class_based_view(view, /):
     klass = getattr(view, "view_class", None)
-    return klass if klass and is_subclass(klass, flask.views.View) else None
+    return klass if is_subclass(klass, flask.views.View) else None
 
 
 def is_annotated(tp, /):
