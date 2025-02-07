@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.2.4 (2025-02-07)
+
 - **Add**: Refactor to improve code organization
 - **Add**: Add more tests to improve coverage.
 - **Add**: The `typed_route` decorator can receive `requestBody` with value `True` to generate an object schema 
