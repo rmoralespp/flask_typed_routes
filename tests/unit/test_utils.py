@@ -109,10 +109,10 @@ def test_is_annotated_false():
 
 
 def test_pretty_errors_with_alias():
-    field = ftr_core.parse_field(
+    field = ftr_core.resolve_field(
         "name",
         t.Annotated[str, ftr_fields.Query(alias="alias_name")],
-        ftr_fields.Query,
+        False,
         None,
     )
     errors = [{"loc": ["alias_name"]}]
@@ -124,7 +124,7 @@ def test_pretty_errors_without_alias():
     class Model(pydantic.BaseModel):
         age: str
 
-    field = ftr_core.parse_field("name", Model, ftr_fields.Body, None)
+    field = ftr_core.resolve_field("name", Model, False, None)
     errors = [{"loc": ["name"]}]
     result = ftr_utils.pretty_errors([field], errors)
     assert result[0]["loc"] == ["body"]

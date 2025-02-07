@@ -52,15 +52,10 @@ def get_locator(alias, name, /):
 class DataType(enum.Enum):
     primitive = "primitive"  # "blue"
     object = "object"  # ["blue", "black", "brown"]
-    array = "array"  # { "R": 100, "G": 200, "B": 150 }
+    array = "array"  # {"R": 100, "G": 200, "B": 150
 
     @classmethod
     def belong_to(cls, annotation, types, /):
-        """
-        Check if the annotation is a data estructure (like an array)
-        containing multiple values.
-        """
-
         if annotation:
             tp = t.get_args(annotation)[0] if ftr_utils.is_annotated(annotation) else annotation
             return tp in types or t.get_origin(tp) in types
@@ -85,7 +80,7 @@ class NonExplodedStyles:
 
     @classmethod
     def choices(cls):
-        return [cls.form, cls.simple, cls.space_delimited, cls.pipe_delimited]
+        return (cls.form, cls.simple, cls.space_delimited, cls.pipe_delimited)
 
     @classmethod
     def get_sep(cls, style):
@@ -123,11 +118,11 @@ class Field(abc.ABC):
         """
         Initialize the field with the given parameters.
 
-        :param args:  Positional arguments for the Pydantic field.
-        :param bool embed:  Embed the field in the parent model.
-        :param Optional[str]:  OpenApi Serialization style for the field.
-        :param Optional[bool] explode:  OpenApi Serialization explodes for the field.
-        :param kwargs:  Keyword arguments for the Pydantic field.
+        :param args: Positional arguments for the Pydantic field.
+        :param bool embed: Embed the field in the parent model.
+        :param Optional[str] style: Use the OpenAPI serialization "style" for the field.
+        :param Optional[bool] explode: Use the OpenAPI serialization "explode" for the field.
+        :param kwargs: Keyword arguments for the Pydantic field.
         """
 
         if embed and self.kind != FieldTypes.body:
@@ -142,7 +137,7 @@ class Field(abc.ABC):
 
         self.embed = embed  # `Body` fields can be embedded
         self.field_info = pydantic.fields.Field(*args, **kwargs)
-        # These attributes are set by the `flask_typed_routes.core.parse_field` function
+        # These attributes are established later.
         self.annotation = None
         self.name = None
 
@@ -202,7 +197,7 @@ class Field(abc.ABC):
         return result
 
     def get_simple_alias_value(self, alias, obj, data_type, /):
-        main_sep = NonExplodedStyles.get_sep(self.style)
+        main_sep = NonExplodedStyles.get_sep(NonExplodedStyles.simple)
         if alias not in obj:
             return Unset
         elif data_type == DataType.array:

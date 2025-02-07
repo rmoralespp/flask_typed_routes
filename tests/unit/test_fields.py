@@ -11,6 +11,98 @@ import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 
 
+@pytest.mark.parametrize("value, expected", [
+    ("", []),
+    (",", []),  # ignore empty values
+    (" , , ", []),   # ignore only spaces
+    ("a", ["a"]),
+    ("a.b", ["a.b"]),  # no split by dot
+    ("a,b", ["a", "b"]),
+    (" a , b ", ["a", "b"]),  # strip spaces
+])
+def test_split_by_comma(value, expected):
+    result = ftr_fields.split_by(value, ',')
+    assert result == expected
+
+
+@pytest.mark.parametrize("value, expected", [
+    ("", dict()),
+    (",", dict()),
+    ("=", dict()),
+    ("=,=", dict()),
+    ("a=1,b=2", {"a": "1", "b": "2"}),
+    ("a=1,b=2,c", {"a": "1", "b": "2", "c": ""}),  # odd number of elements
+    (" a = 1 , b = 2 ", {"a": "1", "b": "2"}),  # strip spaces
+    ("a,1,b,2", {'1': '', '2': '', 'a': '', 'b': ''}),  # bad pair
+])
+def test_split_by_pairs_using_comma_and_equals_delimiters(value, expected):
+    result = ftr_fields.split_by_pairs(value, ",", "=")
+    assert result == expected
+
+
+@pytest.mark.parametrize("value, expected", [
+    ('', dict()),
+    (',', dict()),  # ignore empty values
+    ("a,1,b,2", {'a': '1', 'b': '2'}),  # bad pair
+    ("a=1,b=2", {'a=1': 'b=2'}),  # no split by comma
+    ("a,1,b,2,c", {'a': '1', 'b': '2', 'c': ''}),  # odd number of elements
+])
+def test_split_by_pairs_using_comma_delimiters(value, expected):
+    result = ftr_fields.split_by_pairs(value, ",", ",")
+    assert result == expected
+
+
+@pytest.mark.parametrize("alias, name, expected", [
+    ('alias', 'name', 'alias'),
+    ('alias', '', 'alias'),
+    ('', 'name', 'name'),
+    ('', '', ''),
+])
+def test_get_locator(alias, name, expected):
+    assert ftr_fields.get_locator(alias, name) == expected
+
+
+@pytest.mark.parametrize("annotation, types, expected", [
+    (str, [str], True),
+    (str, [int], False),
+    (list[str], [list], True),
+    (typing.Annotated[list[str], "meta"], [list], True),
+    (typing.Annotated[list[str], "meta"], [str], False),
+])
+def test_DataType_belong_to(annotation, types, expected):
+    assert ftr_fields.DataType.belong_to(annotation, types) == expected
+
+
+@pytest.mark.parametrize("annotation, expected", [
+    (str, ftr_fields.DataType.primitive),
+    (int, ftr_fields.DataType.primitive),
+    (list, ftr_fields.DataType.array),
+    (dict, ftr_fields.DataType.object),
+])
+def test_DataType_typeof_primitive(annotation, expected):
+    assert ftr_fields.DataType.typeof(annotation) == expected
+
+
+def test_NonExplodedStyles_choices():
+    assert ftr_fields.NonExplodedStyles.choices() == ('form', 'simple', 'spaceDelimited', 'pipeDelimited')
+
+
+@pytest.mark.parametrize('style, expected', [
+    ('form', ","),
+    ('simple', ","),
+    ('spaceDelimited', " "),
+    ('pipeDelimited', "|"),
+
+])
+def test_NonExplodedStyles_get_sep(style, expected):
+    assert ftr_fields.NonExplodedStyles.get_sep(style) == expected
+
+
+def test_NonExplodedStyles_bad_get_sep():
+    with pytest.raises(KeyError):
+        ftr_fields.NonExplodedStyles.get_sep(".")
+
+
 @pytest.mark.parametrize(
     'view_args, annotation, explode, expected',
     [

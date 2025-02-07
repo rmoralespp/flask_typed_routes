@@ -24,12 +24,7 @@ def typed_route(*, status_code=None, **openapi):
     :param Unpack[dict[str, Any]] openapi: Describe the OpenAPI operation fields in the route.
 
     Example:
-        openapi = {
-            "summary": "A short summary of what the operation does.",
-            "tags": ["my-tag"],
-            "deprecated": False,
-        }
-        @typed_route(**openapi)
+        @typed_route(status_code=200, summary="My summary", tags=["my-tag"], deprecated=False)
         def my_route():
             pass
 
@@ -65,11 +60,11 @@ class FlaskTypedRoutes:
         :param app: Flask application instance.
         :param Callable validation_error_handler:
             Custom error handler for the "ValidationError" exception,
-            by default it uses the default error handler provided by the library.
+            by default, it uses the default error handler provided by the library.
         :param int validation_error_status_code: Status code for the validation error response.
         :param tuple[str, ...] ignore_verbs: HTTP verbs to ignore.
         :param str mode: Mode of operation, 'auto' or 'manual'. Default is 'auto'.
-        :param Unpack[dict[str, Any]] openapi: OpenAPI schema definition for the application.
+        :param Unpack[dict[str, Any]] openapi: OpenAPI schema definition for the App.
         """
 
         self.error_handler = validation_error_handler
@@ -80,8 +75,7 @@ class FlaskTypedRoutes:
             raise ValueError(f"Invalid mode: {mode}")
         self.mode = mode
 
-        self.openapi_manager = ftr_openapi.OpenApi(**openapi)
-
+        self.openapi = ftr_openapi.OpenApi(**openapi)
         self.routes = []  # registered routes
         if app:
             self.init_app(app)
@@ -97,15 +91,15 @@ class FlaskTypedRoutes:
 
     def add_url_rule(self, func, /):
         """
-        Decorator for the "add_url_rule" method of the Flask application.
-        Applies the "typed_route" decorator to the view functions.
+        Decorator for the "add_url_rule" method of the Flask.
+        Applies of a validation decorator to the view functions.
 
         :param func: Flask "add_url_rule" method
         """
 
         @functools.wraps(func)
         def wrapper(rule, endpoint=None, view_func=None, **kwargs):
-            path_args = ftr_utils.extract_rule_params(rule)
+            view_args = ftr_utils.extract_rule_params(rule)
             methods = kwargs.get("methods") or ("GET",)
             if view_func:
                 # name of the view function or view class if not endpoint is provided
@@ -120,19 +114,19 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view_class, verb.lower())
                             if self.is_typed(method):
-                                new_method = ftr_core.validate(method, path_args, view_name)
-                                self.register_route(new_method, rule, view_name, (verb,), path_args)
+                                new_method = ftr_core.validate(method, view_name, view_args)
+                                self.register_route(new_method, rule, view_name, (verb,), view_args)
                                 setattr(view_class, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view_class.dispatch_request):
-                        new_method = ftr_core.validate(view_class.dispatch_request, path_args, view_name)
-                        self.register_route(new_method, rule, view_name, methods, path_args)
+                        new_method = ftr_core.validate(view_class.dispatch_request, view_name, view_args)
+                        self.register_route(new_method, rule, view_name, methods, view_args)
                         view_class.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
-                    view_func = ftr_core.validate(view_func, path_args, view_name)
-                    self.register_route(view_func, rule, view_name, methods, path_args)
+                    view_func = ftr_core.validate(view_func, view_name, view_args)
+                    self.register_route(view_func, rule, view_name, methods, view_args)
 
             return func(rule, endpoint=endpoint, view_func=view_func, **kwargs)
 
@@ -153,4 +147,13 @@ class FlaskTypedRoutes:
         self.routes.append(route)
 
     def get_openapi_schema(self):
-        return self.openapi_manager.get_schema(self.routes, self.validation_error_status_code)
+        """
+        Get the OpenAPI schema document based on the Flask application routes.
+
+        +ATTENTION+: Use this after registering the routes and blueprints,
+        as the FlaskTypedRoutes first needs to collect the routes to have the full data.
+
+        :rtype: dict[str, Any]
+        """
+
+        return self.openapi.get_schema(self.routes, self.validation_error_status_code)

@@ -277,7 +277,7 @@ def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):
 
 **Incorrect Parsing**
 
-If you omit explode parameter or pass `explode=True`, the library misinterprets this structure:
+If you pass `explode=True`, the library misinterprets this structure:
 
 ❌ GET `http://127.0.0.1:5000/users/name,Alex,age,25,role,Admin/`
 
