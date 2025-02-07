@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Contains the field classes that are used to define the
 input fields of the API.

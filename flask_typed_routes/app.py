@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import functools
 
 import flask_typed_routes.core as ftr_core
