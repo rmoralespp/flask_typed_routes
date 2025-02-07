@@ -56,6 +56,11 @@ HTTP_SUCCESS_RESPONSE = {
     "description": "Success",
     "content": {"application/json": {"schema": {"type": "string"}}},
 }
+# Generic request body
+REQUEST_BODY = {
+    "content": {"application/json": {"schema": {"type": "object"}}},
+    "required": True,
+}
 
 
 def duplicate_request_field(field, /):
@@ -284,6 +289,8 @@ class OpenApi:
         responses = spec.pop("responses", dict())
         description = spec.pop("description", ftr_utils.cleandoc(route.func))
         request_body = spec.pop("requestBody", None)
+        if request_body and isinstance(request_body, bool):
+            request_body = REQUEST_BODY
         operation_id = spec.pop("operationId", None)
         summary = spec.pop("summary", None)
 

@@ -1,5 +1,11 @@
 ## Releases
 
+- **Add**: Refactor to improve code organization
+- **Add**: Add more tests to improve coverage.
+- **Add**: The `typed_route` decorator can receive `requestBody` with value `True` to generate an object schema 
+   for the OpenAPI operation.
+- **Fix**: Deserialization of JSON type Query parameters.
+
 ### v0.2.3 (2025-02-06)
 
 - **Add**: Support serialization of request parameters of a type object.

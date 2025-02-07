@@ -193,7 +193,11 @@ class Field(abc.ABC):
         for name, info in self.annotation.model_fields.items():
             alias = get_locator(info.alias, name)
             if alias in obj:
-                result[alias] = self.get_alias_value(alias, obj, DataType.typeof(info.annotation))
+                data_type = DataType.typeof(info.annotation)
+                if data_type == data_type.object and any(isinstance(m, pydantic.Json) for m in info.metadata):
+                    # Pydantic will handle the deserialization of the JSON string.
+                    data_type = DataType.primitive
+                result[alias] = self.get_alias_value(alias, obj, data_type)
         return result
 
     def get_simple_alias_value(self, alias, obj, data_type, /):
