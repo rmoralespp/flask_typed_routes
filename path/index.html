@@ -324,7 +324,7 @@ def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):
 }
 </code></pre>
 <p><strong>Incorrect Parsing</strong></p>
-<p>If you omit explode parameter or pass <code>explode=True</code>, the library misinterprets this structure:</p>
+<p>If you pass <code>explode=True</code>, the library misinterprets this structure:</p>
 <p>❌ GET <code>http://127.0.0.1:5000/users/name,Alex,age,25,role,Admin/</code></p>
 <p>The result is a dictionary with empty values because the library interprets the comma as a separator.</p>
 <pre><code class="language-json">{
