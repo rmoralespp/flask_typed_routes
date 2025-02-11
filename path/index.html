@@ -45,6 +45,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Usage</span></p>
               <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../setup/">App setup</a>
+                  </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Path parameters</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic Usage</a>
@@ -53,9 +55,9 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#aliasing">Aliasing</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#arrays-in-path-parameters">Arrays in Path Parameters</a>
+    <li class="toctree-l2"><a class="reference internal" href="#parsing-arrays">Parsing Arrays</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#objects-in-path-parameters">Objects in Path Parameters</a>
+    <li class="toctree-l2"><a class="reference internal" href="#parsing-objects">Parsing Objects</a>
     </li>
     </ul>
                   </li>
@@ -113,7 +115,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/&lt;category_id&gt;/&lt;lang&gt;/')
@@ -158,7 +160,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/&lt;category_id&gt;/')
@@ -175,7 +177,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/&lt;category_id&gt;/')
@@ -190,9 +192,9 @@ def read_items(category_id: t.Annotated[int, ftr.Path(ge=1, le=100)]):
 <h2 id="aliasing">Aliasing</h2>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Aliases defined in Path type hints are ignored to maintain consistency with the Flask route parameter names.</p>
+<p>Aliases defined in <strong>Path</strong> type hints are ignored to maintain consistency with the Flask route parameter names.</p>
 </div>
-<h2 id="arrays-in-path-parameters">Arrays in Path Parameters</h2>
+<h2 id="parsing-arrays">Parsing Arrays</h2>
 <p>Path parameters can be parsed as <strong>Arrays</strong> using <code>set</code>, <code>tuple</code>, or <code>list</code>.
 The library follows the <code>simple</code> style of <strong>OpenAPI</strong> parameter serialization for arrays, using commas as separators.</p>
 <div class="admonition tip">
@@ -200,11 +202,10 @@ The library follows the <code>simple</code> style of <strong>OpenAPI</strong> pa
 <p>You can use the <code>set</code> type hint to validate that the values are unique.</p>
 </div>
 <pre><code class="language-python">import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/users/&lt;user_ids&gt;/')
@@ -216,16 +217,15 @@ def get_users(user_ids: list[int]):
   &quot;user_ids&quot;: [1, 2, 3]
 }
 </code></pre>
-<h2 id="objects-in-path-parameters">Objects in Path Parameters</h2>
+<h2 id="parsing-objects">Parsing Objects</h2>
 <p>Path parameters can be parsed as <strong>Objects</strong> using dictionaries or Pydantic models.
 The library follows the <code>simple</code> style of <strong>OpenAPI</strong> parameter serialization for objects.</p>
 <p><strong>Using a Dictionary:</strong></p>
 <pre><code class="language-python">import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/users/&lt;user_info&gt;/')
@@ -244,12 +244,11 @@ def get_users(user_info: dict[str, str]):
 <pre><code class="language-python">import typing as t
 
 import flask
+import flask_typed_routes as ftr
 import pydantic
 
-import flask_typed_routes as ftr
-
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class User(pydantic.BaseModel):
@@ -299,16 +298,15 @@ for example: <code>GET 127.0.0.1:5000/users/name,</code></p>
   }
 }
 </code></pre>
-<p><strong>Handling Exploded parameter</strong></p>
+<p><strong>Handling <code>explode</code> parameter</strong></p>
 <p>With <code>explode=True</code>, keys and values are separated by <code>=</code> in the URL.</p>
 <pre><code class="language-python">import typing as t
 
 import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 @app.get('/users/&lt;user_info&gt;/')
 def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):
@@ -342,7 +340,7 @@ def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href=".." class="btn btn-neutral float-left" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../setup/" class="btn btn-neutral float-left" title="App setup"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../query/" class="btn btn-neutral float-right" title="Query parameters">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -370,7 +368,7 @@ def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):
         </span>
     
     
-      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../setup/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../query/" style="color: #fcfcfc">Next &raquo;</a></span>

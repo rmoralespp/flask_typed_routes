@@ -45,6 +45,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Usage</span></p>
               <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../setup/">App setup</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../path/">Path parameters</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../query/">Query parameters</a>
@@ -103,12 +105,12 @@ request body model. However, if you only want to validate specific fields in the
 <p>Basic Usage of request Body Validation:</p>
 <pre><code class="language-python">import typing as t
 
-import pydantic
 import flask
 import flask_typed_routes as flask_tpr
+import pydantic
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+flask_tpr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):
@@ -193,12 +195,12 @@ def update_item(
 <code>Body</code> field with the <code>embed</code> parameter.</p>
 <pre><code class="language-python">import typing as t
 
-import pydantic
 import flask
 import flask_typed_routes as ftr
+import pydantic
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):

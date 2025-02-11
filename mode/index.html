@@ -45,6 +45,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Usage</span></p>
               <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../setup/">App setup</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../path/">Path parameters</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../query/">Query parameters</a>
@@ -127,17 +129,17 @@ import annotated_types as at
 import flask
 import flask_typed_routes as ftr
 
-api = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(api)  # Default mode is 'auto'
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app=app)  # Default mode is 'auto'
 
 
-@api.get('/products/&lt;int:product_id&gt;/')
+@app.get('/products/&lt;int:product_id&gt;/')
 def get_product(pk: t.Annotated[int, at.Gt(10)]):
     # The 'product_id' parameter is automatically validated as an integer.
     return flask.jsonify({&quot;product_id&quot;: pk})
 
 
-@api.get('/orders/&lt;int:order_id&gt;/')
+@app.get('/orders/&lt;int:order_id&gt;/')
 def get_order(order_id: t.Annotated[int, at.Gt(10)]):
     # The 'order_id' parameter is also automatically validated.
     return flask.jsonify({&quot;order_id&quot;: order_id})
@@ -160,21 +162,20 @@ decorator. This mode provides greater control, allowing developers to selectivel
 
 import annotated_types as at
 import flask
-
 import flask_typed_routes as ftr
 
-api = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(api, mode=ftr.Mode.manual)
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app, mode=ftr.Mode.manual)
 
 
-@api.get('/products/&lt;int:pk&gt;/')
+@app.get('/products/&lt;int:pk&gt;/')
 @ftr.typed_route()  # Validation is explicitly enabled for this route.
 def get_product(pk: t.Annotated[int, at.Gt(10)]):
     # The 'pk' parameter is validated as an integer.
     return flask.jsonify({&quot;pk&quot;: pk})
 
 
-@api.get('/orders/&lt;int:order_id&gt;/')
+@app.get('/orders/&lt;int:order_id&gt;/')
 def get_order(order_id: t.Annotated[int, at.Gt(10)]):
     # The 'order_id' parameter is NOT validated.
     return flask.jsonify({&quot;order_id&quot;: order_id})

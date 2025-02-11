@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/errors/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/setup/" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Handling errors - flask_typed_routes</title>
+    <title>App setup - flask_typed_routes</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Handling errors";
-        var mkdocs_page_input_path = "errors.md";
-        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/errors/";
+        var mkdocs_page_name = "App setup";
+        var mkdocs_page_input_path = "setup.md";
+        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/setup/";
       </script>
     
     <!--[if lt IE 9]>
@@ -45,7 +45,13 @@
               </ul>
               <p class="caption"><span class="caption-text">Usage</span></p>
               <ul class="current">
-                  <li class="toctree-l1"><a class="reference internal" href="../setup/">App setup</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">App setup</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#basic-setup">Basic setup</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#two-step-setup">Two-step setup</a>
+    </li>
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../path/">Path parameters</a>
                   </li>
@@ -57,9 +63,7 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../body/">Request body</a>
                   </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Handling errors</a>
-    <ul class="current">
-    </ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../errors/">Handling errors</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../mode/">Validation Modes</a>
                   </li>
@@ -81,9 +85,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Usage</li>
-      <li class="breadcrumb-item active">Handling errors</li>
+      <li class="breadcrumb-item active">App setup</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/errors.md">Edit on flask_typed_routes</a>
+          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/setup.md">Edit on flask_typed_routes</a>
     </li>
   </ul>
   <hr/>
@@ -91,27 +95,47 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h2 id="handling-errors">Handling Errors</h2>
-<p>If you need to change default output for validation errors, you can pass a
-custom error handler to <code>FlaskTypedRoutes</code> constructor.</p>
+                <h1 id="app-setup">App Setup</h1>
+<p>To set up the application, you need to create a new instance of the <code>Flask</code> 
+application and initialize the <code>FlaskTypedRoutes</code> extension with the <code>app</code> instance.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>FlaskTypedRoutes</code> class must be initialized before registering the <strong>Flask</strong> routes and blueprints 
+to allow the extension to collect the routes and be able to validate the endpoints.</p>
+</div>
+<h2 id="basic-setup">Basic setup</h2>
 <pre><code class="language-python">import flask
-import flask_typed_routes as flask_tpr
+import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app=app)
 
 
-def custom_error_handler(error):
-    return flask.jsonify({&quot;detail&quot;: error.errors}), 400
+@app.get(&quot;/&quot;)
+def read_root():
+    return flask.jsonify({&quot;Hello&quot;: &quot;World&quot;})
+</code></pre>
+<h2 id="two-step-setup">Two-step setup</h2>
+<p>You can also use the <code>init_app</code> method to initialize the extension with the <code>Flask</code> application instance in a 
+separate step as shown below.</p>
+<pre><code class="language-python">import flask
+import flask_typed_routes as ftr
 
+app_ftr = ftr.FlaskTypedRoutes()
 
-flask_tpr.FlaskTypedRoutes(app, validation_error_handler=custom_error_handler)
+app = flask.Flask(__name__)
+app_ftr.init_app(app)
+
+@app.get(&quot;/&quot;)
+def read_root():
+    return flask.jsonify({&quot;Hello&quot;: &quot;World&quot;})
 </code></pre>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../body/" class="btn btn-neutral float-left" title="Request body"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../mode/" class="btn btn-neutral float-right" title="Validation Modes">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href=".." class="btn btn-neutral float-left" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../path/" class="btn btn-neutral float-right" title="Path parameters">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -138,10 +162,10 @@ flask_tpr.FlaskTypedRoutes(app, validation_error_handler=custom_error_handler)
         </span>
     
     
-      <span><a href="../body/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../mode/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../path/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

@@ -45,6 +45,8 @@
               </ul>
               <p class="caption"><span class="caption-text">Usage</span></p>
               <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../setup/">App setup</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../path/">Path parameters</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">Query parameters</a>
@@ -53,9 +55,13 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pydantic-models">Pydantic models</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#arrays-in-query-parameters">Arrays in query parameters</a>
+    <li class="toctree-l2"><a class="reference internal" href="#parsing-arrays">Parsing Arrays</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#object-in-a-single-query-parameter">Object in a single query parameter</a>
+    <li class="toctree-l2"><a class="reference internal" href="#parsing-objects">Parsing Objects</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#parsing-a-single-query-parameter-as-an-object">Parsing a single query parameter as an object</a>
+    </li>
+        </ul>
     </li>
     </ul>
                   </li>
@@ -107,7 +113,7 @@
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/')
@@ -160,7 +166,7 @@ import pydantic
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 # Custom Types for additional validation combining Pydantic and Annotated
 Needy = t.Annotated[str, at.MinLen(3), at.MaxLen(10)]
@@ -191,7 +197,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 Needy = t.Annotated[str, ftr.Query(min_length=3, max_length=10)]
 Limit = t.Annotated[int, ftr.Query(ge=1, le=100, alias=&quot;size&quot;)]
@@ -230,7 +236,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class QueryParams(pydantic.BaseModel):
@@ -266,7 +272,7 @@ When using Pydantic models, you must use <strong>Pydantic's <a href="https://pyd
   &quot;user_id&quot;: 233
 }
 </code></pre>
-<h2 id="arrays-in-query-parameters">Arrays in query parameters</h2>
+<h2 id="parsing-arrays">Parsing Arrays</h2>
 <p>If you want to allow a query parameter to parse as an <strong>Array</strong>, you can use <code>set</code>, <code>tuple</code>, or <code>list</code> annotations.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -279,7 +285,7 @@ import flask_typed_routes as ftr
 import pydantic
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 Tags = t.Annotated[list[str], pydantic.Field(alias=&quot;tag&quot;)]
 
@@ -313,11 +319,10 @@ parameter in the <code>Query</code> field and specify the <code>style</code> par
 <pre><code class="language-python">import typing as t
 
 import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 # By default, the 'style' is 'form', which means that the values are separated by commas.
 TagsByComma = t.Annotated[list[str], ftr.Query(explode=False)]
@@ -355,15 +360,10 @@ def get_tags_by_pipe(tags: TagsByPipe = ()):
   ]
 }
 </code></pre>
-<h2 id="object-in-a-single-query-parameter">Object in a single query parameter</h2>
+<h2 id="parsing-objects">Parsing Objects</h2>
 <p>Query parameters can be parsed as <strong>Objects</strong> using dictionaries or Pydantic models.
 The library follows the <code>form</code> style and of <strong>OpenAPI</strong> parameter serialization for objects.</p>
-<p>The default serialization method is:</p>
-<ul>
-<li><strong>Style:</strong> <code>form</code></li>
-<li><strong>Explode:</strong> <code>true</code></li>
-</ul>
-<p>The query parameter <code>info</code> is serialized as follows:</p>
+<p>The query parameters can be serialized in different ways using the <code>style</code> and <code>explode</code> parameters.</p>
 <table>
 <thead>
 <tr>
@@ -373,6 +373,11 @@ The library follows the <code>form</code> style and of <strong>OpenAPI</strong> 
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>form  (default)</td>
+<td>true (default)</td>
+<td>/users?role=admin&amp;first_name=Alex</td>
+</tr>
 <tr>
 <td>form</td>
 <td>false</td>
@@ -390,7 +395,12 @@ The library follows the <code>form</code> style and of <strong>OpenAPI</strong> 
 </tr>
 </tbody>
 </table>
-<p>You can use <code>dict</code> or Pydantic models to parse object query parameters.</p>
+<h3 id="parsing-a-single-query-parameter-as-an-object">Parsing a single query parameter as an object</h3>
+<p>The <code>explode</code> parameter should be set to <code>False</code> to parse a single query parameter as an object using the <code>form</code> style.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The supported styles are <code>form</code>, <code>spaceDelimited</code>, and <code>pipeDelimited</code>, but only <code>form</code> is supported for objects.</p>
+</div>
 <p><strong>Using a dictionary</strong></p>
 <pre><code class="language-python">import typing as t
 
@@ -399,7 +409,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/users/')
@@ -415,11 +425,6 @@ def get_users(info: t.Annotated[dict, ftr.Query(explode=False)]):
 }
 </code></pre>
 <p><strong>Using Pydantic models</strong>:</p>
-<p>In this example, we use a Pydantic model to parse the query parameters and an embedded model to interpret the 
-<code>info</code> query parameter as an object using <code>explode=False</code> with <code>form=style</code>.</p>
-<p>The <code>explode</code> is set to <code>false</code> to parse the query parameter as an object, while the <code>style</code> defaults 
-to <code>form</code>. The supported styles are <code>form</code>, <code>spaceDelimited</code>, and <code>pipeDelimited</code>, but only <code>form</code> is supported
-for objects.</p>
 <pre><code class="language-python">import typing as t
 
 import flask
@@ -428,7 +433,7 @@ import pydantic
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class UserInfo(pydantic.BaseModel):
@@ -438,18 +443,20 @@ class UserInfo(pydantic.BaseModel):
 
 class QueryParams(pydantic.BaseModel):
     info: UserInfo
+    status: str = &quot;default&quot;
 
 
 @app.get('/users/')
-def get_users(info: t.Annotated[QueryParams, ftr.Query(explode=False)]):
-    return flask.jsonify({'info': info.model_dump()})
+def get_users(params: t.Annotated[QueryParams, ftr.Query(explode=False)]):
+    return flask.jsonify(params.model_dump())
 </code></pre>
 <p><strong>Example request:</strong> <code>GET http://127.0.0.1:5000/users/?info=role,admin,first_name,Alex</code></p>
 <pre><code class="language-json">{
   &quot;info&quot;: {
     &quot;first_name&quot;: &quot;Alex&quot;,
     &quot;role&quot;: &quot;admin&quot;
-  }
+  },
+  &quot;status&quot;: &quot;default&quot;
 }
 </code></pre>
               
