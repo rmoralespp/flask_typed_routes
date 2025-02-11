@@ -6,13 +6,13 @@
 </div>
 <div align="center">Validate requests with Pydantic based on standard Python type hints.</div>
 
+## About
+
 [![CI](https://github.com/rmoralespp/flask_typed_routes/workflows/CI/badge.svg)](https://github.com/rmoralespp/flask_typed_routes/actions?query=event%3Arelease+workflow%3ACI)
 [![pypi](https://img.shields.io/pypi/v/flask_typed_routes.svg)](https://pypi.python.org/pypi/flask_typed_routes)
 [![codecov](https://codecov.io/gh/rmoralespp/flask_typed_routes/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rmoralespp/flask_typed_routes)
 [![license](https://img.shields.io/github/license/rmoralespp/flask_typed_routes.svg)](https://github.com/rmoralespp/flask_typed_routes/blob/main/LICENSE)
 [![Downloads](https://pepy.tech/badge/flask_typed_routes)](https://pepy.tech/project/flask_typed_routes)
-
-## About
 
 **flask_typed_routes** is a `Flask` extension designed to effortlessly validate requests with `Pydantic` based on standard Python type hints.
 
