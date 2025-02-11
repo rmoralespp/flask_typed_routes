@@ -14,5 +14,5 @@ def custom_error_handler(error):
     return flask.jsonify({"detail": error.errors}), 400
 
 
-flask_tpr.FlaskTypedRoutes(app, validation_error_handler=custom_error_handler)
+flask_tpr.FlaskTypedRoutes(app=app, validation_error_handler=custom_error_handler)
 ```

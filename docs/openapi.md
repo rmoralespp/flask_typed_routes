@@ -90,7 +90,7 @@ import swagger_ui
 
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app)
+app_ftr = ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/items/<item_id>/')

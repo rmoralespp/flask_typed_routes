@@ -68,7 +68,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app, mode=ftr.Mode.manual)
+ftr.FlaskTypedRoutes(app=app, mode=ftr.Mode.manual)
 
 
 @app.get('/products/<int:pk>/')
