@@ -10,7 +10,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/')
@@ -73,7 +73,7 @@ import pydantic
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 # Custom Types for additional validation combining Pydantic and Annotated
 Needy = t.Annotated[str, at.MinLen(3), at.MaxLen(10)]
@@ -106,7 +106,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 Needy = t.Annotated[str, ftr.Query(min_length=3, max_length=10)]
 Limit = t.Annotated[int, ftr.Query(ge=1, le=100, alias="size")]
@@ -153,7 +153,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class QueryParams(pydantic.BaseModel):
@@ -192,7 +192,7 @@ def get_orders(
 }
 ```
 
-## Arrays in query parameters
+## Parsing Arrays
 
 If you want to allow a query parameter to parse as an **Array**, you can use `set`, `tuple`, or `list` annotations.
 
@@ -207,7 +207,7 @@ import flask_typed_routes as ftr
 import pydantic
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 Tags = t.Annotated[list[str], pydantic.Field(alias="tag")]
 
@@ -246,11 +246,10 @@ def get_users(user_id: int, tags: Tags = ()):
 import typing as t
 
 import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 # By default, the 'style' is 'form', which means that the values are separated by commas.
 TagsByComma = t.Annotated[list[str], ftr.Query(explode=False)]
@@ -292,25 +291,26 @@ You will see the JSON response as:
 }
 ```
 
-## Object in a single query parameter
+## Parsing Objects
 
 Query parameters can be parsed as **Objects** using dictionaries or Pydantic models.
 The library follows the `form` style and of **OpenAPI** parameter serialization for objects.
 
-The default serialization method is:
+The query parameters can be serialized in different ways using the `style` and `explode` parameters.
 
-- **Style:** `form`
-- **Explode:** `true`
+| style           | explode        | URL                                    |
+|-----------------|----------------|----------------------------------------|
+| form  (default) | true (default) | /users?role=admin&first_name=Alex      |
+| form            | false          | /users?info=role,admin,first_name,Alex |
+| pipeDelimited   | true/false     | n/a                                    |
+| pipeDelimited   | true/false     | n/a                                    |
 
-The query parameter `info` is serialized as follows:
+### Parsing a single query parameter as an object
 
-| style         | explode    | URL                                    |
-|---------------|------------|----------------------------------------|
-| form          | false      | /users?info=role,admin,first_name,Alex |
-| pipeDelimited | true/false | n/a                                    |
-| pipeDelimited | true/false | n/a                                    |
+The `explode` parameter should be set to `False` to parse a single query parameter as an object using the `form` style.
 
-You can use `dict` or Pydantic models to parse object query parameters.
+!!! warning
+    The supported styles are `form`, `spaceDelimited`, and `pipeDelimited`, but only `form` is supported for objects.
 
 **Using a dictionary**
 
@@ -322,7 +322,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/users/')
@@ -343,13 +343,6 @@ def get_users(info: t.Annotated[dict, ftr.Query(explode=False)]):
 
 **Using Pydantic models**:
 
-In this example, we use a Pydantic model to parse the query parameters and an embedded model to interpret the 
-`info` query parameter as an object using `explode=False` with `form=style`.
-
-The `explode` is set to `false` to parse the query parameter as an object, while the `style` defaults 
-to `form`. The supported styles are `form`, `spaceDelimited`, and `pipeDelimited`, but only `form` is supported
-for objects.
-
 ```python
 import typing as t
 
@@ -359,7 +352,7 @@ import pydantic
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class UserInfo(pydantic.BaseModel):
@@ -369,11 +362,12 @@ class UserInfo(pydantic.BaseModel):
 
 class QueryParams(pydantic.BaseModel):
     info: UserInfo
+    status: str = "default"
 
 
 @app.get('/users/')
-def get_users(info: t.Annotated[QueryParams, ftr.Query(explode=False)]):
-    return flask.jsonify({'info': info.model_dump()})
+def get_users(params: t.Annotated[QueryParams, ftr.Query(explode=False)]):
+    return flask.jsonify(params.model_dump())
 ```
 
 **Example request:** `GET http://127.0.0.1:5000/users/?info=role,admin,first_name,Alex`
@@ -383,6 +377,7 @@ def get_users(info: t.Annotated[QueryParams, ftr.Query(explode=False)]):
   "info": {
     "first_name": "Alex",
     "role": "admin"
-  }
+  },
+  "status": "default"
 }
 ```

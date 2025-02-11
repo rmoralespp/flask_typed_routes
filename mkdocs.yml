@@ -11,6 +11,7 @@ markdown_extensions:
 nav:
   - Introduction: index.md
   - Usage:
+    - App setup: setup.md
     - Path parameters: path.md
     - Query parameters: query.md
     - Cookie parameters: cookie.md

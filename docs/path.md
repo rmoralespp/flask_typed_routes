@@ -15,7 +15,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/<category_id>/<lang>/')
@@ -70,7 +70,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/<category_id>/')
@@ -90,7 +90,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.route('/items/<category_id>/')
@@ -106,9 +106,9 @@ def read_items(category_id: t.Annotated[int, ftr.Path(ge=1, le=100)]):
 ## Aliasing
 
 !!! warning
-    Aliases defined in Path type hints are ignored to maintain consistency with the Flask route parameter names.
+    Aliases defined in **Path** type hints are ignored to maintain consistency with the Flask route parameter names.
 
-## Arrays in Path Parameters
+## Parsing Arrays
 
 Path parameters can be parsed as **Arrays** using `set`, `tuple`, or `list`.
 The library follows the `simple` style of **OpenAPI** parameter serialization for arrays, using commas as separators.
@@ -118,11 +118,10 @@ The library follows the `simple` style of **OpenAPI** parameter serialization fo
 
 ```python
 import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/users/<user_ids>/')
@@ -138,7 +137,7 @@ def get_users(user_ids: list[int]):
 }
 ```
 
-## Objects in Path Parameters
+## Parsing Objects
 
 Path parameters can be parsed as **Objects** using dictionaries or Pydantic models.
 The library follows the `simple` style of **OpenAPI** parameter serialization for objects.
@@ -147,11 +146,10 @@ The library follows the `simple` style of **OpenAPI** parameter serialization fo
 
 ```python
 import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 @app.get('/users/<user_info>/')
@@ -176,12 +174,11 @@ def get_users(user_info: dict[str, str]):
 import typing as t
 
 import flask
+import flask_typed_routes as ftr
 import pydantic
 
-import flask_typed_routes as ftr
-
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class User(pydantic.BaseModel):
@@ -244,7 +241,7 @@ for example: `GET 127.0.0.1:5000/users/name,`
 }
 ```
 
-**Handling Exploded parameter**
+**Handling `explode` parameter**
 
 With `explode=True`, keys and values are separated by `=` in the URL.
 
@@ -252,11 +249,10 @@ With `explode=True`, keys and values are separated by `=` in the URL.
 import typing as t
 
 import flask
-
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 @app.get('/users/<user_info>/')
 def get_users(user_info: t.Annotated[dict, ftr.Path(explode=True)]):

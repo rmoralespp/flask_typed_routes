@@ -8,16 +8,13 @@
 
 **flask_typed_routes** is a `Flask` extension designed to effortlessly validate requests with `Pydantic` based on standard Python type hints.
 
-**Documentation**: https://rmoralespp.github.io/flask_typed_routes/
+**Documentation**: `https://rmoralespp.github.io/flask_typed_routes/`
 
 ## Features
 
-- 🎯 **Type Safety:** Automatically validates requests using Python type hints.
-- 🔌 **Easy Integration:** Simple extension for validating Flask routes.
-- ⚠️ **Error Handling:** Clear and automatic responses for validation failures.
-- ✨ **Autocomplete:** Editor integration with comprehensive suggestions.
-- ⚙️ **Validation Modes:** Supports automatic validation for all routes and manual validation for specific routes using decorators.
-- 📖 **OpenAPI Support:** Automatically generates an OpenAPI schema, ensuring clear documentation and seamless integration with OpenAPI tools.
+- **Easy:** Easy to use and integrate with [Flask applications](https://flask.palletsprojects.com).
+- **Standard-based:** Based on [OpenAPI Specification](https://spec.openapis.org/oas/v3.1.0)
+- **Data validation:** Fast data verification based on [Pydantic](https://docs.pydantic.dev/)
 
 ## Requirements
 
@@ -35,38 +32,30 @@ pip install flask_typed_routes
 
 ## Getting Started
 
-This tool offers comprehensive validation for various types of request parameters,
-including **Path, Query, Body, Header, and Cookie** parameters.
+This tool allows you to validate request parameters in Flask, similar to how FastAPI handles validation. It supports 
+**Path**, **Query**, **Header**, **Cookie**, and **Body** validation.
 
-Example of a simple Flask application using `flask_typed_routes`:
+
+## Example
 
 Create a file `items.py` with:
 
 ```python
-import typing as t
-
-import annotated_types as at
 import flask
 import flask_typed_routes as ftr
-import pydantic
 
 app = flask.Flask(__name__)
-# The `FlaskTypedRoutes` class must be initialized before registering the **Flask** routes and blueprints 
-# to allow the extension to collect the routes and be able to validate the endpoints.
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
-Skip = pydantic.NonNegativeInt # custom Pydantic type
-Limit = t.Annotated[int, at.Ge(1), at.Le(100)] # custom Annotated type
 
-@app.get('/items/<user>/')
-def read_items(user: str, skip: Skip = 0, limit: Limit = 10):
-    # Parameters not included in the "path" are automatically treated as "query" parameters.
-    data = {
-        'user': user,
-        'skip': skip,
-        'limit': limit,
-    }
-    return flask.jsonify(data)
+@app.get("/")
+def read_root():
+    return flask.jsonify({"Hello": "World"})
+
+
+@app.get("/items/<user>/")
+def read_items(user: str, skip: int = 0, limit: int = 10):
+    return flask.jsonify({"user": user, "skip": skip, "limit": limit})
 ```
 
 **Run the server with:**
@@ -106,24 +95,36 @@ You will see the JSON response with the error details because the `skip` paramet
 }
 ```
 
-### Example with Pydantic Models
+### Example Body Validation
 
-You can also use Pydantic models to validate request data in Flask routes.
+You can also use Pydantic models to validate the request body.
+
 Now let's update the `items.py` file with:
 
 ```python
-import pydantic
 import flask
 import flask_typed_routes as ftr
+import pydantic
+
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):
     name: str
-    description: str = None
     price: float
+    description: str = None
+
+
+@app.get("/")
+def read_root():
+    return flask.jsonify({"Hello": "World"})
+
+
+@app.get("/items/<user>/")
+def read_items(user: str, skip: int = 0, limit: int = 10):
+    return flask.jsonify({"user": user, "skip": skip, "limit": limit})
 
 
 @app.post('/items/')
@@ -136,9 +137,7 @@ def update_item(item_id: int, item: Item):
     return flask.jsonify({'item_id': item_id, **item.model_dump()})
 ```
 
-### Using Flask Blueprints
-
-You can also use `flask_typed_routes` with Flask Blueprints.
+### Example Flask Blueprints
 
 Now let's update the `items.py` file with:
 
@@ -147,22 +146,19 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
-blp = flask.Blueprint('items', __name__, url_prefix='/v2')
+ftr.FlaskTypedRoutes(app=app)
+orders = flask.Blueprint('orders', __name__)
 
 
-@blp.get('/items/')
-def read_items(skip: int = 0, limit: int = 10, country: str = 'US'):
-    data = {'skip': skip, 'limit': limit, 'country': country}
-    return flask.jsonify(data)
+@orders.get("/orders/<user>/")
+def read_orders(user: str, skip: int = 0, limit: int = 10):
+    return flask.jsonify({"user": user, "skip": skip, "limit": limit})
 
 
-app.register_blueprint(blp)
+app.register_blueprint(orders)
 ```
 
-### Using Flask Class-Based Views
-
-You can also use `flask_typed_routes` with Flask Class-Based Views.
+### Example Flask Class-Based Views
 
 Now let's update the `items.py` file with:
 
@@ -172,7 +168,7 @@ import flask.views
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class UserProducts(flask.views.View):
@@ -195,8 +191,8 @@ app.add_url_rule('/orders/<user>/', view_func=UserOrders.as_view('user_orders'))
 
 ### Interactive API docs
 
-You can OpenApi schema generated by `flask_typed_routes` with any OpenApi tools to
-generate interactive API docs for your Flask application. In this example we will use the `swagger-ui-py` library.
+You can generate interactive API docs for your Flask application using OpenAPI schema generated by `flask_typed_routes`
+with any OpenAPI UI library. For example, you can use `swagger-ui-py` to generate the API docs.
 
 ```bash
 pip install swagger-ui-py  # ignore if already installed
@@ -204,19 +200,18 @@ pip install swagger-ui-py  # ignore if already installed
 
 ```python
 import flask
+import flask_typed_routes as ftr
 import pydantic
 import swagger_ui
 
-import flask_typed_routes as ftr
-
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app)
+app_ftr = ftr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):
     name: str
-    description: str = None
     price: float
+    description: str = None
 
 
 @app.get('/items/<user>/')
@@ -240,8 +235,6 @@ def remove_item(item_id: int):
     return flask.jsonify({'item_id': item_id})
 
 
-# Get the OpenAPI schema from the `FlaskTypedRoutes` instance after registering the routes and blueprints,
-# as the extension first needs to collect the routes to generate the OpenAPI schema.
 swagger_ui.api_doc(app, config=app_ftr.get_openapi_schema(), url_prefix='/docs')
 ```
 

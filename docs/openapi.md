@@ -35,19 +35,19 @@ pip install swagger-ui-py  # ignore if already installed
 
 ```python
 import flask
+import flask_typed_routes as ftr
 import pydantic
 import swagger_ui
 
-import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-app_ftr = ftr.FlaskTypedRoutes(app)
+app_ftr = ftr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):
     name: str
-    description: str = None
     price: float
+    description: str = None
 
 
 @app.get('/items/<user>/')
@@ -85,9 +85,9 @@ The `typed_route` decorator allows you to parameterize the fields supported by O
 
 ```python
 import flask.views
+import flask_typed_routes as ftr
 import swagger_ui
 
-import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
 app_ftr = ftr.FlaskTypedRoutes(app)
@@ -114,10 +114,9 @@ For more advanced customization, you can pass additional parameters to the `Flas
 
 ```python
 import flask.views
+import flask_typed_routes as ftr
 import pydantic
 import swagger_ui
-
-import flask_typed_routes as ftr
 
 
 class Item(pydantic.BaseModel):

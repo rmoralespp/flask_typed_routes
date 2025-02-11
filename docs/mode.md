@@ -24,17 +24,17 @@ import annotated_types as at
 import flask
 import flask_typed_routes as ftr
 
-api = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(api)  # Default mode is 'auto'
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app=app)  # Default mode is 'auto'
 
 
-@api.get('/products/<int:product_id>/')
+@app.get('/products/<int:product_id>/')
 def get_product(pk: t.Annotated[int, at.Gt(10)]):
     # The 'product_id' parameter is automatically validated as an integer.
     return flask.jsonify({"product_id": pk})
 
 
-@api.get('/orders/<int:order_id>/')
+@app.get('/orders/<int:order_id>/')
 def get_order(order_id: t.Annotated[int, at.Gt(10)]):
     # The 'order_id' parameter is also automatically validated.
     return flask.jsonify({"order_id": order_id})
@@ -65,21 +65,20 @@ import typing as t
 
 import annotated_types as at
 import flask
-
 import flask_typed_routes as ftr
 
-api = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(api, mode=ftr.Mode.manual)
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app, mode=ftr.Mode.manual)
 
 
-@api.get('/products/<int:pk>/')
+@app.get('/products/<int:pk>/')
 @ftr.typed_route()  # Validation is explicitly enabled for this route.
 def get_product(pk: t.Annotated[int, at.Gt(10)]):
     # The 'pk' parameter is validated as an integer.
     return flask.jsonify({"pk": pk})
 
 
-@api.get('/orders/<int:order_id>/')
+@app.get('/orders/<int:order_id>/')
 def get_order(order_id: t.Annotated[int, at.Gt(10)]):
     # The 'order_id' parameter is NOT validated.
     return flask.jsonify({"order_id": order_id})

@@ -14,12 +14,12 @@ Basic Usage of request Body Validation:
 ```python
 import typing as t
 
-import pydantic
 import flask
 import flask_typed_routes as flask_tpr
+import pydantic
 
 app = flask.Flask(__name__)
-flask_tpr.FlaskTypedRoutes(app)
+flask_tpr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):
@@ -120,12 +120,12 @@ You can use multiple Pydantic models in a single route and validate specific fie
 ```python
 import typing as t
 
-import pydantic
 import flask
 import flask_typed_routes as ftr
+import pydantic
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 
 class Item(pydantic.BaseModel):

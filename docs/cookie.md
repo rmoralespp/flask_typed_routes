@@ -10,7 +10,7 @@ import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app)
+ftr.FlaskTypedRoutes(app=app)
 
 SessionId = t.Annotated[str, ftr.Cookie(alias="session-id")]
 
