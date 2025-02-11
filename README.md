@@ -1,3 +1,11 @@
+<div align="center">
+    <a href="https://rmoralespp.github.io/flask_typed_routes/" target="_blank">
+        <img class="off-glb" src="https://raw.githubusercontent.com/rmoralespp/flask_typed_routes/main/docs/images/logo.svg" 
+             width="20%" height="auto" alt="logo">
+    </a>
+</div>
+<div align="center">Validate requests with Pydantic based on standard Python type hints.</div>
+
 [![CI](https://github.com/rmoralespp/flask_typed_routes/workflows/CI/badge.svg)](https://github.com/rmoralespp/flask_typed_routes/actions?query=event%3Arelease+workflow%3ACI)
 [![pypi](https://img.shields.io/pypi/v/flask_typed_routes.svg)](https://pypi.python.org/pypi/flask_typed_routes)
 [![codecov](https://codecov.io/gh/rmoralespp/flask_typed_routes/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rmoralespp/flask_typed_routes)
