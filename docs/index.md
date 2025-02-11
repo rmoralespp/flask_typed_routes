@@ -4,9 +4,8 @@
              width="20%" height="auto" alt="logo">
     </a>
 </div>
-<div align="center">Validate requests with Pydantic based on standard Python type hints.</div>
+<div align="center"><b>Validate requests with Pydantic based on standard Python type hints.</b></div>
 
-## About
 
 [![CI](https://github.com/rmoralespp/flask_typed_routes/workflows/CI/badge.svg)](https://github.com/rmoralespp/flask_typed_routes/actions?query=event%3Arelease+workflow%3ACI)
 [![pypi](https://img.shields.io/pypi/v/flask_typed_routes.svg)](https://pypi.python.org/pypi/flask_typed_routes)
