@@ -23,6 +23,10 @@ array_types = (list, t.List, tuple, t.Tuple, set, t.Set, frozenset, t.FrozenSet)
 dict_types = (dict, t.Dict)  # noqa UP006
 
 
+def is_json(field_info, /):
+    return any(isinstance(m, pydantic.Json) for m in field_info.metadata)
+
+
 def split_by(value, sep, /, maxsplit=-1):
     return list(filter(None, map(str.strip, value.split(sep, maxsplit=maxsplit))))
 
@@ -63,9 +67,10 @@ class DataType(enum.Enum):
             return False
 
     @classmethod
-    def typeof(cls, annotation, /):
+    def typeof(cls, annotation, field_info, /):
         if cls.belong_to(annotation, dict_types) or ftr_utils.is_subclass(annotation, pydantic.BaseModel):
-            return cls.object
+            # Pydantic will handle the deserialization of the JSON string.
+            return cls.primitive if is_json(field_info) else cls.object
         elif cls.belong_to(annotation, array_types):
             return cls.array
         else:
@@ -172,14 +177,18 @@ class Field(abc.ABC):
     def is_required(self):
         return self.default != Undef
 
+    @property
+    def data_type(self, /):
+        return DataType.typeof(self.annotation, self.field_info)
+
     def get_value(self, obj, /):
         """Get values from the request according to the field annotation."""
 
-        if ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
-            result = self.get_model_value(obj)
+        data_type = self.data_type
+        if data_type == DataType.object and ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
+            return self.get_model_value(obj)
         else:
-            result = self.get_alias_value(self.alias, obj, DataType.typeof(self.annotation))
-        return result
+            return self.get_alias_value(self.alias, obj, data_type)
 
     def get_alias_value(self, alias, obj, data_type, /):
         """Get request values when the annotation is a standard type according to the field alias."""
@@ -193,11 +202,7 @@ class Field(abc.ABC):
         for name, info in self.annotation.model_fields.items():
             alias = get_locator(info.alias, name)
             if alias in obj:
-                data_type = DataType.typeof(info.annotation)
-                if data_type == data_type.object and any(isinstance(m, pydantic.Json) for m in info.metadata):
-                    # Pydantic will handle the deserialization of the JSON string.
-                    data_type = DataType.primitive
-                result[alias] = self.get_alias_value(alias, obj, data_type)
+                result[alias] = self.get_alias_value(alias, obj, DataType.typeof(info.annotation, info))
         return result
 
     def get_simple_alias_value(self, alias, obj, data_type, /):
@@ -222,7 +227,7 @@ class Path(Field):
 
     @property
     def value(self):
-        return self.get_alias_value(self.alias, flask.request.view_args, DataType.typeof(self.annotation))
+        return self.get_alias_value(self.alias, flask.request.view_args, self.data_type)
 
     def get_alias_value(self, alias, obj, data_type, /):
         return self.get_simple_alias_value(alias, obj, data_type)
@@ -292,3 +297,22 @@ class Body(Field):
     def value(self):
         data = flask.request.json or dict()
         return data.get(self.alias, Unset) if self.alias else data
+
+
+class Depends(Field):
+
+    def __init__(self, dependency, /, use_cache=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._dependency = dependency
+        self._use_cache = use_cache
+        self._cached = Unset
+
+    @property
+    def value(self):
+        if self._use_cache and self._cached is not Unset:
+            return self._cached
+        elif self._use_cache:
+            self._cached = self._dependency()
+            return self._cached
+        else:
+            return self._dependency()

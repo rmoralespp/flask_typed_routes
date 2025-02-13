@@ -21,11 +21,14 @@ def get_request_values(fields, /):
 
 
 def set_field_alias(field, /):
-    if isinstance(field, ftr_fields.Path):
+    # +ATTENTION+: The 'field' must have an 'annotation' and 'name' attributes set.
+
+    if isinstance(field, ftr_fields.Path | ftr_fields.Depends):
         # Respect the name of the path parameter offered by `Flask` routing.
+        # Also, respect the name of the dependency parameter.
         field.alias = field.name
-    elif ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
-        # When the parameter is a Pydantic model, use alias if `embed` is True.
+    elif field.data_type == ftr_fields.DataType.object and ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
+        # When the object parameter is a Pydantic model, use alias if `embed` is True.
         field.alias = field.locator if field.embed else None
     else:
         # Otherwise, use the alias if it is set, otherwise use the name.

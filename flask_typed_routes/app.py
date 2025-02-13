@@ -15,12 +15,14 @@ class Mode:
     manual = "manual"
 
 
-def typed_route(*, status_code=None, **openapi):
+def typed_route(*, status_code=None, dependencies=None, **openapi):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
 
     :param int status_code: Status code for the success response.
+    :param list[Callable] dependencies: List of dependencies for the route.
+            Order of the dependencies is important, as they are executed in the order they are defined.
     :param Unpack[dict[str, Any]] openapi: Describe the OpenAPI operation fields in the route.
 
     Example:
@@ -34,6 +36,7 @@ def typed_route(*, status_code=None, **openapi):
         setattr(view_func, ftr_utils.ROUTE_ENABLED, True)
         setattr(view_func, ftr_utils.ROUTE_OPENAPI, openapi)
         setattr(view_func, ftr_utils.ROUTE_STATUS_CODE, status_code)
+        setattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, dependencies)
         return view_func
 
     return worker
@@ -114,17 +117,20 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view_class, verb.lower())
                             if self.is_typed(method):
+                                self.run_dependencies(method)
                                 new_method = ftr_core.validate(method, view_name, view_args)
                                 self.register_route(new_method, rule, view_name, (verb,), view_args)
                                 setattr(view_class, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view_class.dispatch_request):
+                        self.run_dependencies(view_class.dispatch_request)
                         new_method = ftr_core.validate(view_class.dispatch_request, view_name, view_args)
                         self.register_route(new_method, rule, view_name, methods, view_args)
                         view_class.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
+                    self.run_dependencies(view_func)
                     view_func = ftr_core.validate(view_func, view_name, view_args)
                     self.register_route(view_func, rule, view_name, methods, view_args)
 
@@ -135,6 +141,11 @@ class FlaskTypedRoutes:
     def is_typed(self, view_func, /):
         enabled = getattr(view_func, ftr_utils.ROUTE_ENABLED, False)
         return self.mode == Mode.auto or enabled
+
+    @staticmethod
+    def run_dependencies(view_func, /):
+        for dep in getattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, ()) or ():
+            dep()
 
     def register_route(self, view_func, rule, name, methods, rule_args, /):
         route = ftr_utils.RouteInfo(

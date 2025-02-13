@@ -104,23 +104,26 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
     params_fields = (field for field in fields if field.kind in PARAMETER_TYPES)
     for field in params_fields:
         slot = params[field.kind]
+
+        properties_slot = model_properties
+        required_slot = model_required_fields
+        names = (field.locator,)
+
         if ftr_utils.is_subclass(field.annotation, pydantic.BaseModel) and field.kind != ftr_fields.FieldTypes.path:
-            ref_properties = model_properties[field.locator]
-            ref_name = ref_properties["$ref"].split("/")[-1]
-            ref_schema = definitions[ref_name]
-            properties_slot = ref_schema.get("properties", dict())
-            required_slot = frozenset(ref_schema.get("required", ()))
-            names = (info.alias or name for name, info in field.annotation.model_fields.items())
-        else:
-            properties_slot = model_properties
-            required_slot = model_required_fields
-            names = (field.locator,)
+            loc_properties = model_properties[field.locator]
+            if "$ref" in loc_properties:
+                ref_name = loc_properties["$ref"].split("/")[-1]
+                ref_schema = definitions[ref_name]
+                properties_slot = ref_schema.get("properties", dict())
+                required_slot = frozenset(ref_schema.get("required", ()))
+                names = (info.alias or name for name, info in field.annotation.model_fields.items())
 
         for name in names:
             if name in slot:
                 duplicate_request_field(field)
             else:
                 schema = properties_slot[name]
+                media_type = schema.pop("contentMediaType", None)
                 _ = schema.pop("title", None)  # title is dont used
                 description = schema.pop("description", None)
                 examples = schema.pop("examples", ())
@@ -130,10 +133,17 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
                     "name": name,
                     "in": field.kind,
                     "required": name in required_slot,
-                    "schema": schema,
-                    "style": field.style,
-                    "explode": field.explode,
                 }
+                if media_type:
+                    # The 'content' field is used in OpenApi for complex serialization scenarios that are not
+                    # covered by 'style' and 'explode'.
+                    param_spec["content"] = {media_type: {"schema": schema.pop("contentSchema", schema)}}
+                else:
+                    param_spec.update((
+                        ("schema", schema),
+                        ("style", field.style),
+                        ("explode", field.explode)
+                    ))
                 if description:
                     param_spec["description"] = description
                 if deprecated:

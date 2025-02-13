@@ -1,4 +1,5 @@
 import typing
+import unittest.mock
 import unittest.mock as mock
 
 import flask
@@ -14,7 +15,7 @@ import flask_typed_routes.fields as ftr_fields
 @pytest.mark.parametrize("value, expected", [
     ("", []),
     (",", []),  # ignore empty values
-    (" , , ", []),   # ignore only spaces
+    (" , , ", []),  # ignore only spaces
     ("a", ["a"]),
     ("a.b", ["a.b"]),  # no split by dot
     ("a,b", ["a", "b"]),
@@ -77,10 +78,14 @@ def test_DataType_belong_to(annotation, types, expected):
     (str, ftr_fields.DataType.primitive),
     (int, ftr_fields.DataType.primitive),
     (list, ftr_fields.DataType.array),
+    (set, ftr_fields.DataType.array),
+    (tuple, ftr_fields.DataType.array),
     (dict, ftr_fields.DataType.object),
+    (pydantic.create_model("Model"), ftr_fields.DataType.object),
+    (pydantic.Json[dict], ftr_fields.DataType.object),
 ])
-def test_DataType_typeof_primitive(annotation, expected):
-    assert ftr_fields.DataType.typeof(annotation) == expected
+def test_DataType_typeof(annotation, expected):
+    assert ftr_fields.DataType.typeof(annotation, mock.MagicMock()) == expected
 
 
 def test_NonExplodedStyles_choices():
@@ -208,7 +213,7 @@ def test_query_field_explode(flask_app_auto, standalone, url, annotation, style,
         ('/?search=role,admin,name,Alex', dict, None, {'role': 'admin', 'name': 'Alex'}),  # multiple pairs
         ('/?search=role,admin,role,user', dict, None, {'role': 'user'}),  # duplicate keys
         ('/?search=role,admin,name', dict, None, {'role': 'admin', 'name': ''}),  # odd number of elements
-        ('/?search=term1|term2', dict, "pipeDelimited", dict()),   # because if style is pipeDelimited
+        ('/?search=term1|term2', dict, "pipeDelimited", dict()),  # because if style is pipeDelimited
         ('/?search=term1 term2', dict, "spaceDelimited", dict()),  # because if style is spaceDelimited
     ]
 )
@@ -335,6 +340,21 @@ def test_bad_embed_field(field_class):
         field_class(embed=True)
 
 
+def test_depends_field():
+    value = object()
+    obj = ftr_fields.Depends(lambda: value)
+    assert obj.value is value
+
+
+def test_depends_use_cache():
+    value = object()
+    my_dependency = unittest.mock.Mock(return_value=value)
+    obj = ftr_fields.Depends(my_dependency, use_cache=True)
+    assert obj.value is value
+    assert obj.value is value
+    assert my_dependency.call_count == 1
+
+
 @pytest.mark.parametrize('annotation, expected', [
     (str, ftr_fields.DataType.primitive),
     (list, ftr_fields.DataType.array),
@@ -357,5 +377,5 @@ def test_bad_embed_field(field_class):
     (typing.Annotated[list[str], pydantic.Field(alias='list-field')], ftr_fields.DataType.array),
     (typing.Annotated[typing.List[str], pydantic.Field(alias='list-field')], ftr_fields.DataType.array),  # noqa UP006
 ])
-def test_DataType_typeof(annotation, expected):
-    assert ftr_fields.DataType.typeof(annotation) == expected
+def test_dataType_typeof(annotation, expected):
+    assert ftr_fields.DataType.typeof(annotation, mock.MagicMock()) == expected

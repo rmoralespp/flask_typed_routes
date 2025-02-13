@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 import tests.conftest
@@ -62,13 +64,15 @@ def test_path_bad_greater_than(client_auto, url_prefix):
 
 
 def test_query(client_auto, url_prefix):
-    url = f"{url_prefix}products/query/?tag=foo&tag=bar"
+    json_data = json.dumps({"a": 1, "b": 2})
+    url = f"{url_prefix}products/query/?tag=foo&tag=bar&json_data={json_data}"
     expected = {
         'limit': 10,
         'skip': 0,
         'tags': ['foo', 'bar'],
         "status1": "active",
         "status2": "active",
+        "json_data": {"a": 1, "b": 2},
     }
     response = client_auto.get(url)
     assert response.json == expected
@@ -92,8 +96,15 @@ def test_query_bad_limit(client_auto, url_prefix):
 
 
 def test_query_model(client_auto, url_prefix):
-    url = f"{url_prefix}products/query/model/"
-    expected = {'extra_field': 'Extra field', 'limit': 10, 'skip': 0, 'sort_by': 'id'}
+    json_data = json.dumps({"a": 1, "b": 2})
+    url = f"{url_prefix}products/query/model/?json_data={json_data}"
+    expected = {
+        'extra_field': 'Extra field',
+        'limit': 10,
+        'skip': 0,
+        'sort_by': 'id',
+        'json_data': {'a': 1, 'b': 2},
+    }
     response = client_auto.get(url)
     assert response.json == expected
 
@@ -343,6 +354,13 @@ def test_body_forward_refs(client_auto, url_prefix):
     assert response.json == expected
 
 
+def test_test_depends(client_auto, url_prefix):
+    url = f"{url_prefix}products/depends/"
+    expected = {'dependency': 'ok'}
+    response = client_auto.get(url)
+    assert response.json == expected
+
+
 def test_func_all_params(client_auto, url_prefix):
     url = f"{url_prefix}products/all/foo/123/"
     payload = {
@@ -366,6 +384,7 @@ def test_func_all_params(client_auto, url_prefix):
         'product_id': 123,
         'session_id': '123',
         'skip': 0,
+        'my_dependency': 'ok',
     }
 
     headers = {"Authorization": "Bearer token"}

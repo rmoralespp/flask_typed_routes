@@ -15,6 +15,10 @@ pydantic_url = functools.partial(
 )
 
 
+def dependency():
+    return "ok"
+
+
 def login_required(func):
     """Decorator to simulate a login required on the view function."""
 
@@ -41,10 +45,16 @@ class Product(pydantic.BaseModel):
     category: str | None = None
 
 
+class QueryEmbedJson(pydantic.BaseModel):
+    a: int
+    b: int
+
+
 class QueryParams(pydantic.BaseModel):
     skip: int = 0
     limit: int = 10
     sort_by: t.Annotated[str, pydantic.Field(alias='order-by')] = 'id'  # Testing alias
+    json_data: pydantic.Json[QueryEmbedJson] = None
 
     @pydantic.computed_field()
     @property
@@ -76,6 +86,7 @@ def flask_app_auto():
         skip: int = 0,
         limit: pydantic.NonNegativeInt = 10,
         tags: t.Annotated[list[str], ftr.Query(alias="tag")] = None,
+        json_data: t.Annotated[pydantic.Json[QueryEmbedJson], ftr.Query()] = None,
     ):
         return flask.jsonify(
             {
@@ -84,6 +95,7 @@ def flask_app_auto():
                 "tags": tags,
                 "status1": status1,
                 "status2": status2,
+                "json_data": json_data.model_dump() if json_data else None,
             }
         )
 
@@ -120,6 +132,9 @@ def flask_app_auto():
     def test_body_forward_refs(order: 'ForwardRefModel'):
         return flask.jsonify(order.model_dump())
 
+    def test_depends(my_dependency: t.Annotated[str, ftr.Depends(dependency)]):
+        return flask.jsonify({"dependency": my_dependency})
+
     def func_all_params(
         category: str,
         product_id: int,
@@ -128,6 +143,7 @@ def flask_app_auto():
         limit: int = 10,
         auth: t.Annotated[str, ftr.Header(alias="Authorization")] = None,
         session_id: t.Annotated[str, ftr.Cookie(alias="session-id")] = None,
+        my_dependency: t.Annotated[str, ftr.Depends(dependency)] = None,
     ):
         result = {
             "category": category,
@@ -137,6 +153,7 @@ def flask_app_auto():
             "limit": limit,
             "auth": auth,
             "session_id": session_id,
+            "my_dependency": my_dependency,
         }
         return flask.jsonify(result)
 
@@ -179,6 +196,7 @@ def flask_app_auto():
     add_url('/products/body/field/', view_func=func_body_field, methods=['POST'])
     add_url('/products/body/embed/', view_func=func_body_embed, methods=['POST'])
     add_url('/products/body/forward-refs/', view_func=test_body_forward_refs, methods=['POST'])
+    add_url('/products/depends/', view_func=test_depends)
     add_url('/products/all/<string:category>/<product_id>/', view_func=func_all_params, methods=['POST'])
     add_url('/products/mixed/', view_func=func_mixed_annotations)
 

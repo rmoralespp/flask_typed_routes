@@ -17,6 +17,7 @@ nav:
     - Cookie parameters: cookie.md
     - Header parameters: header.md
     - Request body: body.md
+    - Dependencies: dependencies.md
     - Handling errors: errors.md
     - Validation Modes: mode.md
     - OpenAPI: openapi.md
