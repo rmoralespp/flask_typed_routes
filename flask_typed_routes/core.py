@@ -27,7 +27,7 @@ def set_field_alias(field, /):
         # Respect the name of the path parameter offered by `Flask` routing.
         # Also, respect the name of the dependency parameter.
         field.alias = field.name
-    elif field.data_type == ftr_fields.DataType.object and ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
+    elif field.is_model_object:
         # When the object parameter is a Pydantic model, use alias if `embed` is True.
         field.alias = field.locator if field.embed else None
     else:
@@ -93,6 +93,14 @@ def create_model(view_func, view_name, view_args, /):
         return (None, None)
 
 
+def resolve_non_returning_dependencies(view_func, view_name, /):
+    result = getattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, ()) or ()
+    if not all(isinstance(d, ftr_fields.Depends) for d in result):
+        msg = f"The dependencies must be of type 'Depends' in {view_name!r}"
+        raise ftr_errors.InvalidParameterTypeError(msg)
+    return result
+
+
 def validate(view_func, view_name, view_args, /):
     """
     A decorator that validates the request parameters of the view function.
@@ -104,6 +112,9 @@ def validate(view_func, view_name, view_args, /):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
+        # Resolve the dependencies before the model validation.
+        for dependency in dependencies:
+            dependency()
         try:
             instance = model.model_validate(get_request_values(fields))
         except pydantic.ValidationError as e:
@@ -114,6 +125,7 @@ def validate(view_func, view_name, view_args, /):
             kwargs.update(inject)
             return view_func(*args, **kwargs)
 
+    dependencies = resolve_non_returning_dependencies(view_func, view_name)
     model, fields = create_model(view_func, view_name, view_args)
     if model:
         setattr(decorator, ftr_utils.ROUTE_REQUEST_MODEL, model)

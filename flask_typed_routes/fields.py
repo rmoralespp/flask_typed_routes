@@ -9,6 +9,7 @@ import abc
 import enum
 import inspect
 import typing as t
+import uuid
 
 import flask
 import pydantic.fields
@@ -23,8 +24,8 @@ array_types = (list, t.List, tuple, t.Tuple, set, t.Set, frozenset, t.FrozenSet)
 dict_types = (dict, t.Dict)  # noqa UP006
 
 
-def is_json(field_info, /):
-    return any(isinstance(m, pydantic.Json) for m in field_info.metadata)
+def is_json(metadata, /):
+    return any(isinstance(m, pydantic.Json) for m in metadata)
 
 
 def split_by(value, sep, /, maxsplit=-1):
@@ -56,7 +57,7 @@ def get_locator(alias, name, /):
 class DataType(enum.Enum):
     primitive = "primitive"  # "blue"
     object = "object"  # ["blue", "black", "brown"]
-    array = "array"  # {"R": 100, "G": 200, "B": 150
+    array = "array"  # {"R": 100, "G": 200, "B": 150}
 
     @classmethod
     def belong_to(cls, annotation, types, /):
@@ -67,10 +68,10 @@ class DataType(enum.Enum):
             return False
 
     @classmethod
-    def typeof(cls, annotation, field_info, /):
+    def typeof(cls, annotation, metadata, /):
         if cls.belong_to(annotation, dict_types) or ftr_utils.is_subclass(annotation, pydantic.BaseModel):
             # Pydantic will handle the deserialization of the JSON string.
-            return cls.primitive if is_json(field_info) else cls.object
+            return cls.primitive if is_json(metadata) else cls.object
         elif cls.belong_to(annotation, array_types):
             return cls.array
         else:
@@ -179,16 +180,19 @@ class Field(abc.ABC):
 
     @property
     def data_type(self, /):
-        return DataType.typeof(self.annotation, self.field_info)
+        return DataType.typeof(self.annotation, self.field_info.metadata)
+
+    @property
+    def is_model_object(self, /):
+        return self.data_type == DataType.object and ftr_utils.is_subclass(self.annotation, pydantic.BaseModel)
 
     def get_value(self, obj, /):
         """Get values from the request according to the field annotation."""
 
-        data_type = self.data_type
-        if data_type == DataType.object and ftr_utils.is_subclass(self.annotation, pydantic.BaseModel):
+        if self.is_model_object:
             return self.get_model_value(obj)
         else:
-            return self.get_alias_value(self.alias, obj, data_type)
+            return self.get_alias_value(self.alias, obj, self.data_type)
 
     def get_alias_value(self, alias, obj, data_type, /):
         """Get request values when the annotation is a standard type according to the field alias."""
@@ -202,7 +206,7 @@ class Field(abc.ABC):
         for name, info in self.annotation.model_fields.items():
             alias = get_locator(info.alias, name)
             if alias in obj:
-                result[alias] = self.get_alias_value(alias, obj, DataType.typeof(info.annotation, info))
+                result[alias] = self.get_alias_value(alias, obj, DataType.typeof(info.annotation, info.metadata))
         return result
 
     def get_simple_alias_value(self, alias, obj, data_type, /):
@@ -301,18 +305,32 @@ class Body(Field):
 
 class Depends(Field):
 
-    def __init__(self, dependency, /, use_cache=False, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, dependency, /, use_cache=False):
+        """
+        Initialize the field with the given parameters.
+
+        :param Callable dependency: Dependency function to get the value.
+        :param bool use_cache:
+            By default, `use_cache` is set to `False` so that the dependency is called again
+            (if declared more than once) in the same request.
+
+            Set `use_cache` to `False` so that after a dependency is called for the first time in a request,
+            if the dependency is declared again for the rest of the request
+        """
+
+        super().__init__()
         self._dependency = dependency
         self._use_cache = use_cache
-        self._cached = Unset
+        self._ref = "{}-{}".format("dependency", uuid.uuid4())
 
     @property
     def value(self):
-        if self._use_cache and self._cached is not Unset:
-            return self._cached
-        elif self._use_cache:
-            self._cached = self._dependency()
-            return self._cached
+        if self._use_cache:
+            if self._ref in flask.g:
+                result = getattr(flask.g, self._ref)
+            else:
+                result = self._dependency()
+                setattr(flask.g, self._ref, result)
+            return result
         else:
             return self._dependency()

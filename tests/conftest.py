@@ -228,6 +228,13 @@ def flask_app_manual():
 
 
 @pytest.fixture(scope='package')
+def flask_app_simple():
+    api = flask.Flask(__name__)
+    ftr.FlaskTypedRoutes(api)
+    return api
+
+
+@pytest.fixture(scope='package')
 def client_auto(flask_app_auto):
     return flask_app_auto.test_client()
 

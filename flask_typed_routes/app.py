@@ -117,20 +117,17 @@ class FlaskTypedRoutes:
                         for verb in verbs:
                             method = getattr(view_class, verb.lower())
                             if self.is_typed(method):
-                                self.run_dependencies(method)
                                 new_method = ftr_core.validate(method, view_name, view_args)
                                 self.register_route(new_method, rule, view_name, (verb,), view_args)
                                 setattr(view_class, verb.lower(), new_method)
 
                     # no implemented methods, use the default "dispatch_request"
                     elif self.is_typed(view_class.dispatch_request):
-                        self.run_dependencies(view_class.dispatch_request)
                         new_method = ftr_core.validate(view_class.dispatch_request, view_name, view_args)
                         self.register_route(new_method, rule, view_name, methods, view_args)
                         view_class.dispatch_request = new_method
 
                 elif self.is_typed(view_func):  # function-based view
-                    self.run_dependencies(view_func)
                     view_func = ftr_core.validate(view_func, view_name, view_args)
                     self.register_route(view_func, rule, view_name, methods, view_args)
 
@@ -141,11 +138,6 @@ class FlaskTypedRoutes:
     def is_typed(self, view_func, /):
         enabled = getattr(view_func, ftr_utils.ROUTE_ENABLED, False)
         return self.mode == Mode.auto or enabled
-
-    @staticmethod
-    def run_dependencies(view_func, /):
-        for dep in getattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, ()) or ():
-            dep()
 
     def register_route(self, view_func, rule, name, methods, rule_args, /):
         route = ftr_utils.RouteInfo(

@@ -4,7 +4,9 @@ import unittest.mock
 import pydantic
 import pytest
 
+import flask_typed_routes.app as ftr_app
 import flask_typed_routes.core as ftr_core
+import flask_typed_routes.errors as ftr_errors
 import flask_typed_routes.fields as ftr_fields
 
 empty = inspect.Parameter.empty
@@ -157,3 +159,17 @@ def test_create_model_typed():
 def test_create_model_none(view_func):
     result = ftr_core.create_model(view_func, "my_view", ())
     assert result == (None, None)
+
+
+def test_resolve_field_params_non_typed():
+    dependencies = [ftr_fields.Depends(unittest.mock.Mock())]
+    fn = ftr_app.typed_route(dependencies=dependencies)(used_non_typed)
+    result = ftr_core.resolve_non_returning_dependencies(fn, "my_view")
+    assert result == dependencies
+
+
+def test_resolve_field_params_no_dependencies_fail():
+    dependencies = [unittest.mock.Mock()]
+    fn = ftr_app.typed_route(dependencies=dependencies)(used_non_typed)
+    with pytest.raises(ftr_errors.InvalidParameterTypeError):
+        ftr_core.resolve_non_returning_dependencies(fn, "my_view")
