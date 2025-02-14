@@ -1,6 +1,5 @@
 # Dependencies Injections
 
-## Using Depends
 
 ## Dependencies in `typed_route` decorator.
 
