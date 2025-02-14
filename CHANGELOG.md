@@ -1,7 +1,7 @@
 ## Releases
 
 - **Add**: Add `Depends` field to allow dependencies between parameters.
-- **Add**: The `typed_route` decorator can receive a list of callables in the `dependencies` parameter
+- **Add**: The `typed_route` decorator can receive a list of `dependencies`.
 - **Change**: **OpenApi** schema has been improved for complex serialization scenarios like JSON in query params.
 
 ### v0.2.4 (2025-02-07)

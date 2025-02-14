@@ -135,7 +135,9 @@ def validate(view_func, view_name, view_args, /):
 
     dependencies = resolve_non_returning_dependencies(view_func, view_name)
     model, fields = create_model(view_func, view_name, view_args)
-    if model:
+    if (model and fields) or dependencies:
         setattr(decorator, ftr_utils.ROUTE_REQUEST_MODEL, model)
         setattr(decorator, ftr_utils.ROUTE_PARAM_FIELDS, fields)
-    return decorator
+        return decorator
+    else:
+        return view_func
