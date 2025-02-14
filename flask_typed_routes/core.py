@@ -94,6 +94,13 @@ def create_model(view_func, view_name, view_args, /):
 
 
 def resolve_non_returning_dependencies(view_func, view_name, /):
+    """
+    Resolve the dependencies of the view function.
+    :param view_func:
+    :param view_name:
+    :rtype: Sequence[flask_typed_routes.fields.Depends]
+    """
+
     result = getattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, ()) or ()
     if not all(isinstance(d, ftr_fields.Depends) for d in result):
         msg = f"The dependencies must be of type 'Depends' in {view_name!r}"
@@ -112,24 +119,23 @@ def validate(view_func, view_name, view_args, /):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
-        # Resolve the dependencies before the model validation.
+        # Calls the dependencies before the model validation.
         for dependency in dependencies:
-            dependency()
-        try:
-            instance = model.model_validate(get_request_values(fields))
-        except pydantic.ValidationError as e:
-            errors = ftr_utils.pretty_errors(fields, e.errors(include_context=False))
-            raise ftr_errors.ValidationError(errors) from None
-        else:
-            inject = ((field.name, getattr(instance, field.name)) for field in fields)
-            kwargs.update(inject)
-            return view_func(*args, **kwargs)
+            _ = dependency.value  # Ensure that the dependency is called.
+        if model and fields:
+            try:
+                instance = model.model_validate(get_request_values(fields))
+            except pydantic.ValidationError as e:
+                errors = ftr_utils.pretty_errors(fields, e.errors(include_context=False))
+                raise ftr_errors.ValidationError(errors) from None
+            else:
+                inject = ((field.name, getattr(instance, field.name)) for field in fields)
+                kwargs.update(inject)
+        return view_func(*args, **kwargs)
 
     dependencies = resolve_non_returning_dependencies(view_func, view_name)
     model, fields = create_model(view_func, view_name, view_args)
     if model:
         setattr(decorator, ftr_utils.ROUTE_REQUEST_MODEL, model)
         setattr(decorator, ftr_utils.ROUTE_PARAM_FIELDS, fields)
-        return decorator
-    else:
-        return view_func
+    return decorator

@@ -361,6 +361,24 @@ def test_test_depends(client_auto, url_prefix):
     assert response.json == expected
 
 
+def test_test_depends_fail(client_auto, url_prefix):
+    url = f"{url_prefix}products/depends/fail/"
+    response = client_auto.get(url)
+    assert response.status_code == 400
+
+
+def test_test_non_returning_depends(client_auto, url_prefix):
+    url = f"{url_prefix}products/non-returning-depends/"
+    response = client_auto.get(url)
+    assert response.json == dict()
+
+
+def test_test_non_returning_fail(client_auto, url_prefix):
+    url = f"{url_prefix}products/non-returning-depends/fail/"
+    response = client_auto.get(url)
+    assert response.status_code == 400
+
+
 def test_func_all_params(client_auto, url_prefix):
     url = f"{url_prefix}products/all/foo/123/"
     payload = {

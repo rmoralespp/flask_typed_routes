@@ -19,6 +19,10 @@ def dependency():
     return "ok"
 
 
+def fail_dependency():
+    raise flask.abort(400)
+
+
 def login_required(func):
     """Decorator to simulate a login required on the view function."""
 
@@ -132,8 +136,19 @@ def flask_app_auto():
     def test_body_forward_refs(order: 'ForwardRefModel'):
         return flask.jsonify(order.model_dump())
 
+    @ftr.typed_route(dependencies=[ftr.Depends(dependency)])
+    def test_non_returning_depends():
+        return flask.jsonify({})
+
     def test_depends(my_dependency: t.Annotated[str, ftr.Depends(dependency)]):
         return flask.jsonify({"dependency": my_dependency})
+
+    @ftr.typed_route(dependencies=[ftr.Depends(fail_dependency)])
+    def test_non_returning_depends_fail():
+        return flask.jsonify({})
+
+    def test_depends_fail(my_dependency: t.Annotated[str, ftr.Depends(fail_dependency)]):
+        return flask.jsonify({'my_dependency': my_dependency})
 
     def func_all_params(
         category: str,
@@ -197,6 +212,9 @@ def flask_app_auto():
     add_url('/products/body/embed/', view_func=func_body_embed, methods=['POST'])
     add_url('/products/body/forward-refs/', view_func=test_body_forward_refs, methods=['POST'])
     add_url('/products/depends/', view_func=test_depends)
+    add_url('/products/depends/fail/', view_func=test_depends_fail)
+    add_url('/products/non-returning-depends/', view_func=test_non_returning_depends)
+    add_url('/products/non-returning-depends/fail/', view_func=test_non_returning_depends_fail)
     add_url('/products/all/<string:category>/<product_id>/', view_func=func_all_params, methods=['POST'])
     add_url('/products/mixed/', view_func=func_mixed_annotations)
 
