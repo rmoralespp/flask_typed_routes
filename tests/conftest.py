@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import functools
 import typing as t
-import urllib.parse
 
 import annotated_types as at
 import flask
@@ -9,10 +10,6 @@ import pydantic
 import pytest
 
 import flask_typed_routes as ftr
-
-pydantic_url = functools.partial(
-    urllib.parse.urljoin, f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
-)
 
 
 def dependency():

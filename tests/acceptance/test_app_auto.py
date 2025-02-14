@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+
 import json
 
 import pytest
 
-import tests.conftest
+import tests.utils
 
-pydantic_url = tests.conftest.pydantic_url
+pydantic_url = tests.utils.pydantic_url
 
 
 @pytest.fixture(params=["/", "/bp/"])

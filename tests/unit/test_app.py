@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest.mock
 
 import flask_typed_routes.app as ftr_app
