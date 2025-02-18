@@ -17,19 +17,6 @@ import flask_typed_routes.utils as ftr_utils
 empty = inspect.Parameter.empty
 
 
-class MyClass:
-    def my_method(self):
-        pass
-
-    @staticmethod
-    def my_staticmethod():
-        pass
-
-    @classmethod
-    def my_classmethod(cls):
-        pass
-
-
 class ValidView(flask.views.View):
     def dispatch_request(self):
         return "Valid View"

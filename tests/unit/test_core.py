@@ -163,14 +163,14 @@ def test_create_model_none(view_func):
     assert result == (None, None)
 
 
-def test_resolve_field_params_non_typed():
+def test_resolve_non_returning_dependencies():
     dependencies = [ftr_fields.Depends(unittest.mock.Mock())]
     fn = ftr_app.typed_route(dependencies=dependencies)(used_non_typed)
     result = ftr_core.resolve_non_returning_dependencies(fn, "my_view")
     assert result == dependencies
 
 
-def test_resolve_field_params_no_dependencies_fail():
+def test_resolve_non_returning_dependencies_fail():
     dependencies = [unittest.mock.Mock()]
     fn = ftr_app.typed_route(dependencies=dependencies)(used_non_typed)
     with pytest.raises(ftr_errors.InvalidParameterTypeError):
