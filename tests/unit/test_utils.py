@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import inspect
 import typing as t
 
@@ -13,19 +15,6 @@ import flask_typed_routes.fields as ftr_fields
 import flask_typed_routes.utils as ftr_utils
 
 empty = inspect.Parameter.empty
-
-
-class MyClass:
-    def my_method(self):
-        pass
-
-    @staticmethod
-    def my_staticmethod():
-        pass
-
-    @classmethod
-    def my_classmethod(cls):
-        pass
 
 
 class ValidView(flask.views.View):

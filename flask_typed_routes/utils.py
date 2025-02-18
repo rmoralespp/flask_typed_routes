@@ -24,6 +24,7 @@ ROUTE_REQUEST_MODEL = ROUTE_MARK.format(field="request_model")
 ROUTE_PARAM_FIELDS = ROUTE_MARK.format(field="fields")
 ROUTE_OPENAPI = ROUTE_MARK.format(field="openapi")
 ROUTE_STATUS_CODE = ROUTE_MARK.format(field="status_code")
+ROUTE_DEPENDENCIES = ROUTE_MARK.format(field="dependencies")
 
 logger = logging.getLogger("flask_typed_routes")
 logger.addHandler(logging.NullHandler())
@@ -95,13 +96,10 @@ def pretty_errors(fields, errors, /):
     for error in errors:
         loc = list(error["loc"])
         field = locators[loc[0]]
-        if field.alias:
-            # If the field has an alias, use "kind", "alias", and the rest of the location.
-            loc = [field.kind, field.alias] + loc[1:]
-        else:
-            # Otherwise, use "kind" and the rest of the location.
-            loc = [field.kind] + loc[1:]
-        error["loc"] = loc
+        prefix = [field.kind] if field.kind else []
+        suffix = loc[1:]
+        affix = [field.alias] if field.alias else []
+        error["loc"] = prefix + affix + suffix
     return errors
 
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import unittest.mock
 
 import pydantic
@@ -88,6 +90,28 @@ def test_get_parameters():
     result = ftr_openapi.get_parameters(fields, model_properties, model_required_fields, definitions)
     result = tuple(result)
     assert result == expected
+
+
+def test_get_json_parameters():
+    fields = [
+        unittest.mock.Mock(locator="field", kind="query", annotation=dict),
+    ]
+    model_properties = {
+        "field": {
+            "contentMediaType": "application/json",
+            "contentSchema": {"type": "object"},
+        },
+    }
+    expected = (
+        {
+            'content': {'application/json': {'schema': {'type': 'object'}}},
+            'in': 'query',
+            'name': 'field',
+            'required': False,
+        },
+    )
+    result = ftr_openapi.get_parameters(fields, model_properties, (), {})
+    assert tuple(result) == expected
 
 
 def test_get_unvalidated_parameters():

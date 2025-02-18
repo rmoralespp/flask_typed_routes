@@ -1,6 +1,8 @@
-import tests.conftest
+# -*- coding: utf-8 -*-
 
-pydantic_url = tests.conftest.pydantic_url
+import tests.utils
+
+pydantic_url = tests.utils.pydantic_url
 
 
 def test_validate(client_manual):

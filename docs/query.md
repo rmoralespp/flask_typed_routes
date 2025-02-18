@@ -381,3 +381,54 @@ def get_users(params: t.Annotated[QueryParams, ftr.Query(explode=False)]):
   "status": "default"
 }
 ```
+
+# Parsing JSONs
+
+You can parse JSON data from the query parameters using the `Json` type wrapper of Pydantic.
+
+```python
+import typing as t
+
+import flask
+import pydantic
+
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+ftr.FlaskTypedRoutes(app=app)
+
+
+class UserInfo(pydantic.BaseModel):
+    role: str
+    first_name: str
+
+
+class QueryParams(pydantic.BaseModel):
+    info: pydantic.Json[UserInfo]
+
+
+@app.get('/users/signature/')
+def get_users1(info: pydantic.Json[UserInfo]):
+    # Using directly the `Json` type in the function signature
+    return flask.jsonify(info.model_dump())
+
+
+@app.get('/users/model/')
+def get_users2(query: t.Annotated[QueryParams, ftr.Query()]):
+    # Using a Pydantic model with the `Json` type
+    return flask.jsonify(query.model_dump()['info'])
+```
+
+**Example request:** 
+
+- `GET http://127.0.0.1:5000/users/signature/?info={"role": "admin", "first_name": "Alex"}`
+- `GET http://127.0.0.1:5000/users/model/?info={"role": "admin", "first_name": "Alex"}`
+
+The response will be:
+
+```json
+{
+  "first_name": "Alex",
+  "role": "admin"
+}
+```

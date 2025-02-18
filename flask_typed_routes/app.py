@@ -15,12 +15,14 @@ class Mode:
     manual = "manual"
 
 
-def typed_route(*, status_code=None, **openapi):
+def typed_route(*, status_code=None, dependencies=None, **openapi):
     """
     Decorator for marking a route function as typed for request
     validation using type hints.
 
     :param int status_code: Status code for the success response.
+    :param list[Callable] dependencies: List of dependencies for the route.
+            Order of the dependencies is important, as they are executed in the order they are defined.
     :param Unpack[dict[str, Any]] openapi: Describe the OpenAPI operation fields in the route.
 
     Example:
@@ -34,6 +36,7 @@ def typed_route(*, status_code=None, **openapi):
         setattr(view_func, ftr_utils.ROUTE_ENABLED, True)
         setattr(view_func, ftr_utils.ROUTE_OPENAPI, openapi)
         setattr(view_func, ftr_utils.ROUTE_STATUS_CODE, status_code)
+        setattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, dependencies)
         return view_func
 
     return worker

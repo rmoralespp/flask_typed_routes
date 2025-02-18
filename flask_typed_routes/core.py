@@ -21,11 +21,14 @@ def get_request_values(fields, /):
 
 
 def set_field_alias(field, /):
-    if isinstance(field, ftr_fields.Path):
+    # +ATTENTION+: The 'field' must have an 'annotation' and 'name' attributes set.
+
+    if isinstance(field, ftr_fields.Path | ftr_fields.Depends):
         # Respect the name of the path parameter offered by `Flask` routing.
+        # Also, respect the name of the dependency parameter.
         field.alias = field.name
-    elif ftr_utils.is_subclass(field.annotation, pydantic.BaseModel):
-        # When the parameter is a Pydantic model, use alias if `embed` is True.
+    elif field.is_model_object:
+        # When the object parameter is a Pydantic model, use alias if `embed` is True.
         field.alias = field.locator if field.embed else None
     else:
         # Otherwise, use the alias if it is set, otherwise use the name.
@@ -90,6 +93,21 @@ def create_model(view_func, view_name, view_args, /):
         return (None, None)
 
 
+def resolve_non_returning_dependencies(view_func, view_name, /):
+    """
+    Resolve the dependencies of the view function.
+    :param view_func:
+    :param view_name:
+    :rtype: Sequence[flask_typed_routes.fields.Depends]
+    """
+
+    result = getattr(view_func, ftr_utils.ROUTE_DEPENDENCIES, ()) or ()
+    if not all(isinstance(d, ftr_fields.Depends) for d in result):
+        msg = f"The dependencies must be of type 'Depends' in {view_name!r}"
+        raise ftr_errors.InvalidParameterTypeError(msg)
+    return result
+
+
 def validate(view_func, view_name, view_args, /):
     """
     A decorator that validates the request parameters of the view function.
@@ -101,18 +119,23 @@ def validate(view_func, view_name, view_args, /):
 
     @functools.wraps(view_func)
     def decorator(*args, **kwargs):
-        try:
-            instance = model.model_validate(get_request_values(fields))
-        except pydantic.ValidationError as e:
-            errors = ftr_utils.pretty_errors(fields, e.errors(include_context=False))
-            raise ftr_errors.ValidationError(errors) from None
-        else:
-            inject = ((field.name, getattr(instance, field.name)) for field in fields)
-            kwargs.update(inject)
-            return view_func(*args, **kwargs)
+        # Calls the dependencies before the model validation.
+        for dependency in dependencies:
+            _ = dependency.value  # Ensure that the dependency is called.
+        if model and fields:
+            try:
+                instance = model.model_validate(get_request_values(fields))
+            except pydantic.ValidationError as e:
+                errors = ftr_utils.pretty_errors(fields, e.errors(include_context=False))
+                raise ftr_errors.ValidationError(errors) from None
+            else:
+                inject = ((field.name, getattr(instance, field.name)) for field in fields)
+                kwargs.update(inject)
+        return view_func(*args, **kwargs)
 
+    dependencies = resolve_non_returning_dependencies(view_func, view_name)
     model, fields = create_model(view_func, view_name, view_args)
-    if model:
+    if (model and fields) or dependencies:
         setattr(decorator, ftr_utils.ROUTE_REQUEST_MODEL, model)
         setattr(decorator, ftr_utils.ROUTE_PARAM_FIELDS, fields)
         return decorator

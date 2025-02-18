@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import functools
 import typing as t
-import urllib.parse
 
 import annotated_types as at
 import flask
@@ -10,9 +11,13 @@ import pytest
 
 import flask_typed_routes as ftr
 
-pydantic_url = functools.partial(
-    urllib.parse.urljoin, f"https://errors.pydantic.dev/{pydantic.version.version_short()}/v/"
-)
+
+def dependency():
+    return "ok"
+
+
+def fail_dependency():
+    raise flask.abort(400)
 
 
 def login_required(func):
@@ -41,10 +46,16 @@ class Product(pydantic.BaseModel):
     category: str | None = None
 
 
+class QueryEmbedJson(pydantic.BaseModel):
+    a: int
+    b: int
+
+
 class QueryParams(pydantic.BaseModel):
     skip: int = 0
     limit: int = 10
     sort_by: t.Annotated[str, pydantic.Field(alias='order-by')] = 'id'  # Testing alias
+    json_data: pydantic.Json[QueryEmbedJson] = None
 
     @pydantic.computed_field()
     @property
@@ -76,6 +87,7 @@ def flask_app_auto():
         skip: int = 0,
         limit: pydantic.NonNegativeInt = 10,
         tags: t.Annotated[list[str], ftr.Query(alias="tag")] = None,
+        json_data: t.Annotated[pydantic.Json[QueryEmbedJson], ftr.Query()] = None,
     ):
         return flask.jsonify(
             {
@@ -84,6 +96,7 @@ def flask_app_auto():
                 "tags": tags,
                 "status1": status1,
                 "status2": status2,
+                "json_data": json_data.model_dump() if json_data else None,
             }
         )
 
@@ -120,6 +133,20 @@ def flask_app_auto():
     def test_body_forward_refs(order: 'ForwardRefModel'):
         return flask.jsonify(order.model_dump())
 
+    @ftr.typed_route(dependencies=[ftr.Depends(dependency)])
+    def test_non_returning_depends():
+        return flask.jsonify({})
+
+    def test_depends(my_dependency: t.Annotated[str, ftr.Depends(dependency)]):
+        return flask.jsonify({"dependency": my_dependency})
+
+    @ftr.typed_route(dependencies=[ftr.Depends(fail_dependency)])
+    def test_non_returning_depends_fail():
+        return flask.jsonify({})
+
+    def test_depends_fail(my_dependency: t.Annotated[str, ftr.Depends(fail_dependency)]):
+        return flask.jsonify({'my_dependency': my_dependency})
+
     def func_all_params(
         category: str,
         product_id: int,
@@ -128,6 +155,7 @@ def flask_app_auto():
         limit: int = 10,
         auth: t.Annotated[str, ftr.Header(alias="Authorization")] = None,
         session_id: t.Annotated[str, ftr.Cookie(alias="session-id")] = None,
+        my_dependency: t.Annotated[str, ftr.Depends(dependency)] = None,
     ):
         result = {
             "category": category,
@@ -137,6 +165,7 @@ def flask_app_auto():
             "limit": limit,
             "auth": auth,
             "session_id": session_id,
+            "my_dependency": my_dependency,
         }
         return flask.jsonify(result)
 
@@ -179,6 +208,10 @@ def flask_app_auto():
     add_url('/products/body/field/', view_func=func_body_field, methods=['POST'])
     add_url('/products/body/embed/', view_func=func_body_embed, methods=['POST'])
     add_url('/products/body/forward-refs/', view_func=test_body_forward_refs, methods=['POST'])
+    add_url('/products/depends/', view_func=test_depends)
+    add_url('/products/depends/fail/', view_func=test_depends_fail)
+    add_url('/products/non-returning-depends/', view_func=test_non_returning_depends)
+    add_url('/products/non-returning-depends/fail/', view_func=test_non_returning_depends_fail)
     add_url('/products/all/<string:category>/<product_id>/', view_func=func_all_params, methods=['POST'])
     add_url('/products/mixed/', view_func=func_mixed_annotations)
 
@@ -206,6 +239,13 @@ def flask_app_manual():
     def get_product_no_validate(pk: t.Annotated[int, at.Gt(5), at.Lt(100)]):
         return flask.jsonify({"product_id": pk})
 
+    return api
+
+
+@pytest.fixture(scope='package')
+def flask_app_simple():
+    api = flask.Flask(__name__)
+    ftr.FlaskTypedRoutes(api)
     return api
 
 
