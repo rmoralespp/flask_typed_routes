@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/cookie/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/rmoralespp/flask_typed_routes/dependencies/" />
       <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Cookie parameters - flask_typed_routes</title>
+    <title>Dependencies - flask_typed_routes</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
     
       <script>
         // Current page data
-        var mkdocs_page_name = "Cookie parameters";
-        var mkdocs_page_input_path = "cookie.md";
-        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/cookie/";
+        var mkdocs_page_name = "Dependencies";
+        var mkdocs_page_input_path = "dependencies.md";
+        var mkdocs_page_url = "/rmoralespp/flask_typed_routes/dependencies/";
       </script>
     
     <!--[if lt IE 9]>
@@ -51,15 +51,21 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../query/">Query parameters</a>
                   </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Cookie parameters</a>
-    <ul class="current">
-    </ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../cookie/">Cookie parameters</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../header/">Header parameters</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../body/">Request body</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../dependencies/">Dependencies</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Dependencies</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#dependencies-in-typed_route-decorator">Dependencies in typed_route decorator.</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dependencies-using-depends">Dependencies using Depends</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#caching-dependencies">Caching Dependencies</a>
+    </li>
+    </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../errors/">Handling errors</a>
                   </li>
@@ -83,9 +89,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
           <li class="breadcrumb-item">Usage</li>
-      <li class="breadcrumb-item active">Cookie parameters</li>
+      <li class="breadcrumb-item active">Dependencies</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/cookie.md">Edit on flask_typed_routes</a>
+          <a href="https://github.com/rmoralespp/flask_typed_routes/edit/master/docs/dependencies.md">Edit on flask_typed_routes</a>
     </li>
   </ul>
   <hr/>
@@ -93,38 +99,101 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h2 id="cookie-parameters">Cookie Parameters</h2>
-<p>You can define cookie parameters in the same way as <strong>query parameters</strong>, with support for multiple
-values and validation using Pydantic models.</p>
+                <h1 id="dependencies-injections">Dependencies Injections</h1>
+<h2 id="dependencies-in-typed_route-decorator">Dependencies in <code>typed_route</code> decorator.</h2>
+<p>In some cases you don't really need the return value of a dependency inside your path operation function.
+But you still need it to be executed/solved.</p>
+<p>For those cases, you can add a list of dependencies to the <code>typed_route</code> decorator.
+It should be a list of <code>Depends()</code>:</p>
+<pre><code class="language-python">import flask
+import flask_typed_routes as ftr
+
+
+app = flask.Flask(__name__)
+
+
+def verify_token():
+    print(&quot;Verifying token&quot;)
+
+
+def verify_key():
+    print(&quot;Verifying key&quot;)
+
+
+@app.get(&quot;/items/&quot;)
+@ftr.typed_route(dependencies=[ftr.Depends(verify_token), ftr.Depends(verify_key)])
+def read_items():
+    return [{&quot;item&quot;: &quot;Foo&quot;}, {&quot;item&quot;: &quot;Bar&quot;}]
+</code></pre>
+<h2 id="dependencies-using-depends">Dependencies using <code>Depends</code></h2>
+<p>You can use <code>Depends</code> field to declare dependencies in your path operation function when you need to use 
+the return value of a dependency within that function.</p>
+<p>The <code>Depends</code> field takes a callable that returns the dependency value.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <code>Depends</code> can take <code>use_cache</code> parameter to cache the dependency value.</p>
+</div>
 <pre><code class="language-python">import typing as t
 
 import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
-ftr.FlaskTypedRoutes(app=app)
-
-SessionId = t.Annotated[str, ftr.Cookie(alias=&quot;session-id&quot;)]
+app_ftr = ftr.FlaskTypedRoutes(app=app)
 
 
-@app.route('/items/')
-def get_items(session_id: SessionId = None):
-    data = {
-        'session_id': session_id,
-    }
-    return flask.jsonify(data)
+def verify_token():
+    return {&quot;token&quot;: &quot;value&quot;}
+
+
+def verify_key():
+    return {&quot;key&quot;: &quot;value&quot;}
+
+
+
+@app.get(&quot;/items/&quot;)
+@ftr.typed_route()
+def read_items(
+    token: t.Annotated[dict, ftr.Depends(verify_token)],
+    key: t.Annotated[dict, ftr.Depends(verify_key)],
+):
+    result = {&quot;token&quot;: token, &quot;key&quot;: key}
+    return flask.jsonify(result)
 </code></pre>
-<h2 id="multiple-cookie-parameters">Multiple Cookie Parameters</h2>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><code>Cookie</code> fields always use the <code>form</code> style. An optional <code>explode</code> keyword controls the array and object serialization.</p>
-</div>
+<h2 id="caching-dependencies">Caching Dependencies</h2>
+<p>By default, <code>use_cache</code> is set to <code>False</code> so that the dependency is called again (if declared more than once) 
+in the same request.</p>
+<p>Set <code>use_cache</code> to <code>False</code> so that after a dependency is called for the first time in a request, if the dependency 
+is declared again for the rest of the request (for example, if multiple dependencies need the dependency), 
+the value will be reused for the rest of the request.</p>
+<p>Example:</p>
+<pre><code class="language-python">import typing as t
+
+import flask
+import flask_typed_routes as ftr
+
+app = flask.Flask(__name__)
+app_ftr = ftr.FlaskTypedRoutes(app=app)
+
+
+def verify_token():
+    return {&quot;token&quot;: &quot;value&quot;}
+
+def verify_key():
+    return {&quot;token&quot;: &quot;value&quot;}
+
+
+@app.get(&quot;/items/&quot;)
+@ftr.typed_route(dependencies=[ftr.Depends(verify_key, use_cache=True)])
+def read_items(token: t.Annotated[dict, ftr.Depends(verify_token, use_cache=True)]):
+    return flask.jsonify({&quot;token&quot;: token})
+</code></pre>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../query/" class="btn btn-neutral float-left" title="Query parameters"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../header/" class="btn btn-neutral float-right" title="Header parameters">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../body/" class="btn btn-neutral float-left" title="Request body"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../errors/" class="btn btn-neutral float-right" title="Handling errors">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -151,10 +220,10 @@ def get_items(session_id: SessionId = None):
         </span>
     
     
-      <span><a href="../query/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../body/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../header/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../errors/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

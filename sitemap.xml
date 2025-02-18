@@ -2,42 +2,46 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/body/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/cookie/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/rmoralespp/flask_typed_routes/dependencies/</loc>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/errors/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/header/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/mode/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/openapi/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/path/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/query/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
     <url>
          <loc>https://github.com/rmoralespp/flask_typed_routes/setup/</loc>
-         <lastmod>2025-02-11</lastmod>
+         <lastmod>2025-02-18</lastmod>
     </url>
 </urlset>
