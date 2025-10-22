@@ -1,5 +1,7 @@
 ## Releases
 
+- **Fix**: Fix deploy todo GitHub page.
+
 ### v0.2.6 (2025-10-22)
 
 - **Add**: Limit Pydantic maximum version to `< 2.12.0` to prevent compatibility issues.
