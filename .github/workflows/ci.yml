@@ -21,9 +21,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.13'
-      - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+          python-version: '3.14'
+      - name: Install tests/lint dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --group=test --group=lint
+      - name: Run Ruff linter
+        run: ruff check --quiet --output-format=concise
       - name: Run tests and collect coverage
         run: python -m pytest --cov
       - name: Upload coverage reports to Codecov
@@ -31,22 +35,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: rmoralespp/flask_typed_routes
-
-  mkdocs:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.13'
-      - name: Install dependencies
-        run: pip install -r requirements-doc.txt
-      - name: Build the documentation
-        run: mkdocs build
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site

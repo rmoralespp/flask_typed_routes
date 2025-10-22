@@ -1,5 +1,15 @@
 ## Releases
 
+### v0.2.6 (2025-10-22)
+
+- **Add**: Limit Pydantic maximum version to < 2.12.0 to prevent compatibility issues.
+- **Add**:  Integrate Ruff linter into the CI pipeline.
+- **Change**: Manage dependencies via pyproject.toml instead of requirements.txt.
+- **Change**: Update the CI pipeline to skip documentation generation on pull requests.
+- **Change**: Update the CD pipeline to generate documentation with mkdocs and deploy it to GitHub Pages.
+- **Change**: Adjust CI/CD workflows to align with pyproject.toml configuration.
+- **Fix**: Add support for Python 3.14.
+
 ### v0.2.5 (2025-02-18)
 
 - **Add**: Add `Depends` field to allow dependencies between parameters.

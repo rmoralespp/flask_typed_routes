@@ -27,7 +27,7 @@
 ## Requirements
 
 - Python 3.10+
-- Pydantic 2.0+
+- Pydantic >=2.0.0, <2.12.0
 - Flask
 
 ## Installation
@@ -267,24 +267,40 @@ project [documentation](https://rmoralespp.github.io/flask_typed_routes/)
 
 To contribute to the project, you can run the following commands for testing and documentation:
 
+### Setting up the Development Environment
+
+Ensure you have PIP updated:
+
+```bash
+python -m pip install --upgrade pip
+```
+
 ### Running Unit Tests
 
 Install the development dependencies and run the tests:
 
+```bash
+pip install --group=test --upgrade  # Skip if already installed
+python -m pytest tests/
+python -m pytest --cov  # With coverage report
 ```
-(env)$ pip install -r requirements-dev.txt  # Skip if already installed
-(env)$ python -m pytest tests/
-(env)$ python -m pytest --cov # Run tests with coverage
+
+### Running the Linter
+To run the linter, use the following command:
+
+```bash
+pip install --group=lint --upgrade  # Skip if already installed
+ruff check .
 ```
 
 ### Building the Documentation
 
 To build the documentation locally, use the following commands:
 
-```
-(env)$ pip install -r requirements-doc.txt # Skip if already installed
-(env)$ mkdocs serve # Start live-reloading docs server
-(env)$ mkdocs build # Build the documentation site
+```bash
+pip install --group=doc --upgrade  # Skip if already installed
+mkdocs serve  # Start live-reloading docs server
+mkdocs build  # Build the documentation site
 ```
 
 ## License
