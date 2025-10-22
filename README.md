@@ -277,7 +277,7 @@ python -m pip install --upgrade pip
 
 ### Running Unit Tests
 
-Install the development dependencies and run the tests:
+Install the test dependencies and run the tests:
 
 ```bash
 pip install --group=test --upgrade  # Skip if already installed
@@ -286,7 +286,7 @@ python -m pytest --cov  # With coverage report
 ```
 
 ### Running the Linter
-To run the linter, use the following command:
+To run the linter, use the following commands:
 
 ```bash
 pip install --group=lint --upgrade  # Skip if already installed
