@@ -21,7 +21,7 @@
 ## Requirements
 
 - Python 3.10+
-- Pydantic 2.0+
+- Pydantic >=2.0.0, <2.12.0
 - Flask
 
 ## Installation
