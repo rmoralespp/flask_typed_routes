@@ -96,6 +96,7 @@ def create_model(view_func, view_name, view_args, /):
 def resolve_non_returning_dependencies(view_func, view_name, /):
     """
     Resolve the dependencies of the view function.
+
     :param view_func:
     :param view_name:
     :rtype: Sequence[flask_typed_routes.fields.Depends]

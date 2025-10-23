@@ -287,7 +287,7 @@ class OpenApi:
         :param int error_status_code: Status code for validation errors response.
         :param Optional[dict] model_schema: Route Model schema.
         :param dict[str, dict] definitions: Models definitions.
-        :rtype dict:
+        :rtype: dict
         """
 
         param_fields = getattr(route.func, ftr_utils.ROUTE_PARAM_FIELDS, None)

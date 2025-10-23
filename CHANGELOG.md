@@ -1,6 +1,9 @@
 ## Releases
 
+### v0.2.7 (2025-10-23)
+
 - **Fix**: Fix deploy todo GitHub page.
+- **Fix**: Docstring sphinx formatting issues.
 
 ### v0.2.6 (2025-10-22)
 

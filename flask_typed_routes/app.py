@@ -29,7 +29,6 @@ def typed_route(*, status_code=None, dependencies=None, **openapi):
         @typed_route(status_code=200, summary="My summary", tags=["my-tag"], deprecated=False)
         def my_route():
             pass
-
     """
 
     def worker(view_func, /):

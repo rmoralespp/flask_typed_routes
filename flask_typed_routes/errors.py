@@ -4,7 +4,7 @@ import flask
 
 
 class InvalidParameterTypeError(TypeError):
-    """Called if the developer supplies a non-standard parameter type"""
+    """Called if the developer supplies a non-standard parameter type."""
 
     pass
 
