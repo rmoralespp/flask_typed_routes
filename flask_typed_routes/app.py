@@ -20,15 +20,14 @@ def typed_route(*, status_code=None, dependencies=None, **openapi):
     Decorator for marking a route function as typed for request
     validation using type hints.
 
+    @typed_route(status_code=200, summary="My summary", tags=["my-tag"], deprecated=False)
+    def my_route():
+        pass
+
     :param int status_code: Status code for the success response.
     :param list[Callable] dependencies: List of dependencies for the route.
             Order of the dependencies is important, as they are executed in the order they are defined.
     :param Unpack[dict[str, Any]] openapi: Describe the OpenAPI operation fields in the route.
-
-    Example:
-        @typed_route(status_code=200, summary="My summary", tags=["my-tag"], deprecated=False)
-        def my_route():
-            pass
     """
 
     def worker(view_func, /):
