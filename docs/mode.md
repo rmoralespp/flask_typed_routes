@@ -18,6 +18,8 @@ routes are validated without additional effort.
 #### Example:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import annotated_types as at
@@ -61,6 +63,8 @@ decorator. This mode provides greater control, allowing developers to selectivel
 Set the mode to `manual` when initializing the library:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import annotated_types as at

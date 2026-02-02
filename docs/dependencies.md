@@ -10,6 +10,8 @@ For those cases, you can add a list of dependencies to the `typed_route` decorat
 It should be a list of `Depends()`:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -42,6 +44,8 @@ The `Depends` field takes a callable that returns the dependency value.
     The `Depends` can take `use_cache` parameter to cache the dependency value.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -82,6 +86,8 @@ the value will be reused for the rest of the request.
 Example:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask

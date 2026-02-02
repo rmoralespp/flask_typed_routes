@@ -27,7 +27,7 @@
 ## Requirements
 
 - Python 3.10+
-- Pydantic >=2.0.0, <2.12.0
+- Pydantic 2.0+
 - Flask
 
 ## Installation
@@ -49,6 +49,8 @@ This tool allows you to validate request parameters in Flask, similar to how Fas
 Create a file `items.py` with:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -110,6 +112,8 @@ You can also use Pydantic models to validate the request body.
 Now let's update the `items.py` file with:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 import pydantic
@@ -150,6 +154,8 @@ def update_item(item_id: int, item: Item):
 Now let's update the `items.py` file with:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -171,6 +177,8 @@ app.register_blueprint(orders)
 Now let's update the `items.py` file with:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask.views
 import flask_typed_routes as ftr
@@ -207,6 +215,8 @@ pip install swagger-ui-py  # ignore if already installed
 ```
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 import pydantic

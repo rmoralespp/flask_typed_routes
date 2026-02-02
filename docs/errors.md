@@ -4,6 +4,8 @@ If you need to change default output for validation errors, you can pass a
 custom error handler to `FlaskTypedRoutes` constructor.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as flask_tpr
 

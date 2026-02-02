@@ -4,6 +4,8 @@ You can define header parameters in the same way as **query/cookie parameters**,
 values and validation using Pydantic models.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask

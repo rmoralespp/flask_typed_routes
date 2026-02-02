@@ -6,6 +6,8 @@ Parameters not included in the **Path** are automatically treated as **Query** p
 - **Optional:** Declared with default values.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -64,6 +66,8 @@ You can apply additional validation using Pydantic's custom [types](https://docs
 with constraints, or define your own custom data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types)
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import annotated_types as at
@@ -100,6 +104,8 @@ This flexibility allows you to tailor query parameter validation to your applica
     the query parameter name in the request.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -146,6 +152,8 @@ This would allow you to re-use the model in multiple places and also to declare 
 parameters at once.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import pydantic
@@ -200,6 +208,8 @@ If you want to allow a query parameter to parse as an **Array**, you can use `se
     You can use the `set` type hint to validate that the values are unique.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -243,6 +253,8 @@ def get_users(user_id: int, tags: Tags = ()):
 **Here’s an example of how to do it:**
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -315,6 +327,8 @@ The `explode` parameter should be set to `False` to parse a single query paramet
 **Using a dictionary**
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -344,6 +358,8 @@ def get_users(info: t.Annotated[dict, ftr.Query(explode=False)]):
 **Using Pydantic models**:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -387,6 +403,8 @@ def get_users(params: t.Annotated[QueryParams, ftr.Query(explode=False)]):
 You can parse JSON data from the query parameters using the `Json` type wrapper of Pydantic.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask

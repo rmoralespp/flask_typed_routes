@@ -10,6 +10,8 @@ application and initialize the `FlaskTypedRoutes` extension with the `app` insta
 ## Basic setup
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -28,6 +30,8 @@ You can also use the `init_app` method to initialize the extension with the `Fla
 separate step as shown below.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 

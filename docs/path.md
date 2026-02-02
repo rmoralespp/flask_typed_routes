@@ -9,6 +9,8 @@ You can validate **Path parameters** in your route by adding standard type hints
 ## Basic Usage
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -63,6 +65,8 @@ You can apply additional validation using Pydantic's custom [types](https://docs
 with constraints, or define your own custom data [types](https://docs.pydantic.dev/latest/concepts/types/#custom-types)
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import annotated_types as at
@@ -84,6 +88,8 @@ offering powerful validation capabilities.
 This flexibility allows you to tailor path parameter validation to your application's specific needs.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -117,6 +123,8 @@ The library follows the `simple` style of **OpenAPI** parameter serialization fo
     You can use the `set` type hint to validate that the values are unique.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -145,6 +153,8 @@ The library follows the `simple` style of **OpenAPI** parameter serialization fo
 **Using a Dictionary:**
 
 ```python
+# -*- coding: utf-8 -*-
+
 import flask
 import flask_typed_routes as ftr
 
@@ -171,6 +181,8 @@ def get_users(user_info: dict[str, str]):
 **Using a Pydantic model**:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -246,6 +258,8 @@ for example: `GET 127.0.0.1:5000/users/name,`
 With `explode=True`, keys and values are separated by `=` in the URL.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask

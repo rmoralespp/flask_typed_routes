@@ -12,6 +12,8 @@ request body model. However, if you only want to validate specific fields in the
 Basic Usage of request Body Validation:
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
@@ -118,6 +120,8 @@ You can use multiple Pydantic models in a single route and validate specific fie
 `Body` field with the `embed` parameter.
 
 ```python
+# -*- coding: utf-8 -*-
+
 import typing as t
 
 import flask
