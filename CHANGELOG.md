@@ -2,6 +2,7 @@
 
 - **Add**: Support for Pydantic v2.12.0 and above.
 - **Changed:** Documentation - Add `UTF-8` headers to the Python code snippets shown.
+- **Fix**: Sphinx docstring formatting issues.
 
 ### v0.2.7 (2025-10-23)
 

@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""
-Contains the field classes that are used to define the
-input fields of the API.
-"""
+"""Contains the field classes that are used to define the input fields of the API."""
 
 import abc
 import enum
@@ -117,10 +114,7 @@ class FieldTypes:
 
 
 class Field(abc.ABC):
-    """
-    Abstract base class for all field types.
-    Inherit from ABC with abstractmethod to avoid instantiation of this class.
-    """
+    """Base class for all field types. Inherit from ABC with abstractmethod to avoid instantiation of this class."""
 
     kind = None
     default_explode = None

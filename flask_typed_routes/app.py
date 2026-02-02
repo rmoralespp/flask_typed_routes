@@ -17,17 +17,16 @@ class Mode:
 
 def typed_route(*, status_code=None, dependencies=None, **openapi):
     """
-    Decorator for marking a route function as typed for request
-    validation using type hints.
-
-    @typed_route(status_code=200, summary="My summary", tags=["my-tag"], deprecated=False)
-    def my_route():
-        pass
+    Decorator for marking a route function as typed for request validation using type hints.
 
     :param int status_code: Status code for the success response.
     :param list[Callable] dependencies: List of dependencies for the route.
             Order of the dependencies is important, as they are executed in the order they are defined.
     :param Unpack[dict[str, Any]] openapi: Describe the OpenAPI operation fields in the route.
+
+    @typed_route(status_code=200, summary="My summary", tags=["my-tag"], deprecated=False)
+    def my_route():
+        pass
     """
 
     def worker(view_func, /):
@@ -41,10 +40,7 @@ def typed_route(*, status_code=None, dependencies=None, **openapi):
 
 
 class FlaskTypedRoutes:
-    """
-    Flask extension for automatically validating Requests with Pydantic
-    by decorating route functions.
-    """
+    """Flask extension for automatically validating Requests with Pydantic by decorating route functions."""
 
     IGNORE_VERBS = ("HEAD", "OPTIONS")
 
@@ -92,8 +88,7 @@ class FlaskTypedRoutes:
 
     def add_url_rule(self, func, /):
         """
-        Decorator for the "add_url_rule" method of the Flask.
-        Applies of a validation decorator to the view functions.
+        Decorator for the "add_url_rule" method of the Flask. Applies of a validation decorator to the view functions.
 
         :param func: Flask "add_url_rule" method
         """

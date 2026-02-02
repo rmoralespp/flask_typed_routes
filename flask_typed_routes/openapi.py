@@ -177,11 +177,11 @@ def get_request_body(fields, model_properties, model_required_fields, /):
     """
     Get OpenAPI operation Request body.
 
+    :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
     :param dict[str, dict] model_properties: Schema properties.
     :param Sequence[str] model_required_fields: Schema required fields.
 
-    :param Iterable[flask_typed_routes.fields.Field] fields: Field definitions
-    :rtype: Iterable[dict]
+    :rtype: dict
     """
 
     required_fields = []

@@ -43,7 +43,9 @@ class RouteInfo(t.NamedTuple):
 def validate_field_annotation(func_path, default, name, tp, /):
     """
     Validates the annotation of a function parameter, ensuring it is a valid field annotation.
-    Raises an exception if the annotation is invalid or inconsistent with the default value.
+
+    :raises InvalidParameterTypeError:
+        Raises an exception if the annotation is invalid or inconsistent with the default value.
     """
 
     if is_annotated(tp):
