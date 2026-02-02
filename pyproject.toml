@@ -33,7 +33,7 @@ dependencies = [
 [dependency-groups]
 test = [
     "flask",
-    "pydantic<2.12.0",
+    "pydantic",
     "pytest",
     "flask",
     "coverage",
