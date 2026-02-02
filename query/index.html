@@ -111,7 +111,9 @@
 <li><strong>Required:</strong> Declared as function arguments without default values.</li>
 <li><strong>Optional:</strong> Declared with default values.</li>
 </ul>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
@@ -159,7 +161,9 @@ def get_items(needy: str, skip: int = 0, limit: int = 100):
 <h2 id="custom-validations">Custom validations</h2>
 <p>You can apply additional validation using Pydantic's custom <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> 
 with constraints, or define your own custom data <a href="https://docs.pydantic.dev/latest/concepts/types/#custom-types">types</a></p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import annotated_types as at
 import flask
@@ -193,7 +197,9 @@ This flexibility allows you to tailor query parameter validation to your applica
 <p>The <code>Query</code> field is supported aliasing. You can use the <code>alias</code> argument to define
 the query parameter name in the request.</p>
 </div>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -231,7 +237,9 @@ def get_items(needy: Needy, skip: int = 0, limit: Limit = 100):
 <p>If you have a group of query parameters that are related, you can create a Pydantic model to declare them.</p>
 <p>This would allow you to re-use the model in multiple places and also to declare validations and metadata for all the
 parameters at once.</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import pydantic
 import flask
@@ -280,7 +288,9 @@ When using Pydantic models, you must use <strong>Pydantic's <a href="https://pyd
 <p class="admonition-title">Tip</p>
 <p>You can use the <code>set</code> type hint to validate that the values are unique.</p>
 </div>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -318,7 +328,9 @@ the resulting list will contain a single element with the entire string.</p>
 parameter in the <code>Query</code> field and specify the <code>style</code> parameter to define the serialization format.</p>
 </div>
 <p><strong>Here’s an example of how to do it:</strong></p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -404,7 +416,9 @@ The library follows the <code>form</code> style and of <strong>OpenAPI</strong> 
 <p>The supported styles are <code>form</code>, <code>spaceDelimited</code>, and <code>pipeDelimited</code>, but only <code>form</code> is supported for objects.</p>
 </div>
 <p><strong>Using a dictionary</strong></p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 
@@ -427,7 +441,9 @@ def get_users(info: t.Annotated[dict, ftr.Query(explode=False)]):
 }
 </code></pre>
 <p><strong>Using Pydantic models</strong>:</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import pydantic
@@ -463,7 +479,9 @@ def get_users(params: t.Annotated[QueryParams, ftr.Query(explode=False)]):
 </code></pre>
 <h1 id="parsing-jsons">Parsing JSONs</h1>
 <p>You can parse JSON data from the query parameters using the <code>Json</code> type wrapper of Pydantic.</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import pydantic

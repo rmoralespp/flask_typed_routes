@@ -124,7 +124,9 @@
 <strong>Path</strong>, <strong>Query</strong>, <strong>Header</strong>, <strong>Cookie</strong>, and <strong>Body</strong> validation.</p>
 <h2 id="example">Example</h2>
 <p>Create a file <code>items.py</code> with:</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
@@ -171,7 +173,9 @@ You will see the JSON response with the error details because the <code>skip</co
 <h3 id="example-body-validation">Example Body Validation</h3>
 <p>You can also use Pydantic models to validate the request body.</p>
 <p>Now let's update the <code>items.py</code> file with:</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 import pydantic
 
@@ -207,7 +211,9 @@ def update_item(item_id: int, item: Item):
 </code></pre>
 <h3 id="example-flask-blueprints">Example Flask Blueprints</h3>
 <p>Now let's update the <code>items.py</code> file with:</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
@@ -224,7 +230,9 @@ app.register_blueprint(orders)
 </code></pre>
 <h3 id="example-flask-class-based-views">Example Flask Class-Based Views</h3>
 <p>Now let's update the <code>items.py</code> file with:</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask.views
 import flask_typed_routes as ftr
 
@@ -254,7 +262,9 @@ app.add_url_rule('/orders/&lt;user&gt;/', view_func=UserOrders.as_view('user_ord
 with any OpenAPI UI library. For example, you can use <code>swagger-ui-py</code> to generate the API docs.</p>
 <pre><code class="language-bash">pip install swagger-ui-py  # ignore if already installed
 </code></pre>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 import pydantic
 import swagger_ui
@@ -350,5 +360,5 @@ swagger_ui.api_doc(app, config=app_ftr.get_openapi_schema(), url_prefix='/docs')
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-10-23 09:25:08.388262+00:00
+Build Date UTC : 2026-02-02 12:02:31.836116+00:00
 -->

@@ -105,7 +105,9 @@ request body model. However, if you only want to validate specific fields in the
 <p>This <code>Body</code> Field is an extension of Pydantic's <a href="https://pydantic-docs.helpmanual.io/concepts/fields/">field</a></p>
 </div>
 <p>Basic Usage of request Body Validation:</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as flask_tpr
@@ -195,7 +197,9 @@ def update_item(
 <h3 id="multiple-pydantic-models">Multiple Pydantic Models</h3>
 <p>You can use multiple Pydantic models in a single route and validate specific fields in the request body using the
 <code>Body</code> field with the <code>embed</code> parameter.</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr

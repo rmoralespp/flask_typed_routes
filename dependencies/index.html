@@ -105,7 +105,9 @@
 But you still need it to be executed/solved.</p>
 <p>For those cases, you can add a list of dependencies to the <code>typed_route</code> decorator.
 It should be a list of <code>Depends()</code>:</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 
@@ -133,7 +135,9 @@ the return value of a dependency within that function.</p>
 <p class="admonition-title">Tip</p>
 <p>The <code>Depends</code> can take <code>use_cache</code> parameter to cache the dependency value.</p>
 </div>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -167,7 +171,9 @@ in the same request.</p>
 is declared again for the rest of the request (for example, if multiple dependencies need the dependency), 
 the value will be reused for the rest of the request.</p>
 <p>Example:</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr

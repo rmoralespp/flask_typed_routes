@@ -111,7 +111,9 @@
 <p>If no type hint is provided, the <strong>Path parameters</strong> are not validated.</p>
 </div>
 <h2 id="basic-usage">Basic Usage</h2>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -155,7 +157,9 @@ def read_items(category_id: int, lang: t.Literal['es', 'en']):
 <h2 id="custom-validations">Custom Validations</h2>
 <p>You can apply additional validation using Pydantic's custom <a href="https://docs.pydantic.dev/latest/concepts/types/">types</a> 
 with constraints, or define your own custom data <a href="https://docs.pydantic.dev/latest/concepts/types/#custom-types">types</a></p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import annotated_types as at
 import flask
@@ -173,7 +177,9 @@ def read_items(category_id: t.Annotated[int, at.Ge(1), at.Le(100)]):
 <p>Alternatively, you can use the <code>Path</code> field. This field is an extension of Pydantic's <a href="https://docs.pydantic.dev/latest/concepts/fields/">field</a>, 
 offering powerful validation capabilities.
 This flexibility allows you to tailor path parameter validation to your application's specific needs.</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -203,7 +209,9 @@ The library follows the <code>simple</code> style of <strong>OpenAPI</strong> pa
 <p class="admonition-title">Tip</p>
 <p>You can use the <code>set</code> type hint to validate that the values are unique.</p>
 </div>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
@@ -223,7 +231,9 @@ def get_users(user_ids: list[int]):
 <p>Path parameters can be parsed as <strong>Objects</strong> using dictionaries or Pydantic models.
 The library follows the <code>simple</code> style of <strong>OpenAPI</strong> parameter serialization for objects.</p>
 <p><strong>Using a Dictionary:</strong></p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
@@ -243,7 +253,9 @@ def get_users(user_info: dict[str, str]):
 }
 </code></pre>
 <p><strong>Using a Pydantic model</strong>:</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr
@@ -302,7 +314,9 @@ for example: <code>GET 127.0.0.1:5000/users/name,</code></p>
 </code></pre>
 <p><strong>Handling <code>explode</code> parameter</strong></p>
 <p>With <code>explode=True</code>, keys and values are separated by <code>=</code> in the URL.</p>
-<pre><code class="language-python">import typing as t
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import typing as t
 
 import flask
 import flask_typed_routes as ftr

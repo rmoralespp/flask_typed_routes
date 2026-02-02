@@ -106,7 +106,9 @@ application and initialize the <code>FlaskTypedRoutes</code> extension with the 
 to allow the extension to collect the routes and be able to validate the endpoints.</p>
 </div>
 <h2 id="basic-setup">Basic setup</h2>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app = flask.Flask(__name__)
@@ -120,7 +122,9 @@ def read_root():
 <h2 id="two-step-setup">Two-step setup</h2>
 <p>You can also use the <code>init_app</code> method to initialize the extension with the <code>Flask</code> application instance in a 
 separate step as shown below.</p>
-<pre><code class="language-python">import flask
+<pre><code class="language-python"># -*- coding: utf-8 -*-
+
+import flask
 import flask_typed_routes as ftr
 
 app_ftr = ftr.FlaskTypedRoutes()
