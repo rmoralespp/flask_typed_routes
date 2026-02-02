@@ -44,14 +44,8 @@ def set_field_props(field, name, tp, default_value, /):
 
 
 def resolve_annotated_field(tp, default_field_class, /):
-    original_tp = tp
-    tp, *metalist = t.get_args(original_tp)
-    field = next((m for m in metalist if isinstance(m, ftr_fields.Field)), default_field_class())
-    field_info = pydantic.fields.FieldInfo.from_annotation(original_tp)
-    # Later `FieldInfo` instances override earlier ones.
-    # Prioritize the `Field` above any other metadata
-    field.field_info = pydantic.fields.FieldInfo.merge_field_infos(field_info, field.field_info)
-    return (field, tp)
+    _, *metalist = t.get_args(tp)
+    return next((m for m in metalist if isinstance(m, ftr_fields.Field)), default_field_class())
 
 
 def resolve_field(name, tp, is_path_field, default_value, /):
@@ -63,7 +57,7 @@ def resolve_field(name, tp, is_path_field, default_value, /):
         klass = ftr_fields.Query
 
     if ftr_utils.is_annotated(tp):
-        field, tp = resolve_annotated_field(tp, klass)
+        field = resolve_annotated_field(tp, klass)
     else:
         field = klass()
     return set_field_props(field, name, tp, default_value)

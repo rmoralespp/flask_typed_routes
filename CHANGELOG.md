@@ -1,5 +1,7 @@
 ## Releases
 
+- **Add**: Support for Pydantic v2.12.0 and above.
+
 ### v0.2.7 (2025-10-23)
 
 - **Fix**: Fix deploy todo GitHub page.

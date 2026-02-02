@@ -54,6 +54,15 @@ def get_locator(alias, name, /):
     return alias or name
 
 
+def unwrap_annotated(annotation, /):
+    """Get the field annotation, unwrapping Annotated if necessary."""
+
+    if ftr_utils.is_annotated(annotation):
+        return t.get_args(annotation)[0]
+    else:
+        return annotation
+
+
 class DataType(enum.Enum):
     primitive = "primitive"  # "blue"
     object = "object"  # ["blue", "black", "brown"]
@@ -62,7 +71,7 @@ class DataType(enum.Enum):
     @classmethod
     def belong_to(cls, annotation, types, /):
         if annotation:
-            tp = t.get_args(annotation)[0] if ftr_utils.is_annotated(annotation) else annotation
+            tp = unwrap_annotated(annotation)
             return tp in types or t.get_origin(tp) in types
         else:
             return False
@@ -118,7 +127,7 @@ class Field(abc.ABC):
     default_style = None
     supported_styles = ()
 
-    __slots__ = ("embed", "style", "explode", "field_info", "annotation", "name")
+    __slots__ = ("args", "kwargs", "embed", "style", "explode", "field_info", "field_annotation", "name")
 
     def __init__(self, *args, embed=False, style=None, explode=None, **kwargs):
         """
@@ -131,6 +140,9 @@ class Field(abc.ABC):
         :param kwargs: Keyword arguments for the Pydantic field.
         """
 
+        self.args = args  # pydantic field args
+        self.kwargs = kwargs  # pydantic field kwargs
+
         if embed and self.kind != FieldTypes.body:
             raise ftr_errors.InvalidParameterTypeError("Only 'Body' fields can be embedded.")
 
@@ -142,14 +154,30 @@ class Field(abc.ABC):
         self.explode = self.default_explode if explode is None else explode  # check explicit None
 
         self.embed = embed  # `Body` fields can be embedded
-        self.field_info = pydantic.fields.Field(*args, **kwargs)
-        # These attributes are established later.
-        self.annotation = None
-        self.name = None
 
-    @property
-    def locator(self):
-        return get_locator(self.alias, self.name)
+        # These attributes are established later.
+        self.name = None
+        self.field_annotation = None
+        self.field_info = None
+
+    def rebuild_field(self, /):
+        """Rebuild the Pydantic FieldInfo object based on the current args, kwargs, and annotation."""
+
+        # Pydantic(2.12+) does not preserve later-modified field attributes, so we must rebuild the field, more info:
+        # https://redmine.taric.local/attachments/41146
+
+        field = pydantic.fields.Field(*self.args, **self.kwargs)
+        if ftr_utils.is_annotated(self.field_annotation):
+            # Later `FieldInfo` instances override earlier ones.
+            # Prioritize the `Field` above any other metadata
+            earlier = pydantic.fields.FieldInfo.from_annotation(self.field_annotation)
+            field = pydantic.fields.FieldInfo.merge_field_infos(earlier, field)
+
+            # Update kwargs to reflect any changes made directly to the field.
+            self.kwargs["alias"] = field.alias
+            self.kwargs["default"] = field.default
+
+        self.field_info = field
 
     @property
     @abc.abstractmethod
@@ -157,22 +185,37 @@ class Field(abc.ABC):
         raise NotImplementedError
 
     @property
+    def annotation(self):
+        return unwrap_annotated(self.field_annotation)
+
+    @annotation.setter
+    def annotation(self, value):
+        self.field_annotation = value
+        self.rebuild_field()
+
+    @property
+    def locator(self):
+        return get_locator(self.alias, self.name)
+
+    @property
     def alias(self):
-        return self.field_info.alias
+        return self.kwargs.get("alias", None)
 
     @alias.setter
     def alias(self, value):
-        self.field_info.alias = value
+        self.kwargs["alias"] = value
+        self.rebuild_field()
 
     @property
     def default(self):
-        return self.field_info.default
+        return self.kwargs.get("default", Undef)
 
     @default.setter
     def default(self, default):
         # Only set the field's default value if the default function parameter is not empty.
         if default != inspect.Parameter.empty:
-            self.field_info.default = default
+            self.kwargs["default"] = default
+        self.rebuild_field()
 
     @property
     def is_required(self):
@@ -180,7 +223,10 @@ class Field(abc.ABC):
 
     @property
     def data_type(self, /):
-        return DataType.typeof(self.annotation, self.field_info.metadata)
+        if self.annotation and self.field_info:
+            return DataType.typeof(self.annotation, self.field_info.metadata)
+        else:
+            return None
 
     @property
     def is_model_object(self, /):
