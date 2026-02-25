@@ -92,6 +92,42 @@ def test_get_parameters():
     assert result == expected
 
 
+def test_get_parameters_with_shared_sub_model():
+    # Validates that shared sub-model definitions maintain field descriptions
+    # across multiple invocations via JSON schema references.
+
+    class SubModel(pydantic.BaseModel):
+        field: str
+
+    shared_definitions = {
+        "SubModel": {
+            "type": "object",
+            "properties": {"field": {"type": "string", "title": "Field", "description": "Field description"}},
+            "required": ["field"],
+        },
+    }
+    fields = [unittest.mock.Mock(locator="params", kind="query", annotation=SubModel, explode=False, style="form")]
+    model_properties = {"params": {"$ref": "#/components/schemas/SubModel"}}
+
+    result1 = tuple(ftr_openapi.get_parameters(fields, model_properties, ("field",), shared_definitions))
+    result2 = tuple(ftr_openapi.get_parameters(fields, model_properties, ("field",), shared_definitions))
+
+    expected = (
+        {
+            "name": "field",
+            "in": "query",
+            "required": True,
+            "schema": {"type": "string"},
+            "description": "Field description",
+            "style": "form",
+            "explode": False,
+        },
+    )
+
+    assert result1 == expected
+    assert result2 == expected
+
+
 def test_get_json_parameters():
     fields = [
         unittest.mock.Mock(locator="field", kind="query", annotation=dict),

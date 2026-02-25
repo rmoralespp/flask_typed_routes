@@ -1,5 +1,7 @@
 ## Releases
 
+**Fix**: Ensure immutability of schema references in OpenAPI parameters.
+
 ### v0.2.8(2026-02-02)
 
 - **Add**: Support for Pydantic `v2.12.0` and above.

@@ -122,7 +122,7 @@ def get_parameters(fields, model_properties, model_required_fields, definitions,
             if name in slot:
                 duplicate_request_field(field)
             else:
-                schema = properties_slot[name]
+                schema = dict(properties_slot[name])  # copy to avoid mutating the original schema
                 media_type = schema.pop("contentMediaType", None)
                 _ = schema.pop("title", None)  # title is dont used
                 description = schema.pop("description", None)
