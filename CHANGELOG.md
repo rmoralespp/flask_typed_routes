@@ -2,7 +2,7 @@
 
 ### v0.2.9(2026-02-25)
 
-**Fix**: Ensure immutability of schema references in OpenAPI parameters.
+- **Fix**: Ensure immutability of schema references in OpenAPI parameters.
 
 ### v0.2.8(2026-02-02)
 
